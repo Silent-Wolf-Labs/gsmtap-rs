@@ -12,4 +12,4 @@ cc -std=c11 -Wall -Wextra -Wno-unused-parameter \
 	$(pkg-config --cflags --libs libosmocore) \
 	-o "$binary"
 
-"$binary"
+"$binary" "$@"
