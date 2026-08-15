@@ -3,9 +3,10 @@
  *
  * This program intentionally delegates packet construction to libosmocore.
  * Its stdout is the conformance oracle; no Rust code participates in
- * generating it.
+ * generating it. The output is a single JSON object suitable for committing
+ * as a golden vector.
  *
- * Reference source revision: 950430e829a3
+ * Reference source revision: 950430e829a3dc1d162aa241bc0505745c5a7311
  */
 
 #include <stdint.h>
@@ -37,9 +38,13 @@ int main(void)
 		return 1;
 	}
 
+	printf("{\"case\":\"gsmtap_v2_basic_header\",");
+	printf("\"libosmocore_commit\":\"950430e829a3dc1d162aa241bc0505745c5a7311\",");
+	printf("\"return_code\":0,");
+	printf("\"length\":%u,\"encoded_hex\":\"", message->len);
 	for (index = 0; index < message->len; index++)
 		printf("%02x", message->data[index]);
-	putchar('\n');
+	puts("\"}");
 
 	msgb_free(message);
 	return 0;

@@ -7,16 +7,16 @@ Rust code must not participate in generating their output.
 ## Initial vector
 
 `gsmtap_makemsg_ex_vector.c` calls `gsmtap_makemsg_ex()` once with a fixed UM
-packet input and writes the complete resulting message as lowercase hexadecimal
-followed by a newline. It targets `libosmocore` revision `950430e829a3`.
+packet input and writes a JSON observation containing the complete resulting
+message as lowercase hexadecimal. It targets `libosmocore` revision
+`950430e829a3dc1d162aa241bc0505745c5a7311`.
 
 Run it against a configured `libosmocore` installation:
 
 ```bash
-PKG_CONFIG_PATH=/path/to/lib/pkgconfig \
-  ./reference/run_gsmtap_makemsg_ex_vector.sh
+source ./scripts/libosmocore-env.sh
+./scripts/generate-reference-vectors.sh
 ```
 
-The command intentionally emits only the C-produced vector. Capturing that
-output as a committed fixture, and consuming it from a Rust integration test,
-is the next step in this issue.
+The generator intentionally captures only C-produced output in
+`tests/vectors/`. Rust code must only consume that fixture.
