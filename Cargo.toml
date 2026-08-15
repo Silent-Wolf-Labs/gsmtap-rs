@@ -15,4 +15,5 @@ path = "src/lib.rs"
 [dependencies]
 
 [dev-dependencies]
+proptest = "1"
 serde_json = "1"
