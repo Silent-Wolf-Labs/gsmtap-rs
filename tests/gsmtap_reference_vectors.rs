@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
-use gsmtap_rs::{parse, GsmtapEncodeInput, GsmtapHeader};
+use gsmtap_rs::gsmtap::{parse, GsmtapEncodeInput, GsmtapHeader};
 
 const LIBOSMOCORE_COMMIT: &str = "950430e829a3dc1d162aa241bc0505745c5a7311";
 const EXPECTED_CASES: &[&str] = &[
