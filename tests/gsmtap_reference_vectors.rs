@@ -6,8 +6,11 @@ use gsmtap_rs::gsmtap::{parse, GsmtapEncodeInput, GsmtapHeader};
 
 const LIBOSMOCORE_COMMIT: &str = "950430e829a3dc1d162aa241bc0505745c5a7311";
 const EXPECTED_CASES: &[&str] = &[
+    "gsmtap_abis_signed_boundaries",
     "gsmtap_makemsg_um_wrapper",
     "gsmtap_sim_atr",
+    "gsmtap_um_pcs_empty_payload",
+    "gsmtap_um_uplink_only",
     "gsmtap_um_uplink_pcs_boundary",
     "gsmtap_v2_basic_header",
 ];

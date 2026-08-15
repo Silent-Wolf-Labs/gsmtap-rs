@@ -45,8 +45,53 @@ static const uint8_t basic_payload[] = { 0xde, 0xad, 0xbe, 0xef };
 static const uint8_t uplink_boundary_payload[] = { 0x00 };
 static const uint8_t sim_atr_payload[] = { 0x3b, 0x00 };
 static const uint8_t wrapper_payload[] = { 0x2b };
+static const uint8_t abis_payload[] = { 0x01, 0x02 };
+static const uint8_t uplink_payload[] = { 0x55 };
+static const uint8_t empty_payload[] = { 0x00 };
 
 static const struct vector_case vector_cases[] = {
+	{
+		.name = "gsmtap_abis_signed_boundaries",
+		.api = CONSTRUCTOR_MAKEMSG_EX,
+		.type = GSMTAP_TYPE_ABIS,
+		.arfcn = 0x7fff,
+		.timeslot = 6,
+		.channel_type = 0xfe,
+		.sub_slot = 6,
+		.frame_number = 0x7fff0000,
+		.signal_dbm = INT8_MAX,
+		.snr_db = INT8_MIN,
+		.payload = abis_payload,
+		.payload_len = sizeof(abis_payload),
+	},
+	{
+		.name = "gsmtap_um_uplink_only",
+		.api = CONSTRUCTOR_MAKEMSG_EX,
+		.type = GSMTAP_TYPE_UM,
+		.arfcn = GSMTAP_ARFCN_F_UPLINK | 1,
+		.timeslot = 2,
+		.channel_type = GSMTAP_CHANNEL_BCCH,
+		.sub_slot = 2,
+		.frame_number = 2,
+		.signal_dbm = -2,
+		.snr_db = -2,
+		.payload = uplink_payload,
+		.payload_len = sizeof(uplink_payload),
+	},
+	{
+		.name = "gsmtap_um_pcs_empty_payload",
+		.api = CONSTRUCTOR_MAKEMSG_EX,
+		.type = GSMTAP_TYPE_UM,
+		.arfcn = GSMTAP_ARFCN_F_PCS | 2,
+		.timeslot = 4,
+		.channel_type = GSMTAP_CHANNEL_AGCH,
+		.sub_slot = 4,
+		.frame_number = 4,
+		.signal_dbm = 4,
+		.snr_db = 4,
+		.payload = empty_payload,
+		.payload_len = 0,
+	},
 	{
 		.name = "gsmtap_v2_basic_header",
 		.api = CONSTRUCTOR_MAKEMSG_EX,
