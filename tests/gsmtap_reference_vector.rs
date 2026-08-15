@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
+use gsmtap_rs::{parse, GsmtapEncodeInput, GsmtapHeader};
+
 const LIBOSMOCORE_COMMIT: &str = "950430e829a3dc1d162aa241bc0505745c5a7311";
 const EXPECTED_CASES: &[&str] = &[
     "gsmtap_makemsg_um_wrapper",
@@ -9,6 +11,14 @@ const EXPECTED_CASES: &[&str] = &[
     "gsmtap_um_uplink_pcs_boundary",
     "gsmtap_v2_basic_header",
 ];
+
+fn decode_hex(hex: &str) -> Vec<u8> {
+    assert_eq!(hex.len() % 2, 0);
+    (0..hex.len())
+        .step_by(2)
+        .map(|index| u8::from_str_radix(&hex[index..index + 2], 16).unwrap())
+        .collect()
+}
 
 #[test]
 fn loads_every_c_generated_gsmtap_reference_vector() {
@@ -63,6 +73,67 @@ fn loads_every_c_generated_gsmtap_reference_vector() {
             .expect("the C-generated vector must contain length");
         assert_eq!(encoded_hex.len(), length as usize * 2);
         assert!(encoded_hex.bytes().all(|byte| byte.is_ascii_hexdigit()));
+
+        let c_packet = decode_hex(encoded_hex);
+        let decoded =
+            parse(&c_packet).expect("C-produced packet must satisfy the Rust decoder contract");
+        let input = &vector["input"];
+        let expected_type = input["type"].as_u64().unwrap_or_else(|| {
+            assert_eq!(vector["api"].as_str(), Some("gsmtap_makemsg"));
+            1
+        });
+        assert_eq!(decoded.header().message_type(), expected_type as u8);
+        assert_eq!(
+            decoded.header().arfcn(),
+            input["arfcn"].as_u64().unwrap() as u16
+        );
+        assert_eq!(
+            decoded.header().timeslot(),
+            input["timeslot"].as_u64().unwrap() as u8
+        );
+        assert_eq!(
+            decoded.header().subtype(),
+            input["channel_type"].as_u64().unwrap() as u8
+        );
+        assert_eq!(
+            decoded.header().sub_slot(),
+            input["sub_slot"].as_u64().unwrap() as u8
+        );
+        assert_eq!(
+            decoded.header().frame_number(),
+            input["frame_number"].as_u64().unwrap() as u32
+        );
+        assert_eq!(
+            decoded.header().signal_dbm(),
+            input["signal_dbm"].as_i64().unwrap() as i8
+        );
+        assert_eq!(
+            decoded.header().snr_db(),
+            input["snr_db"].as_i64().unwrap() as i8
+        );
+        assert_eq!(
+            decoded.payload(),
+            decode_hex(input["payload_hex"].as_str().unwrap())
+        );
+
+        let header = GsmtapHeader::new(
+            decoded.header().version(),
+            decoded.header().header_length_words(),
+            decoded.header().message_type(),
+            decoded.header().timeslot(),
+            decoded.header().arfcn(),
+            decoded.header().signal_dbm(),
+            decoded.header().snr_db(),
+            decoded.header().frame_number(),
+            decoded.header().subtype(),
+            decoded.header().antenna_number(),
+            decoded.header().sub_slot(),
+            decoded.header().reserved(),
+        );
+        let encoded = GsmtapEncodeInput::new(header, decoded.extension(), decoded.payload())
+            .expect("C packet header and extension must compose")
+            .encode();
+        assert_eq!(encoded, c_packet, "Rust encoder differs for {case_name}");
     }
 
     assert_eq!(

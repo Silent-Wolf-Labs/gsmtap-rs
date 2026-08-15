@@ -28,6 +28,36 @@ pub struct GsmtapHeader {
 }
 
 impl GsmtapHeader {
+    pub fn new(
+        version: u8,
+        header_length_words: u8,
+        message_type: u8,
+        timeslot: u8,
+        arfcn: u16,
+        signal_dbm: i8,
+        snr_db: i8,
+        frame_number: u32,
+        subtype: u8,
+        antenna_number: u8,
+        sub_slot: u8,
+        reserved: u8,
+    ) -> Self {
+        Self {
+            version,
+            header_length_words,
+            message_type,
+            timeslot,
+            arfcn,
+            signal_dbm,
+            snr_db,
+            frame_number,
+            subtype,
+            antenna_number,
+            sub_slot,
+            reserved,
+        }
+    }
+
     pub fn version(&self) -> u8 {
         self.version
     }
@@ -132,6 +162,84 @@ impl fmt::Display for ParseError {
 }
 
 impl Error for ParseError {}
+
+/// Errors produced while composing a GSMTAP packet for encoding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EncodeError {
+    InvalidHeaderLength { declared: usize, expected: usize },
+    InvalidExtensionLength { length: usize },
+}
+
+impl fmt::Display for EncodeError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidHeaderLength { declared, expected } => write!(
+                formatter,
+                "invalid GSMTAP header length: declared {declared} bytes, expected {expected}"
+            ),
+            Self::InvalidExtensionLength { length } => {
+                write!(formatter, "invalid GSMTAP extension length: {length} bytes")
+            }
+        }
+    }
+}
+
+impl Error for EncodeError {}
+
+/// Typed input for allocating a complete GSMTAP packet.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GsmtapEncodeInput<'a> {
+    header: GsmtapHeader,
+    extension: &'a [u8],
+    payload: &'a [u8],
+}
+
+impl<'a> GsmtapEncodeInput<'a> {
+    /// Validates that the declared header length matches the supplied extension.
+    pub fn new(
+        header: GsmtapHeader,
+        extension: &'a [u8],
+        payload: &'a [u8],
+    ) -> Result<Self, EncodeError> {
+        if extension.len() % 4 != 0 {
+            return Err(EncodeError::InvalidExtensionLength {
+                length: extension.len(),
+            });
+        }
+        let expected = BASE_HEADER_LENGTH + extension.len();
+        let declared = header.header_length();
+        if declared != expected {
+            return Err(EncodeError::InvalidHeaderLength { declared, expected });
+        }
+        Ok(Self {
+            header,
+            extension,
+            payload,
+        })
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        let mut output = Vec::with_capacity(self.header.header_length() + self.payload.len());
+        output.extend_from_slice(&[
+            self.header.version,
+            self.header.header_length_words,
+            self.header.message_type,
+            self.header.timeslot,
+        ]);
+        output.extend_from_slice(&self.header.arfcn.to_be_bytes());
+        output.extend_from_slice(&[self.header.signal_dbm as u8, self.header.snr_db as u8]);
+        output.extend_from_slice(&self.header.frame_number.to_be_bytes());
+        output.extend_from_slice(&[
+            self.header.subtype,
+            self.header.antenna_number,
+            self.header.sub_slot,
+            self.header.reserved,
+        ]);
+        output.extend_from_slice(self.extension);
+        output.extend_from_slice(self.payload);
+        output
+    }
+}
 
 /// Parses a GSMTAP v2 packet without allocating.
 ///
@@ -251,6 +359,22 @@ mod tests {
         assert_eq!(
             parse(&input),
             Err(ParseError::UnsupportedVersion { version: 1 })
+        );
+    }
+
+    #[test]
+    fn encoding_validates_extension_without_rewriting_header() {
+        let header = GsmtapHeader::new(2, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+        assert_eq!(
+            GsmtapEncodeInput::new(header, &[], &[]),
+            Err(EncodeError::InvalidHeaderLength {
+                declared: 20,
+                expected: 16
+            })
+        );
+        assert_eq!(
+            GsmtapEncodeInput::new(header, &[1, 2, 3], &[]),
+            Err(EncodeError::InvalidExtensionLength { length: 3 })
         );
     }
 }
