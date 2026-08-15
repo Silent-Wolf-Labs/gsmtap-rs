@@ -10,9 +10,9 @@ use std::fmt;
 pub const GSMTAP_VERSION: u8 = 2;
 const BASE_HEADER_LENGTH: usize = 16;
 
-/// A parsed GSMTAP base header. Extension bytes follow the 16-byte base header.
+/// A parsed GSMTAP base header.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct GsmtapHeader<'a> {
+pub struct GsmtapHeader {
     pub version: u8,
     pub header_length_words: u8,
     pub message_type: u8,
@@ -25,15 +25,9 @@ pub struct GsmtapHeader<'a> {
     pub antenna_number: u8,
     pub sub_slot: u8,
     pub reserved: u8,
-    extension: &'a [u8],
 }
 
-impl<'a> GsmtapHeader<'a> {
-    /// Bytes after the base header and before the payload.
-    pub fn extension(&self) -> &'a [u8] {
-        self.extension
-    }
-
+impl GsmtapHeader {
     /// Declared total header length in bytes.
     pub fn header_length(&self) -> usize {
         self.header_length_words as usize * 4
@@ -43,13 +37,19 @@ impl<'a> GsmtapHeader<'a> {
 /// A borrowed GSMTAP packet. Payload begins at the declared header boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GsmtapPacket<'a> {
-    header: GsmtapHeader<'a>,
+    header: GsmtapHeader,
+    extension: &'a [u8],
     payload: &'a [u8],
 }
 
 impl<'a> GsmtapPacket<'a> {
-    pub fn header(&self) -> &GsmtapHeader<'a> {
+    pub fn header(&self) -> &GsmtapHeader {
         &self.header
+    }
+
+    /// Bytes after the 16-byte base header and before the payload.
+    pub fn extension(&self) -> &'a [u8] {
+        self.extension
     }
 
     pub fn payload(&self) -> &'a [u8] {
@@ -129,8 +129,8 @@ pub fn parse(input: &[u8]) -> Result<GsmtapPacket<'_>, ParseError> {
             antenna_number: input[13],
             sub_slot: input[14],
             reserved: input[15],
-            extension: &input[BASE_HEADER_LENGTH..header_length],
         },
+        extension: &input[BASE_HEADER_LENGTH..header_length],
         payload: &input[header_length..],
     })
 }
@@ -149,7 +149,7 @@ mod tests {
         assert_eq!(packet.header().arfcn, 0x1234);
         assert_eq!(packet.header().signal_dbm, -73);
         assert_eq!(packet.header().frame_number, 0x0102_0304);
-        assert!(packet.header().extension().is_empty());
+        assert!(packet.extension().is_empty());
         assert!(packet.payload().is_empty());
     }
 
@@ -161,7 +161,7 @@ mod tests {
             0xca, 0xfe,
         ];
         let packet = parse(&input).unwrap();
-        assert_eq!(packet.header().extension(), &[0xde, 0xad, 0xbe, 0xef]);
+        assert_eq!(packet.extension(), &[0xde, 0xad, 0xbe, 0xef]);
         assert_eq!(packet.payload(), &[0xca, 0xfe]);
     }
 
