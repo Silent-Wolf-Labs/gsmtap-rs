@@ -11,5 +11,7 @@ export PKG_CONFIG_PATH="$LIBOSMOCORE_ROOT/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_
 export LD_LIBRARY_PATH="$LIBOSMOCORE_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 mkdir -p "$output_dir"
-"$repository_root/reference/run_gsmtap_makemsg_ex_vector.sh" \
-	> "$output_dir/gsmtap_v2_basic_header.json"
+for case_name in $("$repository_root/reference/run_gsmtap_makemsg_ex_vector.sh" --list); do
+	"$repository_root/reference/run_gsmtap_makemsg_ex_vector.sh" --case "$case_name" \
+		> "$output_dir/$case_name.json"
+done
