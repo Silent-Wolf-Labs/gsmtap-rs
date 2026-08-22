@@ -1,0 +1,6 @@
+.git
+target
+reference
+scripts
+tests
+*.md

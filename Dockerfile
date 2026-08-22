@@ -1,10 +1,9 @@
-FROM rust:1.70-bookworm AS builder
+FROM rust:1.85-bookworm AS builder
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY static ./static
-COPY tests ./tests
-RUN cargo build --release --bin gsmtap-workbench
+RUN cargo build --release --locked --bin gsmtap-workbench
 
 FROM debian:bookworm-slim
 COPY --from=builder /build/target/release/gsmtap-workbench /usr/local/bin/gsmtap-workbench

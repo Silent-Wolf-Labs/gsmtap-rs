@@ -2,7 +2,7 @@
 name = "gsmtap-rs"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.85"
 description = "Rust GSMTAP implementation and libosmocore conversion-validation harness"
 license = "MIT"
 repository = "https://github.com/bucketking657/gsmtap-rs"
