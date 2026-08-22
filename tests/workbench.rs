@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use axum::{
     body::Body,
@@ -13,7 +13,7 @@ use tokio::net::UdpSocket;
 use tower::ServiceExt;
 
 #[tokio::test]
-async fn rx_and_tx_paths_use_the_gsmtap_library() {
+async fn listen_mode_receives_without_allowing_transmission() {
     let target = UdpSocket::bind("127.0.0.1:0").await.unwrap();
     let target_addr = target.local_addr().unwrap();
     let receiver = UdpSocket::bind("127.0.0.1:0").await.unwrap();
@@ -65,6 +65,7 @@ async fn rx_and_tx_paths_use_the_gsmtap_library() {
 
     let input = serde_json::json!({"version":2,"headerLengthWords":4,"messageType":1,"timeslot":0,"arfcn":1,"signalDbm":0,"snrDb":0,"frameNumber":1,"subtype":0,"antennaNumber":0,"subSlot":0,"reserved":0,"extensionHex":"","payloadHex":"CA FE"});
     let response = router
+        .clone()
         .oneshot(
             Request::post("/api/encode-send")
                 .header("content-type", "application/json")
@@ -73,19 +74,22 @@ async fn rx_and_tx_paths_use_the_gsmtap_library() {
         )
         .await
         .unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
     let mut sent = [0u8; 64];
-    let (length, _) = target.recv_from(&mut sent).await.unwrap();
-    assert_eq!(&sent[..length], packet.as_slice());
-    assert_eq!(
-        store
-            .list()
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), target.recv_from(&mut sent))
             .await
-            .iter()
-            .filter(|item| item.direction == "TX")
-            .count(),
-        1
+            .is_err()
     );
+    let response = router
+        .oneshot(
+            Request::post("/api/packets/1/replay")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
     receive_task.abort();
 }
 
@@ -130,6 +134,32 @@ async fn relay_forwards_valid_and_malformed_datagrams_unchanged() {
         .iter()
         .all(|packet| packet.forward_status.as_deref() == Some("sent")));
     task.abort();
+}
+
+#[tokio::test]
+async fn relay_mode_rejects_manual_packet_transmission() {
+    let target = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let store = Arc::new(PacketStore::new(8));
+    let sender = Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap());
+    let config = Config::from_values(
+        Mode::Relay,
+        "127.0.0.1:0".parse().unwrap(),
+        Some(target.local_addr().unwrap()),
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+    );
+    let router = build_router(config, store, sender);
+    let input = serde_json::json!({"version":2,"headerLengthWords":4,"messageType":1,"timeslot":0,"arfcn":1,"signalDbm":0,"snrDb":0,"frameNumber":1,"subtype":0,"antennaNumber":0,"subSlot":0,"reserved":0,"extensionHex":"","payloadHex":"CA"});
+    let response = router
+        .oneshot(
+            Request::post("/api/encode-send")
+                .header("content-type", "application/json")
+                .body(Body::from(input.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }
 
 #[tokio::test]
