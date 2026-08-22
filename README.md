@@ -17,7 +17,7 @@ behavior, and error handling against the reference implementation.
 
 ## Building
 
-This project uses stable Rust. To build it, run:
+This project requires Rust 1.85 or newer. To build it, run:
 
 ```bash
 cargo build
@@ -79,6 +79,13 @@ Modify mode uses the UI to explicitly replay or edit a packet:
 docker run --rm -p 8080:8080 -p 4729:4729/udp gsmtap-workbench \
   --mode modify --gsmtap-forward 192.168.1.50:4729
 ```
+
+For a local container smoke check, start the image in the intended mode and
+open `http://localhost:8080`. Listen mode must not forward received packets;
+relay mode must forward original bytes unchanged; modify mode requires using
+the UI's Preview changes and Confirm and send controls. GitHub Actions runs
+formatting, tests, a release build, and a Docker image build on pushes and pull
+requests.
 
 ## Reference implementation
 
