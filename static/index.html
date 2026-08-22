@@ -1,7 +1,38 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GSMTAP Workbench</title><link rel="stylesheet" href="/style.css"></head>
-<body><main><h1>GSMTAP Workbench</h1><p id="status">Connecting…</p>
-<section id="send-section" hidden><h2>Encode and send</h2><form id="send-form"><div id="fields"></div><label>Extension (hex)<textarea name="extensionHex"></textarea></label><label>Payload (hex)<textarea name="payloadHex"></textarea></label><button>Encode and send</button></form><pre id="result"></pre></section>
-<section><h2>Packet history</h2><div id="packets"></div></section></main><script src="/app.js"></script></body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GSMTAP Workbench</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>GSMTAP Workbench</h1>
+    <p id="status">Connecting…</p>
+    <section id="send-section" hidden>
+      <h2>Modify selected packet</h2>
+      <p id="selected-packet">Select a decoded RX packet to edit it.</p>
+      <form id="send-form">
+        <div id="fields"></div>
+        <label>Extension (hex)<textarea name="extensionHex"></textarea></label>
+        <label>Payload (hex)<textarea name="payloadHex"></textarea></label>
+        <button>Preview changes</button>
+        <button id="confirm-send" type="button" disabled>Confirm and send</button>
+      </form>
+      <pre id="preview"></pre>
+      <pre id="result"></pre>
+    </section>
+    <section>
+      <h2>Packet history</h2>
+      <div id="filters">
+        <label>Direction <select id="filter-direction"><option value="all">All</option><option>RX</option><option>TX</option></select></label>
+        <label>Parse <select id="filter-parse"><option value="all">All</option><option value="success">Success</option><option value="error">Error</option></select></label>
+        <label>Modified <select id="filter-modified"><option value="all">All</option><option value="yes">Modified</option><option value="no">Unmodified</option></select></label>
+      </div>
+      <div id="packets"></div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
 </html>

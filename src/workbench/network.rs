@@ -30,6 +30,10 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             "/api/packets/:id/modify-send",
             axum::routing::post(api::modify_send),
         )
+        .route(
+            "/api/packets/:id/modify-preview",
+            axum::routing::post(api::modify_preview),
+        )
         .with_state(state)
 }
 
