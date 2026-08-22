@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     response::sse::{Event, KeepAlive, Sse},
     response::Html,
@@ -12,7 +12,7 @@ use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use crate::gsmtap::{GsmtapEncodeInput, GsmtapHeader};
 
 use super::{
-    config::Config,
+    config::{Config, Mode},
     dto::{from_decoded, hex, parse_hex, EncodeSendRequest, PacketRecord, SendResponse},
     history::PacketStore,
 };
@@ -28,7 +28,8 @@ pub struct AppState {
 #[serde(rename_all = "camelCase")]
 pub struct StatusResponse {
     pub gsmtap_listen: String,
-    pub gsmtap_target: String,
+    pub mode: Mode,
+    pub gsmtap_forward: Option<String>,
     pub http_listen: String,
     pub receive_state: &'static str,
 }
@@ -36,7 +37,8 @@ pub struct StatusResponse {
 pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
     Json(StatusResponse {
         gsmtap_listen: state.config.gsmtap_listen.to_string(),
-        gsmtap_target: state.config.gsmtap_target.to_string(),
+        mode: state.config.mode,
+        gsmtap_forward: state.config.gsmtap_forward.map(|addr| addr.to_string()),
         http_listen: state.config.http_listen.to_string(),
         receive_state: "listening",
     })
@@ -93,9 +95,13 @@ pub async fn encode_send(
     let input = GsmtapEncodeInput::new(header, &extension, &payload)
         .map_err(|error| bad_request(error.to_string()))?;
     let encoded = input.encode();
+    let destination = state
+        .config
+        .gsmtap_forward
+        .ok_or_else(|| bad_request("a forward endpoint is required"))?;
     state
         .sender
-        .send_to(&encoded, state.config.gsmtap_target)
+        .send_to(&encoded, destination)
         .await
         .map_err(|error| (StatusCode::BAD_GATEWAY, format!("UDP send failed: {error}")))?;
     let decoded = crate::gsmtap::parse(&encoded)
@@ -104,7 +110,7 @@ pub async fn encode_send(
         .store
         .record(from_decoded(
             "TX",
-            state.config.gsmtap_target.to_string(),
+            destination.to_string(),
             &encoded,
             &decoded,
         ))
@@ -114,8 +120,96 @@ pub async fn encode_send(
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_millis(),
-        destination: state.config.gsmtap_target.to_string(),
+        destination: destination.to_string(),
         encoded_hex: hex(&encoded),
+    }))
+}
+
+pub async fn replay(
+    State(state): State<AppState>,
+    Path(id): Path<u64>,
+) -> Result<Json<SendResponse>, (StatusCode, String)> {
+    let packet = state
+        .store
+        .get(id)
+        .await
+        .ok_or((StatusCode::NOT_FOUND, "packet not found".into()))?;
+    let bytes = parse_hex(&packet.raw_hex).map_err(bad_request)?;
+    send_record(&state, bytes, Some(packet.raw_hex), false).await
+}
+
+pub async fn modify_send(
+    State(state): State<AppState>,
+    Path(id): Path<u64>,
+    Json(request): Json<EncodeSendRequest>,
+) -> Result<Json<SendResponse>, (StatusCode, String)> {
+    let packet = state
+        .store
+        .get(id)
+        .await
+        .ok_or((StatusCode::NOT_FOUND, "packet not found".into()))?;
+    let original = packet.raw_hex.clone();
+    let bytes = encode_request(&request)?;
+    send_record(&state, bytes, Some(original), true).await
+}
+
+fn encode_request(request: &EncodeSendRequest) -> Result<Vec<u8>, (StatusCode, String)> {
+    let extension = parse_hex(&request.extension_hex).map_err(bad_request)?;
+    let payload = parse_hex(&request.payload_hex).map_err(bad_request)?;
+    GsmtapEncodeInput::new(
+        GsmtapHeader::new(
+            request.version,
+            request.header_length_words,
+            request.message_type,
+            request.timeslot,
+            request.arfcn,
+            request.signal_dbm,
+            request.snr_db,
+            request.frame_number,
+            request.subtype,
+            request.antenna_number,
+            request.sub_slot,
+            request.reserved,
+        ),
+        &extension,
+        &payload,
+    )
+    .map(|input| input.encode())
+    .map_err(|error| bad_request(error.to_string()))
+}
+
+async fn send_record(
+    state: &AppState,
+    bytes: Vec<u8>,
+    original: Option<String>,
+    modified: bool,
+) -> Result<Json<SendResponse>, (StatusCode, String)> {
+    let destination = state
+        .config
+        .gsmtap_forward
+        .ok_or_else(|| bad_request("a forward endpoint is required"))?;
+    state
+        .sender
+        .send_to(&bytes, destination)
+        .await
+        .map_err(|error| (StatusCode::BAD_GATEWAY, format!("UDP send failed: {error}")))?;
+    let mut record = match crate::gsmtap::parse(&bytes) {
+        Ok(packet) => from_decoded("TX", "workbench".into(), &bytes, &packet),
+        Err(error) => super::dto::from_error("TX", "workbench".into(), &bytes, error.to_string()),
+    };
+    record.mode = "modify".into();
+    record.destination = Some(destination.to_string());
+    record.modified = modified;
+    record.original_raw_hex = original;
+    record.final_raw_hex = Some(hex(&bytes));
+    state.store.record(record).await;
+    Ok(Json(SendResponse {
+        timestamp_ms: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis(),
+        destination: destination.to_string(),
+        encoded_hex: hex(&bytes),
     }))
 }
 

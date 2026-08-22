@@ -5,12 +5,19 @@ use crate::gsmtap::GsmtapPacket;
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PacketRecord {
+    pub id: u64,
     pub direction: &'static str,
+    pub mode: String,
     pub timestamp_ms: u128,
     pub peer: String,
+    pub destination: Option<String>,
     pub raw_hex: String,
     pub decoded: Option<DecodedPacket>,
     pub parse_error: Option<String>,
+    pub forward_status: Option<String>,
+    pub modified: bool,
+    pub original_raw_hex: Option<String>,
+    pub final_raw_hex: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -69,9 +76,12 @@ pub fn from_decoded(
 ) -> PacketRecord {
     let h = packet.header();
     PacketRecord {
+        id: 0,
         direction,
+        mode: "listen".into(),
         timestamp_ms: now_ms(),
         peer,
+        destination: None,
         raw_hex: hex(raw),
         decoded: Some(DecodedPacket {
             version: h.version(),
@@ -90,6 +100,10 @@ pub fn from_decoded(
             payload_hex: hex(packet.payload()),
         }),
         parse_error: None,
+        forward_status: None,
+        modified: false,
+        original_raw_hex: None,
+        final_raw_hex: None,
     }
 }
 
@@ -100,12 +114,19 @@ pub fn from_error(
     error: String,
 ) -> PacketRecord {
     PacketRecord {
+        id: 0,
         direction,
+        mode: "listen".into(),
         timestamp_ms: now_ms(),
         peer,
+        destination: None,
         raw_hex: hex(raw),
         decoded: None,
         parse_error: Some(error),
+        forward_status: None,
+        modified: false,
+        original_raw_hex: None,
+        final_raw_hex: None,
     }
 }
 
