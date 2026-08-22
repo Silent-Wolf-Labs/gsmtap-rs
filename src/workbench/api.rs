@@ -7,14 +7,17 @@ use axum::{
     response::Html,
     Json,
 };
-use tokio_stream::{wrappers::BroadcastStream, StreamExt};
+use tokio_stream::{
+    wrappers::{errors::BroadcastStreamRecvError, BroadcastStream},
+    StreamExt,
+};
 
 use crate::gsmtap::{GsmtapEncodeInput, GsmtapHeader};
 
 use super::{
     config::{Config, Mode},
     dto::{from_decoded, hex, parse_hex, EncodeSendRequest, PacketRecord, SendResponse},
-    history::PacketStore,
+    history::{PacketStore, RuntimeStats},
 };
 
 #[derive(Clone)]
@@ -32,6 +35,7 @@ pub struct StatusResponse {
     pub gsmtap_forward: Option<String>,
     pub http_listen: String,
     pub receive_state: &'static str,
+    pub stats: RuntimeStats,
 }
 
 pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
@@ -41,6 +45,7 @@ pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
         gsmtap_forward: state.config.gsmtap_forward.map(|addr| addr.to_string()),
         http_listen: state.config.http_listen.to_string(),
         receive_state: "listening",
+        stats: state.store.counters().snapshot(),
     })
 }
 
@@ -318,8 +323,15 @@ fn require_modify(state: &AppState) -> Result<(), (StatusCode, String)> {
 pub async fn events(
     State(state): State<AppState>,
 ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, axum::Error>>> {
+    let store = state.store.clone();
     let stream = BroadcastStream::new(state.store.subscribe())
-        .filter_map(|packet| packet.ok())
+        .filter_map(move |packet| match packet {
+            Ok(packet) => Some(packet),
+            Err(BroadcastStreamRecvError::Lagged(count)) => {
+                store.counters().ui_events_dropped(count);
+                None
+            }
+        })
         .map(|packet| {
             Ok(Event::default()
                 .json_data(packet)

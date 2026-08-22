@@ -21,7 +21,7 @@ pub struct ConfigArgs {
     pub gsmtap_forward: Option<SocketAddr>,
     #[arg(long, env = "HTTP_LISTEN", default_value = "0.0.0.0:8080")]
     pub http_listen: SocketAddr,
-    #[arg(long, env = "PACKET_HISTORY_CAPACITY", default_value_t = 256)]
+    #[arg(long, env = "PACKET_HISTORY_CAPACITY", default_value_t = 1000)]
     pub history_capacity: usize,
 }
 

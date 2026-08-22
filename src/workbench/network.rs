@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::{routing::get, Router};
 use tokio::net::UdpSocket;
+use tokio::sync::mpsc;
 
 use super::{
     api::{self, AppState},
@@ -50,10 +51,20 @@ pub async fn run(
             .serve(router.into_make_service())
             .await
     });
-    let rx = receive_loop(receiver, store, config.mode, config.gsmtap_forward, sender);
+    let ingress_capacity = config.history_capacity.max(1024);
+    let (ingress_tx, ingress_rx) = mpsc::channel(ingress_capacity);
+    let intake = tokio::spawn(udp_receiver(receiver, ingress_tx, store.clone()));
+    let processing = inspection_worker(
+        ingress_rx,
+        store,
+        config.mode,
+        config.gsmtap_forward,
+        sender,
+    );
     tokio::select! {
         result = http => result??,
-        result = rx => result?,
+        result = intake => result??,
+        result = processing => result?,
     }
     Ok(())
 }
@@ -68,21 +79,95 @@ pub async fn receive_loop(
     let mut buffer = vec![0u8; 65535];
     loop {
         let (length, peer) = socket.recv_from(&mut buffer).await?;
-        let bytes = &buffer[..length];
-        let mut record = match parse(bytes) {
-            Ok(packet) => from_decoded("RX", peer.to_string(), bytes, &packet),
-            Err(error) => from_error("RX", peer.to_string(), bytes, error.to_string()),
+        store.counters().received();
+        inspect_datagram(
+            ReceivedDatagram {
+                bytes: buffer[..length].to_vec(),
+                peer,
+                timestamp_ms: now_ms(),
+            },
+            &store,
+            mode,
+            forward,
+            &sender,
+        )
+        .await;
+    }
+}
+
+struct ReceivedDatagram {
+    bytes: Vec<u8>,
+    peer: std::net::SocketAddr,
+    timestamp_ms: u128,
+}
+
+async fn udp_receiver(
+    socket: UdpSocket,
+    ingress: mpsc::Sender<ReceivedDatagram>,
+    store: Arc<PacketStore>,
+) -> Result<(), std::io::Error> {
+    let mut buffer = vec![0u8; 65535];
+    loop {
+        let (length, peer) = socket.recv_from(&mut buffer).await?;
+        store.counters().received();
+        let datagram = ReceivedDatagram {
+            bytes: buffer[..length].to_vec(),
+            peer,
+            timestamp_ms: now_ms(),
         };
-        record.mode = format!("{mode:?}").to_lowercase();
-        record.destination = forward.map(|address| address.to_string());
-        if mode == Mode::Relay {
-            let destination = forward
-                .ok_or_else(|| std::io::Error::other("relay forward endpoint is missing"))?;
+        if ingress.try_send(datagram).is_err() {
+            store.counters().ingress_dropped();
+        }
+    }
+}
+
+async fn inspection_worker(
+    mut ingress: mpsc::Receiver<ReceivedDatagram>,
+    store: Arc<PacketStore>,
+    mode: Mode,
+    forward: Option<std::net::SocketAddr>,
+    sender: Arc<UdpSocket>,
+) -> Result<(), std::io::Error> {
+    while let Some(datagram) = ingress.recv().await {
+        inspect_datagram(datagram, &store, mode, forward, &sender).await;
+    }
+    Ok(())
+}
+
+async fn inspect_datagram(
+    datagram: ReceivedDatagram,
+    store: &PacketStore,
+    mode: Mode,
+    forward: Option<std::net::SocketAddr>,
+    sender: &UdpSocket,
+) {
+    let bytes = &datagram.bytes;
+    let mut record = match parse(bytes) {
+        Ok(packet) => from_decoded("RX", datagram.peer.to_string(), bytes, &packet),
+        Err(error) => {
+            store.counters().parse_failed();
+            from_error("RX", datagram.peer.to_string(), bytes, error.to_string())
+        }
+    };
+    record.timestamp_ms = datagram.timestamp_ms;
+    record.mode = format!("{mode:?}").to_lowercase();
+    record.destination = forward.map(|address| address.to_string());
+    if mode == Mode::Relay {
+        if let Some(destination) = forward {
             match sender.send_to(bytes, destination).await {
                 Ok(_) => record.forward_status = Some("sent".into()),
                 Err(error) => record.forward_status = Some(format!("error: {error}")),
             }
+        } else {
+            record.forward_status = Some("error: relay forward endpoint is missing".into());
         }
-        store.record(record).await;
     }
+    store.record(record).await;
+}
+
+fn now_ms() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis()
 }

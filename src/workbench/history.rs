@@ -9,6 +9,53 @@ pub struct PacketStore {
     capacity: usize,
     events: broadcast::Sender<PacketRecord>,
     next_id: AtomicU64,
+    counters: RuntimeCounters,
+}
+
+#[derive(Default)]
+pub struct RuntimeCounters {
+    received: AtomicU64,
+    ingress_dropped: AtomicU64,
+    history_dropped: AtomicU64,
+    parse_failed: AtomicU64,
+    ui_events_dropped: AtomicU64,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RuntimeStats {
+    pub received: u64,
+    pub ingress_dropped: u64,
+    pub history_dropped: u64,
+    pub parse_failed: u64,
+    pub ui_events_dropped: u64,
+}
+
+impl RuntimeCounters {
+    pub fn received(&self) {
+        self.received.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn ingress_dropped(&self) {
+        self.ingress_dropped.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn history_dropped(&self) {
+        self.history_dropped.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn parse_failed(&self) {
+        self.parse_failed.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn ui_events_dropped(&self, count: u64) {
+        self.ui_events_dropped.fetch_add(count, Ordering::Relaxed);
+    }
+    pub fn snapshot(&self) -> RuntimeStats {
+        RuntimeStats {
+            received: self.received.load(Ordering::Relaxed),
+            ingress_dropped: self.ingress_dropped.load(Ordering::Relaxed),
+            history_dropped: self.history_dropped.load(Ordering::Relaxed),
+            parse_failed: self.parse_failed.load(Ordering::Relaxed),
+            ui_events_dropped: self.ui_events_dropped.load(Ordering::Relaxed),
+        }
+    }
 }
 
 impl PacketStore {
@@ -19,6 +66,7 @@ impl PacketStore {
             capacity: capacity.max(1),
             events,
             next_id: AtomicU64::new(1),
+            counters: RuntimeCounters::default(),
         }
     }
 
@@ -27,6 +75,7 @@ impl PacketStore {
         let mut packets = self.packets.lock().await;
         if packets.len() >= self.capacity {
             packets.pop_front();
+            self.counters.history_dropped();
         }
         packets.push_back(packet.clone());
         let _ = self.events.send(packet);
@@ -47,5 +96,9 @@ impl PacketStore {
 
     pub fn subscribe(&self) -> broadcast::Receiver<PacketRecord> {
         self.events.subscribe()
+    }
+
+    pub fn counters(&self) -> &RuntimeCounters {
+        &self.counters
     }
 }
