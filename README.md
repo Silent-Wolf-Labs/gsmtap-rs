@@ -31,6 +31,32 @@ To run tests, execute:
 cargo test
 ```
 
+## Live web workbench
+
+Build and run the single-process workbench with:
+
+```bash
+cargo run --bin gsmtap-workbench -- \
+  --gsmtap-listen 0.0.0.0:4729 \
+  --gsmtap-target 127.0.0.1:4729 \
+  --http-listen 0.0.0.0:8080
+```
+
+Open `http://localhost:8080`. The equivalent environment variables are
+`GSMTAP_LISTEN`, `GSMTAP_TARGET`, and `HTTP_LISTEN`; command-line values take
+precedence. `PACKET_HISTORY_CAPACITY` bounds in-memory RX/TX history.
+
+The container image exposes TCP port 8080 and UDP port 4729:
+
+```bash
+docker build -t gsmtap-workbench .
+docker run --rm -p 8080:8080 -p 4729:4729/udp \
+  gsmtap-workbench --gsmtap-target 192.168.1.50:4729
+```
+
+The browser only calls the application API. GSMTAP parsing and encoding remain
+implemented by the Rust library.
+
 ## Reference implementation
 
 The reference implementation is located at `../libosmocore`. Treat it as
