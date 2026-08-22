@@ -388,3 +388,42 @@ async fn status_reports_the_active_mode_and_endpoints() {
     assert_eq!(status["mode"], "modify");
     assert_eq!(status["gsmtapForward"], forward.to_string());
 }
+
+#[tokio::test]
+async fn history_evicts_oldest_packets_and_counts_evictions() {
+    let receiver = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let receiver_addr = receiver.local_addr().unwrap();
+    let source = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let store = Arc::new(PacketStore::new(1));
+    let task = tokio::spawn(receive_loop(
+        receiver,
+        store.clone(),
+        Mode::Listen,
+        None,
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+    ));
+    for payload in [0xca, 0xcb] {
+        source
+            .send_to(
+                &[2, 4, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, payload],
+                receiver_addr,
+            )
+            .await
+            .unwrap();
+    }
+    tokio::time::timeout(Duration::from_secs(1), async {
+        while {
+            let stats = store.counters().snapshot();
+            stats.received < 2 || stats.history_dropped < 1
+        } {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    let history = store.list().await;
+    assert_eq!(history.len(), 1);
+    assert!(history[0].raw_hex.ends_with("CB"));
+    assert_eq!(store.counters().snapshot().history_dropped, 1);
+    task.abort();
+}
