@@ -76,6 +76,7 @@ pub async fn encode_send(
     State(state): State<AppState>,
     Json(request): Json<EncodeSendRequest>,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
+    require_modify(&state)?;
     let extension = parse_hex(&request.extension_hex).map_err(bad_request)?;
     let payload = parse_hex(&request.payload_hex).map_err(bad_request)?;
     let header = GsmtapHeader::new(
@@ -129,6 +130,7 @@ pub async fn replay(
     State(state): State<AppState>,
     Path(id): Path<u64>,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
+    require_modify(&state)?;
     let packet = state
         .store
         .get(id)
@@ -143,6 +145,7 @@ pub async fn modify_send(
     Path(id): Path<u64>,
     Json(request): Json<EncodeSendRequest>,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
+    require_modify(&state)?;
     let packet = state
         .store
         .get(id)
@@ -215,6 +218,17 @@ async fn send_record(
 
 fn bad_request(error: impl ToString) -> (StatusCode, String) {
     (StatusCode::BAD_REQUEST, error.to_string())
+}
+
+fn require_modify(state: &AppState) -> Result<(), (StatusCode, String)> {
+    if state.config.mode == Mode::Modify {
+        Ok(())
+    } else {
+        Err((
+            StatusCode::FORBIDDEN,
+            "packet replay and transmission are available only in modify mode".into(),
+        ))
+    }
 }
 
 pub async fn events(
