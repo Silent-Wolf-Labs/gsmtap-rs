@@ -38,24 +38,47 @@ Build and run the single-process workbench with:
 ```bash
 cargo run --bin gsmtap-workbench -- \
   --gsmtap-listen 0.0.0.0:4729 \
-  --gsmtap-target 127.0.0.1:4729 \
+  --mode listen \
   --http-listen 0.0.0.0:8080
 ```
 
 Open `http://localhost:8080`. The equivalent environment variables are
-`GSMTAP_LISTEN`, `GSMTAP_TARGET`, and `HTTP_LISTEN`; command-line values take
-precedence. `PACKET_HISTORY_CAPACITY` bounds in-memory RX/TX history.
+`GSMTAP_MODE`, `GSMTAP_LISTEN`, `GSMTAP_FORWARD`, and `HTTP_LISTEN`;
+command-line values take precedence. `PACKET_HISTORY_CAPACITY` bounds
+in-memory RX/TX history.
 
 The container image exposes TCP port 8080 and UDP port 4729:
 
 ```bash
 docker build -t gsmtap-workbench .
 docker run --rm -p 8080:8080 -p 4729:4729/udp \
-  gsmtap-workbench --gsmtap-target 192.168.1.50:4729
+  gsmtap-workbench --mode listen
 ```
 
 The browser only calls the application API. GSMTAP parsing and encoding remain
 implemented by the Rust library.
+
+### Operating modes
+
+Use `--mode listen` for passive inspection. Use `--mode relay` with
+`--gsmtap-forward HOST:PORT` to forward original UDP datagrams byte-for-byte.
+Use `--mode modify` with the same forward option to hold packets for explicit
+replay or field editing from the UI. Relay forwarding remains payload-
+transparent; the downstream peer will see the workbench as the UDP source.
+
+Relay example:
+
+```bash
+docker run --rm -p 8080:8080 -p 4729:4729/udp gsmtap-workbench \
+  --mode relay --gsmtap-forward 192.168.1.50:4729
+```
+
+Modify mode uses the UI to explicitly replay or edit a packet:
+
+```bash
+docker run --rm -p 8080:8080 -p 4729:4729/udp gsmtap-workbench \
+  --mode modify --gsmtap-forward 192.168.1.50:4729
+```
 
 ## Reference implementation
 
