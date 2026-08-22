@@ -66,6 +66,12 @@ Use `--mode modify` with the same forward option to hold packets for explicit
 replay or field editing from the UI. Relay forwarding remains payload-
 transparent; the downstream peer will see the workbench as the UDP source.
 
+Modify mode is capture-and-replay, not an inline human-held proxy: incoming
+packets are never paused waiting for an edit. The service retains only a
+bounded, oldest-first history (default 1,000 packets), while the UI can later
+select one packet to replay or modify. `/api/status` reports receive, parse,
+ingress-drop, history-eviction, and UI-event-drop counters.
+
 Relay example:
 
 ```bash
