@@ -303,7 +303,7 @@ async fn relay_failure_is_recorded_and_does_not_stop_receiving() {
         receiver,
         store.clone(),
         Mode::Relay,
-        Some("255.255.255.255:4729".parse().unwrap()),
+        Some("255.255.255.255:4729".into()),
         sender,
     ));
     for _ in 0..2 {
@@ -426,4 +426,68 @@ async fn history_evicts_oldest_packets_and_counts_evictions() {
     assert!(history[0].raw_hex.ends_with("CB"));
     assert_eq!(store.counters().snapshot().history_dropped, 1);
     task.abort();
+}
+
+#[tokio::test]
+async fn packet_api_returns_bounded_recent_pages_in_chronological_order() {
+    let store = Arc::new(PacketStore::new(1_200));
+    for byte in 0..1_105u16 {
+        store
+            .record(gsmtap_rs::workbench::dto::from_error(
+                "RX",
+                "127.0.0.1:4729".into(),
+                &[byte as u8],
+                "test packet".into(),
+            ))
+            .await;
+    }
+    let router = build_router(
+        Config::from_values(
+            Mode::Listen,
+            "127.0.0.1:4729".parse().unwrap(),
+            None,
+            "127.0.0.1:8080".parse().unwrap(),
+            1_200,
+        ),
+        store,
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+    );
+
+    async fn ids(router: &axum::Router, path: &str) -> Vec<u64> {
+        let response = router
+            .clone()
+            .oneshot(Request::get(path).body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        serde_json::from_slice::<Vec<serde_json::Value>>(&body)
+            .unwrap()
+            .into_iter()
+            .map(|packet| packet["id"].as_u64().unwrap())
+            .collect()
+    }
+
+    let default_ids = ids(&router, "/api/packets").await;
+    assert_eq!(default_ids.len(), 500);
+    assert_eq!(default_ids.first(), Some(&606));
+    assert_eq!(default_ids.last(), Some(&1_105));
+
+    let short_ids = ids(&router, "/api/packets?limit=3").await;
+    assert_eq!(short_ids, vec![1_103, 1_104, 1_105]);
+
+    let capped_ids = ids(&router, "/api/packets?limit=5000").await;
+    assert_eq!(capped_ids.len(), 1_000);
+    assert_eq!(capped_ids.first(), Some(&106));
+    assert_eq!(capped_ids.last(), Some(&1_105));
+
+    let invalid = router
+        .oneshot(
+            Request::get("/api/packets?limit=not-a-number")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(invalid.status(), StatusCode::BAD_REQUEST);
 }

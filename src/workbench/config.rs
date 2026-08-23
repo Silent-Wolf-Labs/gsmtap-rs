@@ -18,10 +18,10 @@ pub struct ConfigArgs {
     #[arg(long, env = "GSMTAP_LISTEN", default_value = "0.0.0.0:4729")]
     pub gsmtap_listen: SocketAddr,
     #[arg(long, alias = "gsmtap-target", env = "GSMTAP_FORWARD")]
-    pub gsmtap_forward: Option<SocketAddr>,
+    pub gsmtap_forward: Option<String>,
     #[arg(long, env = "HTTP_LISTEN", default_value = "0.0.0.0:8080")]
     pub http_listen: SocketAddr,
-    #[arg(long, env = "PACKET_HISTORY_CAPACITY", default_value_t = 1000)]
+    #[arg(long, env = "PACKET_HISTORY_CAPACITY", default_value_t = 10_000)]
     pub history_capacity: usize,
 }
 
@@ -29,7 +29,7 @@ pub struct ConfigArgs {
 pub struct Config {
     pub mode: Mode,
     pub gsmtap_listen: SocketAddr,
-    pub gsmtap_forward: Option<SocketAddr>,
+    pub gsmtap_forward: Option<String>,
     pub http_listen: SocketAddr,
     pub history_capacity: usize,
 }
@@ -49,7 +49,7 @@ impl Config {
         Self {
             gsmtap_listen,
             mode,
-            gsmtap_forward,
+            gsmtap_forward: gsmtap_forward.map(|address| address.to_string()),
             http_listen,
             history_capacity,
         }

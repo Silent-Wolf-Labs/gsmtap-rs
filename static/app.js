@@ -118,11 +118,11 @@ confirmButton.addEventListener('click', async () => {
 for (const filter of document.querySelectorAll('#filters select')) filter.addEventListener('change', render);
 fetch('/api/status').then(response => response.json()).then(status => {
   activeMode = status.mode;
-  document.querySelector('#status').textContent = `MODE: ${status.mode.toUpperCase()} · RX ${status.gsmtapListen} · FORWARD ${status.gsmtapForward || 'disabled'} · received ${status.stats.received} · history evicted ${status.stats.historyDropped}`;
+  document.querySelector('#status').textContent = `MODE: ${status.mode.toUpperCase()} · RX ${status.gsmtapListen} · FORWARD ${status.gsmtapForward || 'disabled'} · received ${status.stats.received} · ingress dropped ${status.stats.ingressDropped} · history evicted ${status.stats.historyDropped} · parse failed ${status.stats.parseFailed} · UI events dropped ${status.stats.uiEventsDropped}`;
   document.querySelector('#send-section').hidden = activeMode !== 'modify';
   refreshPackets();
 });
-function refreshPackets() { fetch('/api/packets').then(response => response.json()).then(data => { packets = data; render(); }); }
+function refreshPackets() { fetch('/api/packets?limit=500').then(response => response.json()).then(data => { packets = data; render(); }); }
 const events = new EventSource('/api/events');
 events.onmessage = () => {
   if (refreshScheduled) return;

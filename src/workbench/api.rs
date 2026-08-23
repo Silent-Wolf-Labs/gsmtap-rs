@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::sse::{Event, KeepAlive, Sse},
     response::Html,
@@ -38,11 +38,19 @@ pub struct StatusResponse {
     pub stats: RuntimeStats,
 }
 
+#[derive(serde::Deserialize)]
+pub struct PacketQuery {
+    pub limit: Option<usize>,
+}
+
+const DEFAULT_PACKET_LIMIT: usize = 500;
+const MAX_PACKET_LIMIT: usize = 1_000;
+
 pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
     Json(StatusResponse {
         gsmtap_listen: state.config.gsmtap_listen.to_string(),
         mode: state.config.mode,
-        gsmtap_forward: state.config.gsmtap_forward.map(|addr| addr.to_string()),
+        gsmtap_forward: state.config.gsmtap_forward.clone(),
         http_listen: state.config.http_listen.to_string(),
         receive_state: "listening",
         stats: state.store.counters().snapshot(),
@@ -73,8 +81,15 @@ pub async fn stylesheet() -> (
     )
 }
 
-pub async fn packets(State(state): State<AppState>) -> Json<Vec<PacketRecord>> {
-    Json(state.store.list().await)
+pub async fn packets(
+    State(state): State<AppState>,
+    Query(query): Query<PacketQuery>,
+) -> Json<Vec<PacketRecord>> {
+    let limit = query
+        .limit
+        .unwrap_or(DEFAULT_PACKET_LIMIT)
+        .min(MAX_PACKET_LIMIT);
+    Json(state.store.list_recent(limit).await)
 }
 
 pub async fn encode_send(
@@ -278,16 +293,30 @@ async fn send_record(
     let destination = state
         .config
         .gsmtap_forward
+        .clone()
         .ok_or_else(|| bad_request("a forward endpoint is required"))?;
     let mut record = match crate::gsmtap::parse(&bytes) {
         Ok(packet) => from_decoded("TX", "workbench".into(), &bytes, &packet),
         Err(error) => super::dto::from_error("TX", "workbench".into(), &bytes, error.to_string()),
     };
     record.mode = "modify".into();
-    record.destination = Some(destination.to_string());
+    record.destination = Some(destination.clone());
     record.modified = modified;
     record.original_raw_hex = original;
     record.final_raw_hex = Some(hex(&bytes));
+    let destination = tokio::net::lookup_host(&destination)
+        .await
+        .map_err(|error| {
+            (
+                StatusCode::BAD_GATEWAY,
+                format!("UDP destination lookup failed: {error}"),
+            )
+        })?
+        .next()
+        .ok_or((
+            StatusCode::BAD_GATEWAY,
+            "UDP destination resolved to no addresses".into(),
+        ))?;
     if let Err(error) = state.sender.send_to(&bytes, destination).await {
         record.forward_status = Some(format!("error: {error}"));
         state.store.record(record).await;

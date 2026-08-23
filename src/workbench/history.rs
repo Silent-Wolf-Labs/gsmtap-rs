@@ -94,6 +94,12 @@ impl PacketStore {
         self.packets.lock().await.iter().cloned().collect()
     }
 
+    pub async fn list_recent(&self, limit: usize) -> Vec<PacketRecord> {
+        let packets = self.packets.lock().await;
+        let start = packets.len().saturating_sub(limit);
+        packets.iter().skip(start).cloned().collect()
+    }
+
     pub fn subscribe(&self) -> broadcast::Receiver<PacketRecord> {
         self.events.subscribe()
     }
