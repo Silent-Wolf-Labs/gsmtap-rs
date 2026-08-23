@@ -41,11 +41,11 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-cyclonedx
       - run: cargo cyclonedx --format json
-      - run: test -s bom.json
+      - run: test -s gsmtap-rs.cdx.json
       - uses: actions/upload-artifact@v4
         with:
           name: gsmtap-rs-sbom
-          path: bom.json
+          path: gsmtap-rs.cdx.json
           if-no-files-found: error
 
   security-auditable:
