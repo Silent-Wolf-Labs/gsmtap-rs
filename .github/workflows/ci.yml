@@ -14,7 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
       - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked
       - run: cargo test --locked
       - run: cargo build --release --locked
 
@@ -23,6 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
       - uses: taiki-e/install-action@cargo-audit
       - run: cargo audit
 
@@ -31,28 +36,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
       - uses: taiki-e/install-action@cargo-deny
       - run: cargo deny check
-
-  security-sbom:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: taiki-e/install-action@cargo-cyclonedx
-      - run: cargo cyclonedx --format json
-      - run: test -s gsmtap-rs.cdx.json
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gsmtap-rs-sbom
-          path: gsmtap-rs.cdx.json
-          if-no-files-found: error
 
   security-auditable:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
       - uses: taiki-e/install-action@cargo-auditable
       - run: cargo auditable build --release --locked
 
@@ -64,7 +59,6 @@ jobs:
       - run: docker build --target traffic-test --tag gsmtap-traffic-test:ci .
 
   integration:
-    needs: container
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

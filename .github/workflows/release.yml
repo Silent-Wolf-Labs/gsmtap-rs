@@ -1,0 +1,234 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  IMAGE_NAME: ghcr.io/bucketking657/gsmtap-rs
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+
+      - name: Verify semantic-version tag and crate version
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
+          crate_version="$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
+          [[ "$version" == "$crate_version" ]] || {
+            echo "Tag version $version does not match Cargo.toml version $crate_version" >&2
+            exit 1
+          }
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]] || {
+            echo "Checked out commit does not match the tagged commit" >&2
+            exit 1
+          }
+
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked
+      - run: cargo test --locked
+      - run: cargo build --release --locked
+
+      - uses: taiki-e/install-action@cargo-audit
+      - run: cargo audit
+      - uses: taiki-e/install-action@cargo-deny
+      - run: cargo deny check
+
+      - uses: taiki-e/install-action@cargo-cyclonedx
+      - run: cargo cyclonedx --format json
+      - name: Scan SBOM with Trivy
+        id: sbom-scan
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: sbom
+          scan-ref: gsmtap-rs.cdx.json
+          format: sarif
+          output: trivy-sbom.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+      - name: Package crate and create checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo package --locked
+          crate="target/package/gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
+          cp "$crate" "gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
+          sha256sum "$crate" > SHA256SUMS.txt
+          sha256sum gsmtap-rs.cdx.json >> SHA256SUMS.txt
+          test -s gsmtap-rs.cdx.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            gsmtap-rs.cdx.json
+            trivy-sbom.sarif
+            SHA256SUMS.txt
+            gsmtap-rs-*.crate
+          if-no-files-found: error
+      - name: Enforce SBOM scan result
+        if: steps.sbom-scan.outcome == 'failure'
+        run: exit 1
+
+  publish-crate:
+    needs: [verify, scan-container]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+      - name: Publish crate to crates.io
+        run: cargo publish --locked
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  build-container:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Determine image version
+        id: image
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Build exact release image
+        env:
+          IMAGE_VERSION: ${{ steps.image.outputs.version }}
+        run: |
+          docker build \
+            --target workbench \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.version=${GITHUB_REF_NAME}" \
+            --tag "${IMAGE_NAME}:${IMAGE_VERSION}" .
+      - name: Export exact release image
+        env:
+          IMAGE_VERSION: ${{ steps.image.outputs.version }}
+        run: |
+          set -euo pipefail
+          docker save "${IMAGE_NAME}:${IMAGE_VERSION}" | gzip > release-image.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-container
+          path: release-image.tar.gz
+          if-no-files-found: error
+
+  scan-container:
+    needs: build-container
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-container
+      - name: Load exact release image
+        run: gunzip -c release-image.tar.gz | docker load
+      - name: Determine image version
+        id: image
+        shell: bash
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+      - name: Scan exact release image with Trivy
+        id: image-scan
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: image
+          image-ref: ${{ env.IMAGE_NAME }}:${{ steps.image.outputs.version }}
+          format: sarif
+          output: trivy-image.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+      - name: Upload image scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-scan
+          path: trivy-image.sarif
+          if-no-files-found: error
+      - name: Enforce container scan result
+        if: steps.image-scan.outcome == 'failure'
+        run: exit 1
+
+  publish-container:
+    needs: [verify, scan-container]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-container
+      - name: Load exact release image
+        run: gunzip -c release-image.tar.gz | docker load
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish verified runtime image
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          docker push "${IMAGE_NAME}:${version}"
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            docker tag "${IMAGE_NAME}:${version}" "${IMAGE_NAME}:latest"
+            docker push "${IMAGE_NAME}:latest"
+          fi
+
+  github-release:
+    needs: [verify, publish-crate, publish-container, scan-container]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release-artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: container-scan
+          path: release-artifacts
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            release-artifacts/gsmtap-rs.cdx.json \
+            release-artifacts/gsmtap-rs-*.crate \
+            release-artifacts/trivy-sbom.sarif \
+            release-artifacts/trivy-image.sarif \
+            release-artifacts/SHA256SUMS.txt
