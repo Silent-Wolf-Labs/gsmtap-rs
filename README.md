@@ -68,6 +68,15 @@ implemented by the Rust library.
 
 ### Operating modes
 
+The three operating modes are shown below. The web UI is available in every
+mode: listen and relay provide inspection, while modify additionally provides
+explicit edit, preview, and send controls.
+
+![GSMTAP workbench listen, relay, and modify modes](docs/mode_use_cases.svg)
+
+For the mode-by-mode use cases and Docker examples, see
+[Mode use cases](docs/mode-use-cases.md).
+
 Use `--mode listen` for passive inspection. Use `--mode relay` with
 `--gsmtap-forward HOST:PORT` to forward original UDP datagrams byte-for-byte.
 Use `--mode modify` with the same forward option to hold packets for explicit
