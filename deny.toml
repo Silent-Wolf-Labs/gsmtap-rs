@@ -2,9 +2,6 @@
 version = 2
 
 [licenses]
-version = 2
-unlicensed = "deny"
-copyleft = "deny"
 allow = [
     "Apache-2.0",
     "BSD-2-Clause",
