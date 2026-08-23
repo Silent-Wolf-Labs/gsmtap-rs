@@ -1,2 +1,27 @@
-.idea
+# IDE and local tooling
+.idea/
+.vscode/
+
+# Rust build output
 /target/
+
+# Python caches, virtual environments, and test tooling
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local configuration and generated release files
+.env
+.env.*
+!.env.example
+*.cdx.json
+SHA256SUMS.txt
+release-artifacts/
+
+# OS/editor noise
+.DS_Store
+*.swp

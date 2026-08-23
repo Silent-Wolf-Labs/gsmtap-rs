@@ -1,7 +1,36 @@
+# Repository metadata and development-only files
 .git
-target
+.github
+.gitignore
+.dockerignore
+.idea
+.vscode
 reference
 scripts
+docs
+*.md
+
+# Rust build output and generated release material
+target
+*.cdx.json
+SHA256SUMS.txt
+release-artifacts
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Python caches, virtual environments, and test-tool state
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+
+# Keep only the test inputs required by the traffic-test image.
 tests/*
 !tests/
 !tests/vectors/
@@ -9,4 +38,3 @@ tests/*
 !tests/traffic/
 !tests/traffic/*.py
 !tests/traffic/*.toml
-*.md
