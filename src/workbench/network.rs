@@ -73,7 +73,7 @@ pub async fn receive_loop(
     socket: UdpSocket,
     store: Arc<PacketStore>,
     mode: Mode,
-    forward: Option<std::net::SocketAddr>,
+    forward: Option<String>,
     sender: Arc<UdpSocket>,
 ) -> Result<(), std::io::Error> {
     let mut buffer = vec![0u8; 65535];
@@ -88,7 +88,7 @@ pub async fn receive_loop(
             },
             &store,
             mode,
-            forward,
+            forward.clone(),
             &sender,
         )
         .await;
@@ -125,11 +125,11 @@ async fn inspection_worker(
     mut ingress: mpsc::Receiver<ReceivedDatagram>,
     store: Arc<PacketStore>,
     mode: Mode,
-    forward: Option<std::net::SocketAddr>,
+    forward: Option<String>,
     sender: Arc<UdpSocket>,
 ) -> Result<(), std::io::Error> {
     while let Some(datagram) = ingress.recv().await {
-        inspect_datagram(datagram, &store, mode, forward, &sender).await;
+        inspect_datagram(datagram, &store, mode, forward.clone(), &sender).await;
     }
     Ok(())
 }
@@ -138,7 +138,7 @@ async fn inspect_datagram(
     datagram: ReceivedDatagram,
     store: &PacketStore,
     mode: Mode,
-    forward: Option<std::net::SocketAddr>,
+    forward: Option<String>,
     sender: &UdpSocket,
 ) {
     let bytes = &datagram.bytes;
@@ -151,12 +151,24 @@ async fn inspect_datagram(
     };
     record.timestamp_ms = datagram.timestamp_ms;
     record.mode = format!("{mode:?}").to_lowercase();
-    record.destination = forward.map(|address| address.to_string());
+    record.destination = forward.clone();
     if mode == Mode::Relay {
         if let Some(destination) = forward {
-            match sender.send_to(bytes, destination).await {
-                Ok(_) => record.forward_status = Some("sent".into()),
-                Err(error) => record.forward_status = Some(format!("error: {error}")),
+            match tokio::net::lookup_host(&destination).await {
+                Ok(mut addresses) => match addresses.next() {
+                    Some(address) => match sender.send_to(bytes, address).await {
+                        Ok(_) => record.forward_status = Some("sent".into()),
+                        Err(error) => record.forward_status = Some(format!("error: {error}")),
+                    },
+                    None => {
+                        record.forward_status =
+                            Some("error: destination resolved to no addresses".into())
+                    }
+                },
+                Err(error) => {
+                    record.forward_status =
+                        Some(format!("error: destination lookup failed: {error}"))
+                }
             }
         } else {
             record.forward_status = Some("error: relay forward endpoint is missing".into());
