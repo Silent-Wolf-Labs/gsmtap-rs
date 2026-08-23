@@ -16,7 +16,9 @@ use crate::gsmtap::{GsmtapEncodeInput, GsmtapHeader};
 
 use super::{
     config::{Config, Mode},
-    dto::{from_decoded, hex, parse_hex, EncodeSendRequest, PacketRecord, SendResponse},
+    dto::{
+        from_decoded, from_error, hex, parse_hex, EncodeSendRequest, PacketRecord, SendResponse,
+    },
     history::{PacketStore, RuntimeStats},
 };
 
@@ -296,27 +298,36 @@ async fn send_record(
         .clone()
         .ok_or_else(|| bad_request("a forward endpoint is required"))?;
     let mut record = match crate::gsmtap::parse(&bytes) {
-        Ok(packet) => from_decoded("TX", "workbench".into(), &bytes, &packet),
-        Err(error) => super::dto::from_error("TX", "workbench".into(), &bytes, error.to_string()),
+        Ok(packet) => from_decoded("TX", Mode::Modify, "workbench".into(), &bytes, &packet),
+        Err(error) => from_error(
+            "TX",
+            Mode::Modify,
+            "workbench".into(),
+            &bytes,
+            error.to_string(),
+        ),
     };
-    record.mode = "modify".into();
     record.destination = Some(destination.clone());
     record.modified = modified;
     record.original_raw_hex = original;
     record.final_raw_hex = Some(hex(&bytes));
-    let destination = tokio::net::lookup_host(&destination)
-        .await
-        .map_err(|error| {
-            (
-                StatusCode::BAD_GATEWAY,
-                format!("UDP destination lookup failed: {error}"),
-            )
-        })?
-        .next()
-        .ok_or((
-            StatusCode::BAD_GATEWAY,
-            "UDP destination resolved to no addresses".into(),
-        ))?;
+    let destination = match tokio::net::lookup_host(&destination).await {
+        Ok(mut addresses) => match addresses.find(std::net::SocketAddr::is_ipv4) {
+            Some(address) => address,
+            None => {
+                let message = "UDP destination resolved to no IPv4 addresses".to_string();
+                record.forward_status = Some(format!("error: {message}"));
+                state.store.record(record).await;
+                return Err((StatusCode::BAD_GATEWAY, message));
+            }
+        },
+        Err(error) => {
+            let message = format!("UDP destination lookup failed: {error}");
+            record.forward_status = Some(format!("error: {message}"));
+            state.store.record(record).await;
+            return Err((StatusCode::BAD_GATEWAY, message));
+        }
+    };
     if let Err(error) = state.sender.send_to(&bytes, destination).await {
         record.forward_status = Some(format!("error: {error}"));
         state.store.record(record).await;
