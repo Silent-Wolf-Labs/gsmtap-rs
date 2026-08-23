@@ -2,5 +2,11 @@
 target
 reference
 scripts
-tests
+tests/*
+!tests/
+!tests/vectors/
+!tests/vectors/*.json
+!tests/traffic/
+!tests/traffic/*.py
+!tests/traffic/*.toml
 *.md
