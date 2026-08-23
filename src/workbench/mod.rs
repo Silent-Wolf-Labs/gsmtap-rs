@@ -1,7 +1,10 @@
 //! Application layer for the live GSMTAP web workbench.
 
-pub mod api;
-pub mod config;
-pub mod dto;
-pub mod history;
-pub mod network;
+pub(crate) mod api;
+pub(crate) mod config;
+pub(crate) mod dto;
+pub(crate) mod history;
+pub(crate) mod network;
+
+#[cfg(test)]
+mod tests;

@@ -18,6 +18,9 @@ pub struct GsmtapHeader {
 }
 
 impl GsmtapHeader {
+    // GSMTAP has one fixed field per header slot; keeping this constructor
+    // field-for-field makes packet construction explicit for API callers.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         version: u8,
         header_length_words: u8,

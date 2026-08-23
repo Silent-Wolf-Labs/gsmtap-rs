@@ -78,6 +78,7 @@ impl PacketStore {
             self.counters.history_dropped();
         }
         packets.push_back(packet.clone());
+        drop(packets);
         let _ = self.events.send(packet);
     }
 
@@ -90,6 +91,7 @@ impl PacketStore {
             .cloned()
     }
 
+    #[cfg(test)]
     pub async fn list(&self) -> Vec<PacketRecord> {
         self.packets.lock().await.iter().cloned().collect()
     }
