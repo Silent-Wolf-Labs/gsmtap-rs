@@ -149,6 +149,23 @@ The verifier is the test assertion: it confirms receive counts through the
 status/API, checks relay datagrams byte-for-byte, monitors the listen sink for
 unexpected forwarding, and validates modify preview/replay/send effects.
 
+For direct local checks, use the mode-specific scripts. For example, after
+starting the workbench in relay mode with
+`--gsmtap-forward 127.0.0.1:9000`, run:
+
+```bash
+python3 tests/traffic/relay.py \
+  --workbench-host 127.0.0.1 \
+  --workbench-port 8080 \
+  --listen-port 4729 \
+  --sink-port 9000 \
+  --vectors tests/vectors
+```
+
+`tests/traffic/listen.py` and `tests/traffic/modify.py` provide equivalent
+checks for those modes. `replay.py --mode …` remains available for Compose and
+automation compatibility.
+
 ## Reference implementation
 
 The reference implementation is located at `../libosmocore`. Treat it as
