@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GSMTAP Workbench</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/styles/style.css">
 </head>
 <body>
   <main>
     <h1>GSMTAP Workbench</h1>
-    <p id="status">Connecting…</p>
+    <div id="status" aria-live="polite"></div>
     <section id="send-section" hidden>
       <h2>Modify selected packet</h2>
       <p id="selected-packet">Select a decoded RX packet to edit it.</p>
@@ -25,14 +25,10 @@
     </section>
     <section>
       <h2>Packet history</h2>
-      <div id="filters">
-        <label>Direction <select id="filter-direction"><option value="all">All</option><option>RX</option><option>TX</option></select></label>
-        <label>Parse <select id="filter-parse"><option value="all">All</option><option value="success">Success</option><option value="error">Error</option></select></label>
-        <label>Modified <select id="filter-modified"><option value="all">All</option><option value="yes">Modified</option><option value="no">Unmodified</option></select></label>
-      </div>
+      <div id="filters"></div>
       <div id="packets"></div>
     </section>
   </main>
-  <script src="/app.js"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>

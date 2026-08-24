@@ -103,6 +103,9 @@ async fn relay_forwards_valid_and_malformed_datagrams_unchanged() {
         .await
         .iter()
         .all(|packet| packet.forward_status.as_deref() == Some("sent")));
+    let stats = store.counters().snapshot();
+    assert_eq!(stats.forward_sent, 2);
+    assert_eq!(stats.forward_failed, 0);
     task.abort();
 }
 

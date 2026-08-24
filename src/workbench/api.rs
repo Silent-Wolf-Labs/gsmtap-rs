@@ -79,7 +79,87 @@ pub async fn stylesheet() -> (
 ) {
     (
         [(axum::http::header::CONTENT_TYPE, "text/css")],
-        include_str!("../../static/style.css"),
+        include_str!("../../static/styles/style.css"),
+    )
+}
+
+pub async fn packet_table_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/packet-table.js"),
+    )
+}
+
+pub async fn filters_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/filters.js"),
+    )
+}
+
+pub async fn select_control_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/select-control.js"),
+    )
+}
+
+pub async fn api_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/services/api.js"),
+    )
+}
+
+pub async fn app_controller_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/controllers/app-controller.js"),
+    )
+}
+
+pub async fn card_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/cards/card.js"),
+    )
+}
+
+pub async fn status_card_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/cards/status-card.js"),
+    )
+}
+
+pub async fn modify_panel_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/modify-panel.js"),
     )
 }
 

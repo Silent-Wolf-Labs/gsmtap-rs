@@ -30,6 +30,7 @@ async fn relay_failure_is_recorded_and_does_not_stop_receiving() {
         .forward_status
         .as_deref()
         .is_some_and(|status| status.starts_with("error:"))));
+    assert_eq!(store.counters().snapshot().forward_failed, 2);
     assert!(!task.is_finished());
     task.abort();
 }

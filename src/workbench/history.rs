@@ -18,6 +18,8 @@ pub struct RuntimeCounters {
     ingress_dropped: AtomicU64,
     history_dropped: AtomicU64,
     parse_failed: AtomicU64,
+    forward_sent: AtomicU64,
+    forward_failed: AtomicU64,
     ui_events_dropped: AtomicU64,
 }
 
@@ -28,6 +30,8 @@ pub struct RuntimeStats {
     pub ingress_dropped: u64,
     pub history_dropped: u64,
     pub parse_failed: u64,
+    pub forward_sent: u64,
+    pub forward_failed: u64,
     pub ui_events_dropped: u64,
 }
 
@@ -44,6 +48,12 @@ impl RuntimeCounters {
     pub fn parse_failed(&self) {
         self.parse_failed.fetch_add(1, Ordering::Relaxed);
     }
+    pub fn forward_sent(&self) {
+        self.forward_sent.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn forward_failed(&self) {
+        self.forward_failed.fetch_add(1, Ordering::Relaxed);
+    }
     pub fn ui_events_dropped(&self, count: u64) {
         self.ui_events_dropped.fetch_add(count, Ordering::Relaxed);
     }
@@ -53,6 +63,8 @@ impl RuntimeCounters {
             ingress_dropped: self.ingress_dropped.load(Ordering::Relaxed),
             history_dropped: self.history_dropped.load(Ordering::Relaxed),
             parse_failed: self.parse_failed.load(Ordering::Relaxed),
+            forward_sent: self.forward_sent.load(Ordering::Relaxed),
+            forward_failed: self.forward_failed.load(Ordering::Relaxed),
             ui_events_dropped: self.ui_events_dropped.load(Ordering::Relaxed),
         }
     }

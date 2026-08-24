@@ -31,7 +31,30 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
     Router::new()
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
-        .route("/style.css", get(api::stylesheet))
+        .route(
+            "/controllers/app-controller.js",
+            get(api::app_controller_javascript),
+        )
+        .route("/styles/style.css", get(api::stylesheet))
+        .route(
+            "/components/packet-table.js",
+            get(api::packet_table_javascript),
+        )
+        .route("/components/filters.js", get(api::filters_javascript))
+        .route(
+            "/components/select-control.js",
+            get(api::select_control_javascript),
+        )
+        .route("/services/api.js", get(api::api_javascript))
+        .route("/components/cards/card.js", get(api::card_javascript))
+        .route(
+            "/components/cards/status-card.js",
+            get(api::status_card_javascript),
+        )
+        .route(
+            "/components/modify-panel.js",
+            get(api::modify_panel_javascript),
+        )
         .route("/api/status", get(api::status))
         .route("/api/packets", get(api::packets))
         .route("/api/events", get(api::events))
@@ -161,8 +184,14 @@ async fn inspect_datagram(
     record.destination = forward.configured.clone();
     if mode == Mode::Relay {
         record.forward_status = Some(match forward.send(sender, bytes).await {
-            Ok(()) => "sent".into(),
-            Err(error) => format!("error: {error}"),
+            Ok(()) => {
+                store.counters().forward_sent();
+                "sent".into()
+            }
+            Err(error) => {
+                store.counters().forward_failed();
+                format!("error: {error}")
+            }
         });
     }
     store.record(record).await;
@@ -191,7 +220,7 @@ impl ForwardTarget {
         if self.configured.is_none() {
             return Err("relay forward endpoint is missing".into());
         }
-        if Instant::now() >= self.next_resolution_attempt {
+        if self.address.is_none() || Instant::now() >= self.next_resolution_attempt {
             self.refresh().await;
         }
         let address = self.address.ok_or_else(|| {
