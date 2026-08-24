@@ -40,6 +40,11 @@ def wait_for_status(base, minimum, timeout=15):
     raise RuntimeError(f"workbench did not receive {minimum} packets")
 
 
+def workbench_status(base):
+    _, status = http_json(base, "/api/status")
+    return status
+
+
 def load_vectors(directory):
     vectors = []
     for path in sorted(Path(directory).glob("*.json")):
@@ -87,11 +92,21 @@ def modify_payload(decoded):
 
 def check(args, vectors):
     base = f"http://{args.workbench_host}:{args.workbench_port}"
+    initial_status = workbench_status(base)
+    if initial_status["mode"] != args.mode:
+        raise RuntimeError(
+            f"workbench mode is {initial_status['mode']!r}, expected {args.mode!r}; "
+            "restart it with the matching --mode"
+        )
     source = [packet for _, packet in vectors]
     rounds = args.rounds
-    if args.mode == "relay":
-        source.append(bytes.fromhex("deadbeef"))
+    # Include a deliberately malformed datagram in every mode so the UI's
+    # parse-error filter can be verified alongside successful decodes.
+    source.append(bytes.fromhex("deadbeef"))
     expected = len(source) * rounds
+    received_before = initial_status["stats"]["received"]
+    forwarded_before = initial_status["stats"].get("forwardSent", 0)
+    forward_failures_before = initial_status["stats"].get("forwardFailed", 0)
     sink = None
     if args.mode in ("listen", "relay"):
         if not args.sink_port:
@@ -99,10 +114,13 @@ def check(args, vectors):
         sink = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sink.bind(("0.0.0.0", args.sink_port))
     send_packets(args.workbench_host, args.listen_port, source, rounds)
-    status = wait_for_status(base, expected)
+    status = wait_for_status(base, received_before + expected)
     _, records = http_json(base, f"/api/packets?limit={max(expected, 500)}")
     if len(records) < expected:
         raise RuntimeError(f"API returned {len(records)} records, expected at least {expected}")
+    parse_errors = sum(1 for record in records if record.get("parseError"))
+    if parse_errors < rounds:
+        raise RuntimeError(f"API returned {parse_errors} parse errors, expected at least {rounds}")
 
     if args.mode == "listen":
         if status["stats"]["received"] < expected:
@@ -110,16 +128,28 @@ def check(args, vectors):
         if collect_packets(sink, 1, timeout=0.5):
             raise RuntimeError("listen mode forwarded a packet to the configured sink")
         sink.close()
-        print(f"listen: received {expected} opaque datagrams; configured sink received none")
+        print(f"listen: received {expected} datagrams including {parse_errors} parse errors; configured sink received none")
         return
 
     if not args.sink_port:
         raise RuntimeError("--sink-port is required for relay and modify")
     if args.mode == "relay":
+        forwarded = status["stats"].get("forwardSent", 0) - forwarded_before
+        forward_failures = status["stats"].get("forwardFailed", 0) - forward_failures_before
+        if forwarded != expected:
+            raise RuntimeError(
+                f"relay received {expected} new datagrams but forwarded {forwarded}; "
+                f"{forward_failures} forwarding failures reported. "
+                f"Configured target is {status.get('gsmtapForward')!r}."
+            )
         with sink:
             received = collect_packets(sink, expected)
         if received != source * rounds:
-            raise RuntimeError(f"relay bytes/count mismatch: got {len(received)}, expected {expected}")
+            raise RuntimeError(
+                f"relay sent {forwarded} datagrams but the local sink received {len(received)}, "
+                f"expected {expected}. Configured target is {status.get('gsmtapForward')!r}; "
+                "ensure it points to this machine's UDP sink port."
+            )
         print(f"relay: forwarded {expected} datagrams byte-for-byte, including deadbeef")
         return
 
@@ -160,9 +190,10 @@ def check(args, vectors):
         print(f"modify: preview was side-effect free; replay and changed send verified for #{packet_id}")
 
 
-def main():
+def main(default_mode=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("listen", "relay", "modify"), required=True)
+    if default_mode is None:
+        parser.add_argument("--mode", choices=("listen", "relay", "modify"), required=True)
     parser.add_argument("--workbench-host", required=True)
     parser.add_argument("--workbench-port", type=int, default=8080)
     parser.add_argument("--listen-port", type=int, default=4729)
@@ -170,6 +201,7 @@ def main():
     parser.add_argument("--vectors", default="/opt/traffic/vectors")
     parser.add_argument("--rounds", type=int, default=1)
     args = parser.parse_args()
+    args.mode = default_mode or args.mode
     if args.rounds < 1:
         parser.error("--rounds must be positive")
     try:
