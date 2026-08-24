@@ -5,6 +5,8 @@
 .dockerignore
 .idea
 .vscode
+.DS_Store
+*.swp
 reference
 scripts
 docs
@@ -12,9 +14,20 @@ docs
 
 # Rust build output and generated release material
 target
+dist
+build
 *.cdx.json
 SHA256SUMS.txt
 release-artifacts
+
+# Node development dependencies, test configuration, and generated output
+node_modules
+coverage
+.npm
+package.json
+package-lock.json
+jest.config.mjs
+static/components/package.json
 
 # Local configuration and secrets
 .env

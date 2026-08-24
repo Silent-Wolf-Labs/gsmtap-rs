@@ -21,6 +21,16 @@ venv/
 *.cdx.json
 SHA256SUMS.txt
 release-artifacts/
+/node_modules/
+/coverage/
+/.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local build and test output
+/dist/
+/build/
 
 # OS/editor noise
 .DS_Store
