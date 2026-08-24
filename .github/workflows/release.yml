@@ -27,21 +27,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
 
       - name: Check JavaScript syntax
         run: |
           node --check static/app.js
-          node --check static/components/api.js
           node --check static/components/cards/card.js
           node --check static/components/cards/status-card.js
           node --check static/components/filters.js
           node --check static/components/modify-panel.js
           node --check static/components/packet-table.js
           node --check static/components/select-control.js
-      - name: Run UI component tests
-        run: |
-          node tests/ui/filters.test.mjs
-          node tests/ui/components.test.mjs
+          node --check static/services/api.js
+          node --check static/controllers/app-controller.js
+      - name: Run UI tests
+        run: npm ci
+      - run: npm run test:ui
 
       - name: Verify semantic-version tag and crate version
         shell: bash
