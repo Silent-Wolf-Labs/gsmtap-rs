@@ -30,6 +30,8 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
   selectedPacketId = null,
   onSelectPacket,
 } = {}) {
+  const previousOriginalInput = node.querySelector('.selected-row + .packet-details-row .packet-original-input');
+  const previousOriginalInputOpen = previousOriginalInput?.open ?? false;
   node.replaceChildren();
   if (!packets.length) {
     if (selectedPacketId !== null) onSelectPacket?.(null);
@@ -74,6 +76,7 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
       onReplay,
       onModify,
       showModifyActions: activeMode === 'modify',
+      originalInputOpen: packet.id === selectedPacketId ? previousOriginalInputOpen : false,
     }));
     expandedPacketId = packet.id;
     onSelectPacket?.(packet);

@@ -106,6 +106,7 @@ export function renderPacketDetails(packet, {
   onReplay,
   onModify,
   showModifyActions = false,
+  originalInputOpen = false,
 } = {}) {
   const content = documentRef.createElement('div');
   content.className = 'packet-details';
@@ -131,6 +132,7 @@ export function renderPacketDetails(packet, {
 
   const original = documentRef.createElement('details');
   original.className = 'packet-original-input';
+  original.open = originalInputOpen;
   addText(original, documentRef, 'summary', 'Original Input');
   const originalText = documentRef.createElement('pre');
   originalText.textContent = packet.originalRawHex ?? packet.rawHex ?? '—';
