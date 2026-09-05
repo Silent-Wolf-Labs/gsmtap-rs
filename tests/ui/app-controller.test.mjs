@@ -133,3 +133,39 @@ test('starts polling and event updates, then cleans both up', () => {
   expect(api.clearInterval).toHaveBeenCalledWith('interval');
   expect(unsubscribe).toHaveBeenCalledTimes(1);
 });
+
+test('uses the default refresh implementation and replays a packet', async () => {
+  setup();
+  const responses = {
+    '/api/status': status('listen'),
+    '/api/packets?limit=500': [],
+  };
+  global.fetch = jest.fn(async path => ({ json: async () => responses[path], text: async () => 'replayed' }));
+  const controller = createAppController(document, { subscribeToUpdates: jest.fn(() => jest.fn()) });
+
+  await controller.refresh();
+  expect(fetch).toHaveBeenCalledWith('/api/status', expect.any(Object));
+  expect(fetch).toHaveBeenCalledWith('/api/packets?limit=500', expect.any(Object));
+
+  const replayable = { id: 15, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 1 } };
+  const replayController = createAppController(document, {
+    refreshWorkbench: jest.fn(async () => ({ status: status('modify'), packets: [replayable] })),
+    replayPacket: jest.fn(async () => ({ text: async () => 'replayed' })),
+  });
+  await replayController.refresh();
+  document.querySelector('#packets tbody tr').click();
+  const replayButton = [...document.querySelectorAll('#packets button')].find(button => button.textContent === 'Replay');
+  replayButton.click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(document.querySelector('#result').textContent).toBe('replayed');
+});
+
+test('stops safely before start and on repeated cleanup', () => {
+  setup();
+  const api = dependencies();
+  const controller = createAppController(document, api);
+
+  controller.stop();
+  controller.stop();
+  expect(api.clearInterval).not.toHaveBeenCalled();
+});

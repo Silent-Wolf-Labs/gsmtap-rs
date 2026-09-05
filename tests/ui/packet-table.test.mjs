@@ -67,6 +67,15 @@ test('clears unavailable selected packet state', () => {
   expect(onSelectPacket).toHaveBeenCalledWith(null);
 });
 
+test('clears a selected packet that is absent from a nonempty table', () => {
+  const node = document.createElement('div');
+  const onSelectPacket = jest.fn();
+  const packet = { id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {}, parseError: null };
+
+  renderPacketTable(node, [packet], 'listen', jest.fn(), jest.fn(), { selectedPacketId: 1, onSelectPacket });
+  expect(onSelectPacket).toHaveBeenCalledWith(null);
+});
+
 test('selecting a modify-mode row loads it for editing', () => {
   const node = document.createElement('div');
   const onModify = jest.fn();
@@ -96,6 +105,25 @@ test('supports keyboard row selection while ignoring unrelated keys', () => {
   expect(row.getAttribute('aria-selected')).toBe('false');
   row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   expect(row.getAttribute('aria-selected')).toBe('true');
+});
+
+test('does not select a row when a nested button is clicked', () => {
+  const node = document.createElement('div');
+  const onModify = jest.fn();
+  const packet = { id: 8, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {}, parseError: null };
+
+  renderPacketTable(node, [packet], 'modify', jest.fn(), onModify);
+  node.querySelector('button').click();
+  expect(node.querySelector('tbody tr').classList.contains('selected-row')).toBe(true);
+  expect(onModify).toHaveBeenCalledWith(packet);
+});
+
+test('renders pending relay status when no forwarding result exists', () => {
+  const node = document.createElement('div');
+  const packet = { id: 9, direction: 'TX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {} };
+
+  renderPacketTable(node, [packet], 'relay', jest.fn(), jest.fn());
+  expect(node.querySelector('tbody tr').textContent).toContain('Pending');
 });
 
 test('renders empty state and replaces selected details', () => {

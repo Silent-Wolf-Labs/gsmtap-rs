@@ -11,6 +11,20 @@ test('validates plain values without a DOM form', () => {
   expect(validateModifyValues({ ...validValues, arfcn: '65536' })).toContain('arfcn');
 });
 
+test('rejects missing, fractional, and negative numeric values', () => {
+  expect(validateModifyValues({ ...validValues, headerLengthWords: '' })).toContain('headerLengthWords');
+  expect(validateModifyValues({ ...validValues, signalDbm: '1.5' })).toContain('signalDbm');
+  expect(validateModifyValues({ ...validValues, timeslot: '-1' })).toContain('timeslot');
+});
+
+test('validates hexadecimal byte boundaries and header length', () => {
+  expect(validateModifyValues({ ...validValues, payloadHex: 'GG' })).toContain('payloadHex');
+  expect(validateModifyValues({ ...validValues, payloadHex: 'A' })).toContain('payloadHex');
+  expect(validateModifyValues({ ...validValues, extensionHex: 'CA' })).toContain('extensionHex');
+  expect(validateModifyValues({ ...validValues, extensionHex: 'CA FE BA BE', headerLengthWords: '4' })).toContain('headerLengthWords');
+  expect(validateModifyValues({ ...validValues, extensionHex: 'CA FE BA BE', headerLengthWords: '5' })).toBe('');
+});
+
 test('converts numeric fields only at the payload boundary', () => {
   expect(toModifyPayload(validValues)).toMatchObject({ version: 1, frameNumber: 1, payloadHex: 'CA' });
 });

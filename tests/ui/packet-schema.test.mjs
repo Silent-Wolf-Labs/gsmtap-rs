@@ -24,6 +24,14 @@ test('renders decoded fields with reusable tooltip metadata', () => {
   expect(fields.querySelectorAll('dt')).toHaveLength(2);
 });
 
+test('renders null decoded values and fallback field tooltips', () => {
+  const fields = renderDecodedFields({ customField: null });
+
+  expect(fields.querySelector('dt').getAttribute('aria-label')).toContain('Decoded GSMTAP field: customField.');
+  expect(fields.querySelector('dd').textContent).toBe('');
+  expect(renderDecodedFields(null).children).toHaveLength(0);
+});
+
 test('renders parse errors without pretending decoded data exists', () => {
   const node = renderPacketDetails({ rawHex: 'CA', decoded: null, parseError: 'invalid header' });
   expect(node.querySelector('.error').textContent).toBe('invalid header');
@@ -38,4 +46,11 @@ test('keeps modify actions opt-in', () => {
   expect(passive.querySelectorAll('button')).toHaveLength(0);
   const editable = renderPacketDetails(packet, { onReplay, onModify, showModifyActions: true });
   expect(editable.querySelectorAll('button')).toHaveLength(2);
+});
+
+test('renders each optional modify action independently', () => {
+  const packet = { id: 8, direction: 'RX', decoded: { arfcn: 1 }, rawHex: 'CA' };
+  expect(renderPacketDetails(packet, { showModifyActions: true, onReplay: jest.fn() }).querySelectorAll('button')).toHaveLength(1);
+  expect(renderPacketDetails(packet, { showModifyActions: true, onModify: jest.fn() }).querySelectorAll('button')).toHaveLength(1);
+  expect(renderPacketDetails({ ...packet, direction: 'TX' }, { showModifyActions: true, onReplay: jest.fn(), onModify: jest.fn() }).querySelectorAll('button')).toHaveLength(0);
 });

@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { createModifyPanel, fieldTooltips, hexFieldNames, packetFieldNames, validateModifyForm } from '../../static/components/panels/modify-panel.js';
+import { createModifyPreview } from '../../static/components/modify/modify-preview.js';
 
 function setup() {
   document.body.innerHTML = '<section id="send-section" tabindex="-1"><form id="send-form"><div id="fields"></div></form><section id="preview-card" hidden><pre id="preview"></pre><button id="confirm-send"></button><p id="result"></p></section><p id="selected-packet"></p></section>';
@@ -119,4 +120,63 @@ test('shows preview changes and sends after confirmation', async () => {
   document.querySelector('#confirm-send').click();
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(sendModification).toHaveBeenCalledWith(5, expect.objectContaining({ arfcn: 1 }));
+});
+
+test('reports submit errors before calling the modification service', async () => {
+  setup();
+  const showResult = jest.fn();
+  const previewModification = jest.fn();
+  const panel = createModifyPanel({ previewModification, sendModification: jest.fn(), showResult });
+  document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await Promise.resolve();
+
+  expect(showResult).toHaveBeenCalledWith('Select a decoded RX packet first.');
+  expect(previewModification).not.toHaveBeenCalled();
+
+  const packet = { id: 6, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
+  panel.selectPacket(packet);
+  document.querySelector('[name="payloadHex"]').value = 'GG';
+  document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await Promise.resolve();
+  expect(showResult).toHaveBeenCalledWith(expect.stringContaining('Invalid field: payloadHex'));
+});
+
+test('reports an unsuccessful preview response', async () => {
+  setup();
+  const showResult = jest.fn();
+  const panel = createModifyPanel({
+    previewModification: jest.fn(async () => ({ ok: false, text: async () => 'preview failed' })),
+    sendModification: jest.fn(),
+    showResult,
+  });
+  const packet = { id: 13, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
+  panel.selectPacket(packet);
+  document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  expect(showResult).toHaveBeenCalledWith('preview failed');
+  expect(document.querySelector('#preview-card').hidden).toBe(true);
+});
+
+test('handles a panel without a send section', () => {
+  document.body.innerHTML = '<form id="send-form"><div id="fields"></div></form><section id="preview-card" hidden><pre id="preview"></pre><button id="confirm-send"></button></section><p id="selected-packet"></p>';
+  const panel = createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const packet = { id: 14, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
+
+  expect(() => panel.selectPacket(packet)).not.toThrow();
+});
+
+test('renders and resets an empty modification preview', () => {
+  document.body.innerHTML = '<section id="preview-card" hidden><pre id="preview"></pre><button id="confirm-send"></button></section>';
+  const onConfirm = jest.fn();
+  const preview = createModifyPreview({ onConfirm });
+
+  preview.show({ fieldChanges: [], originalHex: 'CA', modifiedHex: 'CB' });
+  expect(document.querySelector('#preview').textContent).toContain('No field changes.');
+  expect(document.querySelector('#confirm-send').disabled).toBe(false);
+  document.querySelector('#confirm-send').click();
+  expect(onConfirm).toHaveBeenCalled();
+  preview.reset();
+  expect(document.querySelector('#preview-card').hidden).toBe(true);
+  expect(document.querySelector('#confirm-send').disabled).toBe(true);
 });

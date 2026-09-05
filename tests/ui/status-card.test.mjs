@@ -26,3 +26,13 @@ test('renders relay target and warning styling for nonzero diagnostics', () => {
   expect(node.textContent).toContain('1 forward failures');
   expect(node.querySelectorAll('.warning')).toHaveLength(5);
 });
+
+test('renders modify mode with a disabled forward target and no relay warnings', () => {
+  const node = document.createElement('div');
+  renderStatusCard(node, { ...status('modify'), gsmtapForward: '', stats: { received: 8, parseFailed: 0, forwardSent: 0, forwardFailed: 0, ingressDropped: 0, historyDropped: 0, uiEventsDropped: 0 } });
+
+  expect(node.textContent).toContain('→ Disabled');
+  expect(node.textContent).not.toContain('forwarded');
+  expect(node.querySelectorAll('.warning')).toHaveLength(0);
+  expect(statusFields({ ...status('modify'), gsmtapForward: '' }).find(([label]) => label === 'Forward target')[1]).toBe('Disabled');
+});
