@@ -38,6 +38,7 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
   }
   const selectedPacket = packets.find(packet => packet.id === selectedPacketId);
   if (selectedPacketId !== null && !selectedPacket) onSelectPacket?.(null);
+  let expandedPacketId = selectedPacket?.id ?? null;
   const table = document.createElement('table');
   const head = table.createTHead().insertRow();
   const showModified = activeMode === 'modify';
@@ -47,12 +48,19 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
     applyTooltip(heading, header, columnTooltips[header]);
   }
   const body = table.createTBody();
-  const selectPacket = (row, packet) => {
+  const clearExpansion = () => {
     for (const selectedRow of body.querySelectorAll('.selected-row')) {
       selectedRow.classList.remove('selected-row');
       selectedRow.setAttribute('aria-selected', 'false');
     }
     for (const detailsRow of body.querySelectorAll('.packet-details-row')) detailsRow.remove();
+  };
+
+  const expandPacket = (row, packet) => {
+    if (expandedPacketId === packet.id && row.classList.contains('selected-row')
+      && body.querySelector('.packet-details-row')) return;
+
+    clearExpansion();
 
     row.classList.add('selected-row');
     row.setAttribute('aria-selected', 'true');
@@ -67,8 +75,16 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
       onModify,
       showModifyActions: activeMode === 'modify',
     }));
+    expandedPacketId = packet.id;
     onSelectPacket?.(packet);
   };
+
+  const collapsePacket = () => {
+    clearExpansion();
+    expandedPacketId = null;
+    onSelectPacket?.(null);
+  };
+
   for (const packet of packets.slice().reverse()) {
     const row = body.insertRow();
     const packetCell = addText(row, 'td', `#${packet.id}`);
@@ -89,20 +105,19 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
       applyTooltip(select, 'Select', 'Select this packet for modification.');
       select.addEventListener('click', event => {
         event.stopPropagation();
-        selectPacket(row, packet);
+        expandPacket(row, packet);
         onModify(packet);
       });
       packetCell.append(' ', select);
     }
 
-    const selectable = activeMode === 'modify' && packet.direction === 'RX' && packet.decoded;
     row.tabIndex = 0;
     row.setAttribute('aria-selected', 'false');
-    if (packet === selectedPacket) selectPacket(row, packet);
+    if (packet === selectedPacket) expandPacket(row, packet);
     row.addEventListener('click', event => {
       if (event.target.closest('button')) return;
-      selectPacket(row, packet);
-      if (selectable) onModify(packet);
+      if (expandedPacketId === packet.id) collapsePacket();
+      else expandPacket(row, packet);
     });
     row.addEventListener('keydown', event => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
