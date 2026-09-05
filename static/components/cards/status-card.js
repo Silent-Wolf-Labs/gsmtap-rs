@@ -1,4 +1,5 @@
 import { createCard } from './card.js';
+import { applyTooltip } from '../tooltip.js';
 
 export function statusFields(status) {
   const fields = [
@@ -23,19 +24,18 @@ export function renderStatusCard(node, status) {
   const modeBadge = document.createElement('strong');
   modeBadge.className = `mode-badge mode-${status.mode}`;
   modeBadge.textContent = status.mode.toUpperCase();
-  modeBadge.title = 'The active workbench operating mode: listen, relay, or modify.';
-  modeBadge.setAttribute('aria-label', `Mode: ${modeBadge.title}`);
+  applyTooltip(modeBadge, 'Mode', 'The active workbench operating mode: listen, relay, or modify.');
   topLine.append(modeBadge);
   const listen = document.createElement('strong');
   listen.className = 'status-endpoint';
   listen.textContent = status.gsmtapListen;
-  listen.title = 'UDP address where GSMTAP packets are received.';
+  applyTooltip(listen, 'GSMTAP listen', 'UDP address where GSMTAP packets are received.');
   topLine.append(listen);
   if (status.mode !== 'listen') {
     const forward = document.createElement('span');
     forward.className = 'status-forward';
     forward.textContent = `→ ${status.gsmtapForward || 'Disabled'}`;
-    forward.title = 'UDP destination used for relay forwarding or explicit modify-mode sends.';
+    applyTooltip(forward, 'Forward target', 'UDP destination used for relay forwarding or explicit modify-mode sends.');
     topLine.append(forward);
   }
   card.append(topLine);
@@ -59,8 +59,7 @@ export function renderStatusCard(node, status) {
 function addStatusMetric(parent, value, label, tooltip, className = '') {
   const metric = document.createElement('span');
   metric.className = `status-metric ${className}`.trim();
-  metric.title = tooltip;
-  metric.setAttribute('aria-label', `${value} ${label}: ${tooltip}`);
+  applyTooltip(metric, `${value} ${label}`, tooltip);
   const number = document.createElement('strong');
   number.textContent = value;
   metric.append(number, ` ${label}`);

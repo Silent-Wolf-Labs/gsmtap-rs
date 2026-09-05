@@ -10,18 +10,18 @@
   <main>
     <h1>GSMTAP Workbench</h1>
     <div id="status" aria-live="polite"></div>
-    <section id="send-section" hidden>
+    <section id="send-section" class="card" tabindex="-1" hidden>
       <h2>Modify selected packet</h2>
       <p id="selected-packet">Select a decoded RX packet to edit it.</p>
       <form id="send-form">
-        <div id="fields"></div>
-        <label>Extension (hex)<textarea name="extensionHex"></textarea></label>
-        <label>Payload (hex)<textarea name="payloadHex"></textarea></label>
-        <button>Preview changes</button>
-        <button id="confirm-send" type="button" disabled>Confirm and send</button>
+        <div id="fields" class="modify-fields"></div>
       </form>
-      <pre id="preview"></pre>
-      <pre id="result"></pre>
+      <section id="preview-card" class="card modify-preview-card" hidden>
+        <h3>Review changes</h3>
+        <pre id="preview"></pre>
+        <button id="confirm-send" type="button" disabled>Confirm and send</button>
+        <p id="result" aria-live="polite"></p>
+      </section>
     </section>
     <section>
       <h2>Packet history</h2>

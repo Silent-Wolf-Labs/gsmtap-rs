@@ -56,10 +56,7 @@ export function renderPacketDetails(packet, {
   addText(content, documentRef, 'code', packet.rawHex);
   if (packet.forwardStatus) addText(content, documentRef, 'em', ` ${packet.forwardStatus}`);
   if (packet.parseError) addText(content, documentRef, 'p', packet.parseError, 'error');
-  else {
-    content.append(renderDecodedFields(packet.decoded, { documentRef }));
-    addText(content, documentRef, 'pre', JSON.stringify(packet.decoded, null, 2));
-  }
+  else addText(content, documentRef, 'pre', JSON.stringify(packet.decoded, null, 2));
   if (packet.modified) addText(content, documentRef, 'pre', `Original: ${packet.originalRawHex}\nFinal: ${packet.finalRawHex}`);
   if (showModifyActions && packet.direction === 'RX' && packet.decoded) {
     if (onReplay) {

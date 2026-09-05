@@ -1,3 +1,5 @@
+import { applyTooltip } from '../tooltip.js';
+
 export function createCard({ title, className = '' }) {
   const card = document.createElement('section');
   card.className = `card ${className}`.trim();
@@ -10,10 +12,7 @@ export function createCard({ title, className = '' }) {
 export function addCardItem(parent, label, value, className = '', tooltip = '') {
   const item = document.createElement('div');
   item.className = `card-item ${className}`.trim();
-  if (tooltip) {
-    item.title = tooltip;
-    item.setAttribute('aria-label', `${label}: ${tooltip}`);
-  }
+  applyTooltip(item, label, tooltip);
   const name = document.createElement('span');
   name.className = 'card-item-label';
   name.textContent = label;

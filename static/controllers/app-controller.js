@@ -5,10 +5,8 @@ import {
   sendModification,
   subscribeToUpdates,
 } from '../services/api.js';
-import { renderStatusCard } from '../components/cards/status-card.js';
-import { createFilters } from '../components/filters.js';
-import { renderPacketTable } from '../components/packet-table.js';
-import { createModifyPanel } from '../components/modify-panel.js';
+import { createModifyPanel } from '../components/panels/modify-panel.js';
+import { createModePanel } from '../components/panels/mode-panel.js';
 
 export function createAppController(documentRef = document, dependencies = {}) {
   const {
@@ -21,12 +19,11 @@ export function createAppController(documentRef = document, dependencies = {}) {
     clearInterval: clearIntervalRequest = clearInterval,
   } = dependencies;
   const packetsNode = documentRef.querySelector('#packets');
-  const statusNode = documentRef.querySelector('#status');
-  const filtersNode = documentRef.querySelector('#filters');
   const sendSectionNode = documentRef.querySelector('#send-section');
   const resultNode = documentRef.querySelector('#result');
   let activeMode = 'listen';
   let packets = [];
+  let selectedPacketId = null;
   let interval;
   let unsubscribe;
 
@@ -34,15 +31,20 @@ export function createAppController(documentRef = document, dependencies = {}) {
     resultNode.textContent = text;
   }
 
-  const filters = createFilters(filtersNode, render);
   const modifyPanel = createModifyPanel({
     previewModification: previewModificationRequest,
     sendModification: sendModificationRequest,
     showResult,
   });
+  const modePanel = createModePanel({
+    documentRef,
+    onReplay: replayPacket,
+    onModify: modifyPanel.selectPacket,
+    onSelectPacket: packet => { selectedPacketId = packet?.id ?? null; },
+  });
 
   function render() {
-    renderPacketTable(packetsNode, filters.filter(packets), activeMode, replayPacket, modifyPanel.selectPacket);
+    modePanel.render(packets, selectedPacketId);
   }
 
   async function replayPacket(id) {
@@ -52,8 +54,7 @@ export function createAppController(documentRef = document, dependencies = {}) {
 
   function applyStatus(status) {
     activeMode = status.mode;
-    renderStatusCard(statusNode, status);
-    filters.setMode(activeMode);
+    modePanel.applyStatus(status);
     sendSectionNode.hidden = activeMode !== 'modify';
   }
 

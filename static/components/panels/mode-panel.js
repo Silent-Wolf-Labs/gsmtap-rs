@@ -1,11 +1,11 @@
 import { createFilters } from '../filters.js';
 import { renderPacketTable } from '../packet/packet-table.js';
-import { renderStatusCard } from './cards/status-card.js';
+import { renderStatusCard } from '../cards/status-card.js';
 import { listenCapability } from './listen-panel.js';
 import { modifyCapability } from './modify-panel.js';
 import { relayCapability, relayForwardingState } from './relay-panel.js';
 
-export { relayForwardingState };
+export { listenCapability, relayCapability, relayForwardingState };
 
 export const modeCapabilities = Object.freeze({ listen: listenCapability, relay: relayCapability, modify: modifyCapability });
 
@@ -16,6 +16,7 @@ export function createModePanel({
   statusNode = documentRef.querySelector('#status'),
   onReplay,
   onModify,
+  onSelectPacket,
   renderTable = renderPacketTable,
   renderStatus = renderStatusCard,
 } = {}) {
@@ -34,11 +35,12 @@ export function createModePanel({
     renderStatus(statusNode, status);
   }
 
-  function render(packets) {
+  function render(packets, selectedPacketId) {
     const actions = capability.actions;
     renderTable(packetsNode, filters.filter(packets), activeMode,
       capability.replay ? (actions.replay || onReplay) : undefined,
-      capability.modify ? (actions.modify || onModify) : undefined);
+      capability.modify ? (actions.modify || onModify) : undefined,
+      { selectedPacketId, onSelectPacket });
   }
 
   return {
