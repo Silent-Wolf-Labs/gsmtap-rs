@@ -123,6 +123,16 @@ pub async fn api_javascript() -> (
     )
 }
 
+pub async fn events_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/services/events.js"),
+    )
+}
+
 pub async fn app_controller_javascript() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static str,

@@ -1,17 +1,23 @@
 import {
+  getStatus,
+  getPackets,
   previewModification,
-  refreshWorkbench,
   replayPacket as apiReplayPacket,
   sendModification,
-  subscribeToUpdates,
 } from '../services/api.js';
+import { subscribeToUpdates } from '../services/events.js';
 import { createModifyPanel } from '../components/panels/modify-panel.js';
 import { createModePanel } from '../components/panels/mode-panel.js';
+
+async function defaultRefreshWorkbench() {
+  const [status, packets] = await Promise.all([getStatus(), getPackets()]);
+  return { status, packets };
+}
 
 export function createAppController(documentRef = document, dependencies = {}) {
   const {
     previewModification: previewModificationRequest = previewModification,
-    refreshWorkbench: refreshWorkbenchRequest = refreshWorkbench,
+    refreshWorkbench: refreshWorkbenchRequest = defaultRefreshWorkbench,
     replayPacket: replayPacketRequest = apiReplayPacket,
     sendModification: sendModificationRequest = sendModification,
     subscribeToUpdates: subscribeToUpdatesRequest = subscribeToUpdates,

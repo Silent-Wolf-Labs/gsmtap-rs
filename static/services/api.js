@@ -25,29 +25,3 @@ export async function previewModification(id, payload) {
 export async function sendModification(id, payload) {
   return request(`/api/packets/${id}/modify-send`, 'POST', payload);
 }
-
-export async function refreshWorkbench() {
-  const [status, packets] = await Promise.all([getStatus(), getPackets()]);
-  return { status, packets };
-}
-
-export function subscribeToUpdates(onUpdate, { EventSourceImpl = EventSource, delay = 250 } = {}) {
-  const events = new EventSourceImpl('/api/events');
-  let refreshScheduled = false;
-  let timeout;
-
-  events.onmessage = () => {
-    if (refreshScheduled) return;
-    refreshScheduled = true;
-    timeout = setTimeout(() => {
-      refreshScheduled = false;
-      timeout = undefined;
-      onUpdate();
-    }, delay);
-  };
-
-  return () => {
-    if (timeout) clearTimeout(timeout);
-    events.close();
-  };
-}

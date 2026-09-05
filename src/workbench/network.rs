@@ -63,6 +63,7 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             get(api::select_control_javascript),
         )
         .route("/services/api.js", get(api::api_javascript))
+        .route("/services/events.js", get(api::events_javascript))
         .route("/components/cards/card.js", get(api::card_javascript))
         .route(
             "/components/cards/status-card.js",
