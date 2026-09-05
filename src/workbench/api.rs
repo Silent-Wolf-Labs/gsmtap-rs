@@ -224,6 +224,16 @@ pub async fn modify_panel_javascript() -> (
     )
 }
 
+pub async fn modify_model_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/models/modify-model.js"),
+    )
+}
+
 pub async fn modify_fields_javascript() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static str,

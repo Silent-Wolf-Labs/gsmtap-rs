@@ -10,7 +10,7 @@ function createLabel(documentRef, name, input) {
   return label;
 }
 
-export function createModifyForm({ documentRef = document, form = documentRef.querySelector('#send-form'), onSubmit }) {
+export function createModifyForm({ documentRef = document, form = documentRef.querySelector('#send-form'), onSubmit, onFieldChange }) {
   const fields = form.querySelector('#fields');
   fields.replaceChildren();
   for (const [groupName, names] of fieldGroups) {
@@ -27,6 +27,7 @@ export function createModifyForm({ documentRef = document, form = documentRef.qu
       input.max = numericFieldRanges[name][1];
       input.step = '1';
       input.required = true;
+      input.addEventListener('input', () => onFieldChange?.(name, input.value));
       group.append(createLabel(documentRef, name, input));
     }
     fields.append(group);
@@ -36,6 +37,7 @@ export function createModifyForm({ documentRef = document, form = documentRef.qu
     input.name = name;
     input.required = name === 'payloadHex';
     if (name === 'extensionHex') input.pattern = '[0-9a-fA-F\\s]*';
+    input.addEventListener('input', () => onFieldChange?.(name, input.value));
     form.append(createLabel(documentRef, name, input));
   }
   const actions = documentRef.createElement('div');

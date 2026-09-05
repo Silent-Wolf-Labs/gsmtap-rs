@@ -73,6 +73,7 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             "/components/panels/modify-panel.js",
             get(api::modify_panel_javascript),
         )
+        .route("/models/modify-model.js", get(api::modify_model_javascript))
         .route(
             "/components/modify/modify-fields.js",
             get(api::modify_fields_javascript),
