@@ -1,0 +1,31 @@
+import { fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames, renderPacketDetails } from '../../static/components/packet-schema.js';
+
+test('exposes shared GSMTAP field metadata', () => {
+  expect(packetFieldNames).toHaveLength(12);
+  expect(hexFieldNames).toEqual(['extensionHex', 'payloadHex']);
+  expect(fieldGroups.flatMap(([, names]) => names)).toEqual(packetFieldNames);
+  expect([...packetFieldNames, ...hexFieldNames].every(name => fieldTooltips[name])).toBe(true);
+});
+
+test('renders raw bytes, decoded fields, and forwarding status', () => {
+  const node = renderPacketDetails({ rawHex: 'CA FE', decoded: { arfcn: 42 }, forwardStatus: 'sent' });
+  expect(node.textContent).toContain('CA FE');
+  expect(node.textContent).toContain('sent');
+  expect(node.querySelector('pre').textContent).toContain('42');
+});
+
+test('renders parse errors without pretending decoded data exists', () => {
+  const node = renderPacketDetails({ rawHex: 'CA', decoded: null, parseError: 'invalid header' });
+  expect(node.querySelector('.error').textContent).toBe('invalid header');
+  expect(node.querySelector('pre')).toBeNull();
+});
+
+test('keeps modify actions opt-in', () => {
+  const packet = { id: 7, direction: 'RX', decoded: { arfcn: 1 }, rawHex: 'CA' };
+  const onReplay = jest.fn();
+  const onModify = jest.fn();
+  const passive = renderPacketDetails(packet, { onReplay, onModify });
+  expect(passive.querySelectorAll('button')).toHaveLength(0);
+  const editable = renderPacketDetails(packet, { onReplay, onModify, showModifyActions: true });
+  expect(editable.querySelectorAll('button')).toHaveLength(2);
+});

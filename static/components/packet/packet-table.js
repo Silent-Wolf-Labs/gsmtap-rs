@@ -1,29 +1,12 @@
+import { relayForwardingState, renderPacketDetails } from './packet-schema.js';
+import { applyTooltip } from '../tooltip.js';
+
 function addText(parent, tag, text, className) {
   const node = document.createElement(tag);
   node.textContent = text;
   if (className) node.className = className;
   parent.append(node);
   return node;
-}
-
-function packetDetails(packet, activeMode, onReplay, onModify) {
-  const content = document.createElement('div');
-  addText(content, 'code', packet.rawHex);
-  if (packet.forwardStatus) addText(content, 'em', ` ${packet.forwardStatus}`);
-  if (packet.parseError) addText(content, 'p', packet.parseError, 'error');
-  else addText(content, 'pre', JSON.stringify(packet.decoded, null, 2));
-  if (packet.modified) addText(content, 'pre', `Original: ${packet.originalRawHex}\nFinal: ${packet.finalRawHex}`);
-  if (activeMode === 'modify' && packet.direction === 'RX' && packet.decoded) {
-    const replay = document.createElement('button');
-    replay.textContent = 'Replay';
-    replay.addEventListener('click', () => onReplay(packet.id));
-    content.append(replay);
-    const modify = document.createElement('button');
-    modify.textContent = 'Modify';
-    modify.addEventListener('click', () => onModify(packet));
-    content.append(modify);
-  }
-  return content;
 }
 
 export function tableColumns(activeMode) {
@@ -58,8 +41,7 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify)
   const showForward = activeMode === 'relay';
   for (const header of tableColumns(activeMode)) {
     const heading = addText(head, 'th', header);
-    heading.title = columnTooltips[header];
-    heading.setAttribute('aria-label', `${header}: ${columnTooltips[header]}`);
+    applyTooltip(heading, header, columnTooltips[header]);
   }
   const body = table.createTBody();
   for (const packet of packets.slice().reverse()) {
@@ -70,8 +52,8 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify)
     addText(row, 'td', packet.peer);
     addText(row, 'td', packet.parseError ? 'Error' : 'Success', packet.parseError ? 'error' : 'success');
     if (showForward) {
-      const failed = packet.forwardStatus?.startsWith('error:');
-      addText(row, 'td', packet.forwardStatus || 'Pending', failed ? 'error' : packet.forwardStatus ? 'success' : '');
+      const forwarding = relayForwardingState(packet);
+      addText(row, 'td', forwarding.status, forwarding.failed ? 'error' : packet.forwardStatus ? 'success' : '');
     }
     if (showModified) addText(row, 'td', packet.modified ? 'Yes' : 'No');
     const details = document.createElement('details');
@@ -79,8 +61,42 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify)
     details.open = openPackets.has(String(packet.id));
     const summary = document.createElement('summary');
     summary.textContent = 'Expand';
-    details.append(summary, packetDetails(packet, activeMode, onReplay, onModify));
-    row.insertCell().append(details);
+    details.append(summary, renderPacketDetails(packet, {
+      onReplay,
+      onModify,
+      showModifyActions: activeMode === 'modify',
+    }));
+    const detailsCell = row.insertCell();
+    detailsCell.append(details);
+    if (activeMode === 'modify' && packet.direction === 'RX' && packet.decoded) {
+      const select = document.createElement('button');
+      select.type = 'button';
+      select.textContent = 'Select';
+      applyTooltip(select, 'Select', 'Select this packet for modification.');
+      select.addEventListener('click', event => {
+        event.stopPropagation();
+        row.classList.add('selected-row');
+        row.setAttribute('aria-selected', 'true');
+        onModify(packet);
+      });
+      detailsCell.append(select);
+    }
+
+    const selectable = activeMode === 'modify' && packet.direction === 'RX' && packet.decoded;
+    row.tabIndex = 0;
+    row.setAttribute('aria-selected', 'false');
+    row.addEventListener('click', event => {
+      if (event.target.closest('button')) return;
+      row.classList.add('selected-row');
+      row.setAttribute('aria-selected', 'true');
+      if (selectable) onModify(packet);
+      if (!event.target.closest('summary')) details.open = !details.open;
+    });
+    row.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      row.click();
+    });
   }
   node.append(table);
 }

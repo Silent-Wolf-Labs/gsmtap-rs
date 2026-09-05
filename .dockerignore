@@ -11,6 +11,7 @@ reference
 scripts
 docs
 *.md
+.junie
 
 # Rust build output and generated release material
 target

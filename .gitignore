@@ -1,6 +1,7 @@
 # IDE and local tooling
 .idea/
 .vscode/
+.junie/
 
 # Rust build output
 /target/
