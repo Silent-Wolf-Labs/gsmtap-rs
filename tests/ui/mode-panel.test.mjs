@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { createModePanel, listenCapability, relayForwardingState } from '../../static/components/mode-panel.js';
+import { createModePanel, listenCapability, relayForwardingState } from '../../static/components/panels/mode-panel.js';
 
 function setup() {
   document.body.innerHTML = '<div id="status"></div><div id="filters"></div><div id="packets"></div>';
@@ -17,6 +17,7 @@ test('listen mode renders decoded packet details without actions', () => {
   setup();
   const panel = createModePanel();
   panel.render([{ id: 1, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA FE', decoded: { arfcn: 42 } }]);
+  document.querySelector('#packets tbody tr td').click();
   expect(document.querySelector('#packets pre').textContent).toContain('42');
   expect(document.querySelectorAll('#packets button')).toHaveLength(0);
 });
@@ -29,7 +30,8 @@ test('mode panel changes capabilities without inventing controls', () => {
   panel.render([]);
   expect(panel.capability.mode).toBe('relay');
   expect(panel.capability.forwarding).toBe(true);
-  expect(renderTable).toHaveBeenCalledWith(document.querySelector('#packets'), [], 'relay', undefined, undefined);
+  expect(renderTable).toHaveBeenCalledWith(document.querySelector('#packets'), [], 'relay', undefined, undefined,
+    { selectedPacketId: undefined, onSelectPacket: undefined });
 });
 
 test('maps relay forwarding success, failure, and pending states', () => {

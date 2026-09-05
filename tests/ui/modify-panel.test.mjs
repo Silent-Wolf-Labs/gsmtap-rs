@@ -1,14 +1,95 @@
 import { jest } from '@jest/globals';
-import { createModifyPanel, hexFieldNames, packetFieldNames } from '../../static/components/modify-panel.js';
+import { createModifyPanel, fieldTooltips, hexFieldNames, packetFieldNames, validateModifyForm } from '../../static/components/panels/modify-panel.js';
 
 function setup() {
-  document.body.innerHTML = '<form id="send-form"><div id="fields"></div><textarea name="extensionHex"></textarea><textarea name="payloadHex"></textarea><button id="confirm-send"></button></form><pre id="preview"></pre><pre id="result"></pre><p id="selected-packet"></p>';
+  document.body.innerHTML = '<section id="send-section" tabindex="-1"><form id="send-form"><div id="fields"></div></form><section id="preview-card" hidden><pre id="preview"></pre><button id="confirm-send"></button><p id="result"></p></section><p id="selected-packet"></p></section>';
 }
 
 test('defines all editable numeric and hex fields', () => {
   expect(packetFieldNames).toHaveLength(12);
   expect(new Set(packetFieldNames).size).toBe(12);
   expect(hexFieldNames).toEqual(['extensionHex', 'payloadHex']);
+  expect([...packetFieldNames, ...hexFieldNames].every(name => fieldTooltips[name])).toBe(true);
+});
+
+test('adds descriptions to every modify field', () => {
+  setup();
+  createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  for (const name of [...packetFieldNames, ...hexFieldNames]) {
+  expect(document.querySelector(`[name="${name}"]`).title).toBe(fieldTooltips[name]);
+  }
+});
+
+test('keeps the send action in a separate preview card', async () => {
+  setup();
+  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalHex: 'CA', modifiedHex: 'CB' }) }));
+  const panel = createModifyPanel({ previewModification, sendModification: jest.fn(), showResult: jest.fn() });
+  const packet = { id: 9, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
+  panel.selectPacket(packet);
+  expect(document.querySelector('#preview-card').hidden).toBe(true);
+  document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(document.querySelector('#preview-card').hidden).toBe(false);
+  expect(document.querySelector('#preview-card #confirm-send')).not.toBeNull();
+});
+
+test('focuses the modify section when a packet is selected', () => {
+  setup();
+  const panel = createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const packet = { id: 11, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
+  panel.selectPacket(packet);
+  expect(document.activeElement).toBe(document.querySelector('#send-section'));
+});
+
+test('disables preview button until a packet is selected', () => {
+  setup();
+  const panel = createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const previewButton = document.querySelector('.modify-form-actions button');
+  const packet = { id: 12, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
+
+  expect(previewButton.disabled).toBe(true);
+  panel.selectPacket(packet);
+  expect(previewButton.disabled).toBe(false);
+});
+
+test('sets numeric ranges and rejects invalid field values', () => {
+  setup();
+  createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const form = document.querySelector('#send-form');
+  expect(form.elements.arfcn.min).toBe('0');
+  expect(form.elements.arfcn.max).toBe('65535');
+  for (const name of packetFieldNames) form.elements[name].value = name === 'headerLengthWords' ? '4' : '1';
+  form.elements.extensionHex.value = '';
+  form.elements.payloadHex.value = '';
+  form.elements.arfcn.value = '65536';
+  expect(validateModifyForm(form)).toContain('arfcn');
+  form.elements.arfcn.value = '1';
+  form.elements.signalDbm.value = '1.5';
+  expect(validateModifyForm(form)).toContain('signalDbm');
+});
+
+test('rejects malformed hex and mismatched extension length', () => {
+  setup();
+  createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const form = document.querySelector('#send-form');
+  for (const name of packetFieldNames) form.elements[name].value = name === 'headerLengthWords' ? '4' : '1';
+  form.elements.extensionHex.value = 'CA FE';
+  form.elements.payloadHex.value = 'GG';
+  expect(validateModifyForm(form)).toContain('payloadHex');
+  form.elements.payloadHex.value = 'AA';
+  form.elements.extensionHex.value = 'CA FE BA BE';
+  form.elements.headerLengthWords.value = '4';
+  expect(validateModifyForm(form)).toContain('headerLengthWords');
+});
+
+test('allows an empty optional extension', () => {
+  setup();
+  createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const form = document.querySelector('#send-form');
+  for (const name of packetFieldNames) form.elements[name].value = name === 'headerLengthWords' ? '4' : '1';
+  form.elements.extensionHex.value = '';
+  form.elements.payloadHex.value = '';
+  expect(validateModifyForm(form)).toBe('');
 });
 
 test('selects a packet and previews without sending', async () => {
@@ -16,7 +97,7 @@ test('selects a packet and previews without sending', async () => {
   const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalHex: 'CA', modifiedHex: 'CB' }) }));
   const sendModification = jest.fn();
   const panel = createModifyPanel({ previewModification, sendModification, showResult: jest.fn() });
-  const packet = { id: 4, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, 1])) };
+  const packet = { id: 4, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? 'CA FE BA BE' : name === 'headerLengthWords' ? 5 : 1])) };
   panel.selectPacket(packet);
   expect(document.querySelector('#selected-packet').textContent).toContain('#4');
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
@@ -30,7 +111,7 @@ test('shows preview changes and sends after confirmation', async () => {
   const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [{ field: 'arfcn', original: 1, modified: 2 }], originalHex: 'CA', modifiedHex: 'CB' }) }));
   const sendModification = jest.fn(async () => ({ text: async () => 'sent' }));
   const panel = createModifyPanel({ previewModification, sendModification, showResult: jest.fn() });
-  const packet = { id: 5, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, 1])) };
+  const packet = { id: 5, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? 'CA FE BA BE' : name === 'headerLengthWords' ? 5 : 1])) };
   panel.selectPacket(packet);
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await new Promise(resolve => setTimeout(resolve, 0));

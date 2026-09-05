@@ -1,4 +1,5 @@
-import { fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames, renderPacketDetails } from '../../static/components/packet-schema.js';
+import { jest } from '@jest/globals';
+import { fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames, renderDecodedFields, renderPacketDetails } from '../../static/components/packet/packet-schema.js';
 
 test('exposes shared GSMTAP field metadata', () => {
   expect(packetFieldNames).toHaveLength(12);
@@ -12,6 +13,15 @@ test('renders raw bytes, decoded fields, and forwarding status', () => {
   expect(node.textContent).toContain('CA FE');
   expect(node.textContent).toContain('sent');
   expect(node.querySelector('pre').textContent).toContain('42');
+});
+
+test('renders decoded fields with reusable tooltip metadata', () => {
+  const fields = renderDecodedFields({ arfcn: 42, customField: 'value' });
+  const arfcn = fields.querySelector('dt');
+  expect(arfcn.textContent).toBe('arfcn');
+  expect(arfcn.title).toBe(fieldTooltips.arfcn);
+  expect(arfcn.getAttribute('aria-label')).toContain(fieldTooltips.arfcn);
+  expect(fields.querySelectorAll('dt')).toHaveLength(2);
 });
 
 test('renders parse errors without pretending decoded data exists', () => {

@@ -8,11 +8,11 @@ function setup() {
       <p id="selected-packet"></p>
       <form id="send-form">
         <div id="fields"></div>
-        <textarea name="extensionHex"></textarea>
-        <textarea name="payloadHex"></textarea>
-        <button id="confirm-send" type="button"></button>
       </form>
-      <pre id="preview"></pre>
+      <section id="preview-card" hidden>
+        <pre id="preview"></pre>
+        <button id="confirm-send" type="button"></button>
+      </section>
       <pre id="result"></pre>
     </section>
     <div id="filters"></div>
@@ -53,6 +53,56 @@ test('refreshes data and updates the mode-aware UI', async () => {
   expect(document.querySelector('.mode-badge').textContent).toBe('MODIFY');
   expect(document.querySelector('#send-section').hidden).toBe(false);
   expect(document.querySelectorAll('#packets tbody tr')).toHaveLength(1);
+});
+
+test('keeps listen packet inspection passive', async () => {
+  setup();
+  const api = dependencies({
+    refreshWorkbench: jest.fn(async () => ({
+      status: status('listen'),
+      packets: [{ id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 } }],
+    })),
+  });
+  const controller = createAppController(document, api);
+
+  await controller.refresh();
+  document.querySelector('#packets tbody tr td').click();
+
+  expect(document.querySelector('#packets pre').textContent).toContain('42');
+  expect(document.querySelectorAll('#packets button')).toHaveLength(0);
+});
+
+test('retains selected packet details after refresh', async () => {
+  setup();
+  const packet = { id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 } };
+  const api = dependencies({
+    refreshWorkbench: jest.fn(async () => ({ status: status('listen'), packets: [packet] })),
+  });
+  const controller = createAppController(document, api);
+
+  await controller.refresh();
+  document.querySelector('#packets tbody tr td').click();
+  await controller.refresh();
+
+  expect(document.querySelector('#packets .selected-row').textContent).toContain('#2');
+  expect(document.querySelector('#packets .packet-details-row pre').textContent).toContain('42');
+});
+
+test('shows relay forwarding state without adding unsupported controls', async () => {
+  setup();
+  const api = dependencies({
+    refreshWorkbench: jest.fn(async () => ({
+      status: status('relay'),
+      packets: [{ id: 3, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {}, forwardStatus: 'error: target unavailable' }],
+    })),
+  });
+  const controller = createAppController(document, api);
+
+  await controller.refresh();
+
+  expect(document.querySelector('#packets th:nth-child(6)').textContent).toBe('Forward');
+  expect(document.querySelector('#packets tbody tr').textContent).toContain('error: target unavailable');
+  expect(document.querySelectorAll('#packets button')).toHaveLength(0);
 });
 
 test('renders a packet error when refresh fails', async () => {
