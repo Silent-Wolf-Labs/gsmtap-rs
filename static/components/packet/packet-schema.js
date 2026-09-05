@@ -59,11 +59,20 @@ const detailHeaderFields = [
   ['Antenna', 'antennaNumber'],
 ];
 
+export const editableHeaderFields = [
+  ['Version', 'version'], ['Header Length', 'headerLengthWords'], ['Type', 'messageType'],
+  ['Timeslot', 'timeslot'], ['ARFCN', 'arfcn'], ['Signal', 'signalDbm'], ['SNR', 'snrDb'],
+  ['Frame', 'frameNumber'], ['Subtype', 'subtype'], ['Antenna', 'antennaNumber'],
+  ['Sub-slot', 'subSlot'], ['Reserved', 'reserved'],
+];
+
+export const editableFieldLabels = { extensionHex: 'Header extension', payloadHex: 'Payload' };
+
 function displayValue(value, suffix = '') {
   return value == null ? '—' : `${value}${suffix}`;
 }
 
-function displayHeaderLength(decoded) {
+export function displayHeaderLength(decoded) {
   const words = decoded?.headerLengthWords;
   const bytes = decoded?.headerLengthBytes;
   if (bytes != null && words != null) return `${bytes} bytes (${words} words)`;
@@ -72,7 +81,7 @@ function displayHeaderLength(decoded) {
   return '—';
 }
 
-function displayHeaderValue(decoded, name) {
+export function displayHeaderValue(decoded, name) {
   if (name === 'headerLengthWords') return displayHeaderLength(decoded);
   if (name === 'signalDbm') return displayValue(decoded?.[name], ' dBm');
   if (name === 'snrDb') return displayValue(decoded?.[name], ' dB');

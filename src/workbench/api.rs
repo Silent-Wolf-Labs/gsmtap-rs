@@ -17,7 +17,8 @@ use crate::gsmtap::{GsmtapEncodeInput, GsmtapHeader};
 use super::{
     config::{Config, Mode},
     dto::{
-        from_decoded, from_error, hex, parse_hex, EncodeSendRequest, PacketRecord, SendResponse,
+        decoded_from_packet, from_decoded, from_error, hex, parse_hex, DecodedPacket,
+        EncodeSendRequest, PacketRecord, SendResponse,
     },
     history::{PacketStore, RuntimeStats},
 };
@@ -343,6 +344,8 @@ pub struct ModifyPreview {
     pub packet_id: u64,
     pub original_hex: String,
     pub modified_hex: String,
+    pub original_decoded: DecodedPacket,
+    pub modified_decoded: DecodedPacket,
     pub field_changes: Vec<FieldChange>,
 }
 
@@ -372,6 +375,7 @@ pub async fn modify_preview(
     let encoded = encode_request(&request)?;
     let modified = crate::gsmtap::parse(&encoded)
         .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+    let modified_decoded = decoded_from_packet(&modified);
     let mut changes = Vec::new();
     let header = modified.header();
     push_change(&mut changes, "version", original.version, header.version());
@@ -442,6 +446,8 @@ pub async fn modify_preview(
         packet_id: id,
         original_hex: packet.raw_hex,
         modified_hex: hex(&encoded),
+        original_decoded: original.clone(),
+        modified_decoded,
         field_changes: changes,
     }))
 }

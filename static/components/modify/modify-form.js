@@ -55,5 +55,6 @@ export function createModifyForm({ documentRef = document, form = documentRef.qu
     setValues(values) { for (const name of Object.keys(values)) if (form.elements[name]) form.elements[name].value = values[name] ?? ''; },
     readValues,
     setPreviewEnabled(enabled) { previewButton.disabled = !enabled; },
+    reset() { form.reset(); previewButton.disabled = true; },
   };
 }

@@ -1,4 +1,4 @@
-export { fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames } from '../packet/packet-schema.js';
+export { editableFieldLabels, editableHeaderFields, fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames } from '../packet/packet-schema.js';
 
 export const numericFieldRanges = {
   version: [0, 255], headerLengthWords: [4, 255], messageType: [0, 255], timeslot: [0, 255],

@@ -1,7 +1,7 @@
 import { fieldTooltips, hexFieldNames, packetFieldNames } from '../modify/modify-fields.js';
 import { createModifyForm } from '../modify/modify-form.js';
 import { createModifyPreview } from '../modify/modify-preview.js';
-import { createModifyState, selectModifyPacket, setPendingPayload, clearPendingPayload } from '../modify/modify-state.js';
+import { createModifyState, selectModifyPacket, setPendingPayload } from '../modify/modify-state.js';
 import { readModifyForm, toModifyPayload, validateModifyForm } from '../modify/modify-validation.js';
 import { createModificationService } from '../../services/modification-service.js';
 
@@ -30,6 +30,13 @@ export function createModifyPanel({ documentRef = document, previewModification,
     }
   }
 
+  function resetSelection() {
+    state = createModifyState();
+    formView.reset();
+    previewView.reset();
+    selectedNode.textContent = 'Select a decoded RX packet to edit it.';
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (!state.selectedPacket) return showResult('Select a decoded RX packet first.');
@@ -45,9 +52,12 @@ export function createModifyPanel({ documentRef = document, previewModification,
   async function handleConfirm() {
     if (!state.selectedPacket || !state.pendingPayload) return;
     const response = await service.send(state.selectedPacket.id, state.pendingPayload);
-    showResult(await response.text());
-    state = clearPendingPayload(state);
-    previewView.setConfirmEnabled(false);
+    if (!response.ok) {
+      showResult(await response.text());
+      return;
+    }
+    showResult('Packet modified and sent successfully.');
+    resetSelection();
   }
 
   return { selectPacket };

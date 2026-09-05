@@ -27,6 +27,7 @@ pub struct PacketRecord {
 pub struct DecodedPacket {
     pub version: u8,
     pub header_length_words: u8,
+    pub header_length_bytes: usize,
     pub message_type: u8,
     pub timeslot: u8,
     pub arfcn: u16,
@@ -39,6 +40,27 @@ pub struct DecodedPacket {
     pub reserved: u8,
     pub extension_hex: String,
     pub payload_hex: String,
+}
+
+pub fn decoded_from_packet(packet: &GsmtapPacket<'_>) -> DecodedPacket {
+    let h = packet.header();
+    DecodedPacket {
+        version: h.version(),
+        header_length_words: h.header_length_words(),
+        header_length_bytes: h.header_length(),
+        message_type: h.message_type(),
+        timeslot: h.timeslot(),
+        arfcn: h.arfcn(),
+        signal_dbm: h.signal_dbm(),
+        snr_db: h.snr_db(),
+        frame_number: h.frame_number(),
+        subtype: h.subtype(),
+        antenna_number: h.antenna_number(),
+        sub_slot: h.sub_slot(),
+        reserved: h.reserved(),
+        extension_hex: hex(packet.extension()),
+        payload_hex: hex(packet.payload()),
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -77,7 +99,6 @@ pub fn from_decoded(
     raw: &[u8],
     packet: &GsmtapPacket<'_>,
 ) -> PacketRecord {
-    let h = packet.header();
     PacketRecord {
         id: 0,
         direction,
@@ -86,22 +107,7 @@ pub fn from_decoded(
         peer,
         destination: None,
         raw_hex: hex(raw),
-        decoded: Some(DecodedPacket {
-            version: h.version(),
-            header_length_words: h.header_length_words(),
-            message_type: h.message_type(),
-            timeslot: h.timeslot(),
-            arfcn: h.arfcn(),
-            signal_dbm: h.signal_dbm(),
-            snr_db: h.snr_db(),
-            frame_number: h.frame_number(),
-            subtype: h.subtype(),
-            antenna_number: h.antenna_number(),
-            sub_slot: h.sub_slot(),
-            reserved: h.reserved(),
-            extension_hex: hex(packet.extension()),
-            payload_hex: hex(packet.payload()),
-        }),
+        decoded: Some(decoded_from_packet(packet)),
         parse_error: None,
         forward_status: None,
         modified: false,

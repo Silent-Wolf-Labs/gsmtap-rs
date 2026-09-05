@@ -31,6 +31,11 @@ label { display:inline-flex; flex-direction:column; gap:.35rem; margin:.35rem; c
 .modify-form-actions { margin-top:.5rem; }
 .modify-preview-card { margin:1rem 0 0; }
 .modify-preview-card h3 { margin:.1rem 0 1rem; }
+.modify-comparison-table { min-width:32rem; }
+.modify-comparison-table td:nth-child(n+2) { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.modify-comparison-table tr.modify-preview-changed { background:#3a2f1f; }
+.modify-comparison-table tr.modify-preview-changed td:first-child { color:#fed7aa; font-weight:700; }
+.modify-comparison-table pre { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
 input,textarea { background:#0e1318; color:#fff; border:1px solid #405263; padding:.4rem; }
 select { min-width:7rem; background:#0e1318; color:#dce6ef; border:1px solid #405263; border-radius:4px; padding:.4rem .55rem; font:inherit; }
 select:hover { border-color:#6b8296; }
