@@ -36,6 +36,8 @@ test('keeps the send action in a separate preview card', async () => {
   const packet = { id: 9, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
   panel.selectPacket(packet);
   expect(document.querySelector('#preview-card').hidden).toBe(true);
+  document.querySelector('[name="arfcn"]').value = '2';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(document.querySelector('#preview-card').hidden).toBe(false);
@@ -50,7 +52,7 @@ test('focuses the modify section when a packet is selected', () => {
   expect(document.activeElement).toBe(document.querySelector('#send-section'));
 });
 
-test('disables preview button until a packet is selected', () => {
+test('disables preview button until a selected packet is changed', () => {
   setup();
   const panel = createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
   const previewButton = document.querySelector('.modify-form-actions button');
@@ -58,7 +60,13 @@ test('disables preview button until a packet is selected', () => {
 
   expect(previewButton.disabled).toBe(true);
   panel.selectPacket(packet);
+  expect(previewButton.disabled).toBe(true);
+  document.querySelector('[name="arfcn"]').value = '2';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
   expect(previewButton.disabled).toBe(false);
+  document.querySelector('[name="arfcn"]').value = '1';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
+  expect(previewButton.disabled).toBe(true);
 });
 
 test('sets numeric ranges and rejects invalid field values', () => {
@@ -109,9 +117,11 @@ test('selects a packet and previews without sending', async () => {
   const packet = { id: 4, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? 'CA FE BA BE' : name === 'headerLengthWords' ? 5 : 1])) };
   panel.selectPacket(packet);
   expect(document.querySelector('#selected-packet').textContent).toContain('#4');
+  document.querySelector('[name="arfcn"]').value = '2';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await Promise.resolve();
-  expect(previewModification).toHaveBeenCalledWith(4, expect.objectContaining({ arfcn: 1 }));
+  expect(previewModification).toHaveBeenCalledWith(4, expect.objectContaining({ arfcn: 2 }));
   expect(sendModification).not.toHaveBeenCalled();
 });
 
@@ -123,6 +133,8 @@ test('shows preview changes and sends after confirmation', async () => {
   const panel = createModifyPanel({ previewModification, sendModification, showResult });
   const packet = { id: 5, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? 'CA FE BA BE' : name === 'headerLengthWords' ? 5 : 1])) };
   panel.selectPacket(packet);
+  document.querySelector('[name="arfcn"]').value = '2';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(document.querySelector('#preview').textContent).toContain('ARFCN12');
@@ -131,7 +143,7 @@ test('shows preview changes and sends after confirmation', async () => {
   expect(document.querySelector('#preview').querySelectorAll('pre')[3].textContent).toBe('AA\nBB');
   document.querySelector('#confirm-send').click();
   await new Promise(resolve => setTimeout(resolve, 0));
-  expect(sendModification).toHaveBeenCalledWith(5, expect.objectContaining({ arfcn: 1 }));
+  expect(sendModification).toHaveBeenCalledWith(5, expect.objectContaining({ arfcn: 2 }));
   expect(showResult).toHaveBeenLastCalledWith('Packet modified and sent successfully.');
   expect(document.querySelector('#preview-card').hidden).toBe(true);
   expect(document.querySelector('#selected-packet').textContent).toBe('Select a decoded RX packet to edit it.');
@@ -154,6 +166,7 @@ test('reports submit errors before calling the modification service', async () =
   const packet = { id: 6, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
   panel.selectPacket(packet);
   document.querySelector('[name="payloadHex"]').value = 'GG';
+  document.querySelector('[name="payloadHex"]').dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await Promise.resolve();
   expect(showResult).toHaveBeenCalledWith(expect.stringContaining('Invalid field: payloadHex'));
@@ -169,6 +182,8 @@ test('reports an unsuccessful preview response', async () => {
   });
   const packet = { id: 13, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
   panel.selectPacket(packet);
+  document.querySelector('[name="arfcn"]').value = '2';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -206,6 +221,8 @@ test('retains preview and pending state when sending fails', async () => {
   const showResult = jest.fn();
   const panel = createModifyPanel({ previewModification, sendModification, showResult });
   panel.selectPacket({ id: 15, decoded: decoded({ extensionHex: '' }) });
+  document.querySelector('[name="arfcn"]').value = '2';
+  document.querySelector('[name="arfcn"]').dispatchEvent(new Event('input', { bubbles: true }));
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await new Promise(resolve => setTimeout(resolve, 0));
   document.querySelector('#confirm-send').click();
