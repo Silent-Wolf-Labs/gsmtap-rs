@@ -200,6 +200,11 @@ async fn modify_preview_does_not_transmit() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let preview: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(preview["originalDecoded"]["headerLengthBytes"], 16);
+    assert_eq!(preview["modifiedDecoded"]["payloadHex"], "CA");
+    assert_eq!(preview["fieldChanges"][0]["field"], "arfcn");
     let mut received = [0u8; 64];
     assert!(tokio::time::timeout(
         std::time::Duration::from_millis(50),

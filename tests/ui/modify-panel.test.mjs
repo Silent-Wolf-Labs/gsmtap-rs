@@ -6,6 +6,14 @@ function setup() {
   document.body.innerHTML = '<section id="send-section" tabindex="-1"><form id="send-form"><div id="fields"></div></form><section id="preview-card" hidden><pre id="preview"></pre><button id="confirm-send"></button><p id="result"></p></section><p id="selected-packet"></p></section>';
 }
 
+function decoded(overrides = {}) {
+  return {
+    version: 2, headerLengthWords: 4, headerLengthBytes: 16, messageType: 1, timeslot: 0,
+    arfcn: 1, signalDbm: 0, snrDb: 0, frameNumber: 1, subtype: 0, antennaNumber: 0,
+    subSlot: 0, reserved: 0, extensionHex: 'CA FE', payloadHex: 'AA BB', ...overrides,
+  };
+}
+
 test('defines all editable numeric and hex fields', () => {
   expect(packetFieldNames).toHaveLength(12);
   expect(new Set(packetFieldNames).size).toBe(12);
@@ -23,7 +31,7 @@ test('adds descriptions to every modify field', () => {
 
 test('keeps the send action in a separate preview card', async () => {
   setup();
-  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalHex: 'CA', modifiedHex: 'CB' }) }));
+  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalDecoded: decoded(), modifiedDecoded: decoded() }) }));
   const panel = createModifyPanel({ previewModification, sendModification: jest.fn(), showResult: jest.fn() });
   const packet = { id: 9, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? '' : name === 'headerLengthWords' ? 4 : 1])) };
   panel.selectPacket(packet);
@@ -95,7 +103,7 @@ test('allows an empty optional extension', () => {
 
 test('selects a packet and previews without sending', async () => {
   setup();
-  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalHex: 'CA', modifiedHex: 'CB' }) }));
+  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalDecoded: decoded(), modifiedDecoded: decoded() }) }));
   const sendModification = jest.fn();
   const panel = createModifyPanel({ previewModification, sendModification, showResult: jest.fn() });
   const packet = { id: 4, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? 'CA FE BA BE' : name === 'headerLengthWords' ? 5 : 1])) };
@@ -109,17 +117,25 @@ test('selects a packet and previews without sending', async () => {
 
 test('shows preview changes and sends after confirmation', async () => {
   setup();
-  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [{ field: 'arfcn', original: 1, modified: 2 }], originalHex: 'CA', modifiedHex: 'CB' }) }));
-  const sendModification = jest.fn(async () => ({ text: async () => 'sent' }));
-  const panel = createModifyPanel({ previewModification, sendModification, showResult: jest.fn() });
+  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [{ field: 'arfcn', original: 1, modified: 2 }], originalDecoded: decoded(), modifiedDecoded: decoded({ arfcn: 2, extensionHex: ' CA  FE ', payloadHex: 'AA\nBB' }) }) }));
+  const sendModification = jest.fn(async () => ({ ok: true, text: async () => 'sent' }));
+  const showResult = jest.fn();
+  const panel = createModifyPanel({ previewModification, sendModification, showResult });
   const packet = { id: 5, decoded: Object.fromEntries([...packetFieldNames, ...hexFieldNames].map(name => [name, hexFieldNames.includes(name) ? 'CA FE BA BE' : name === 'headerLengthWords' ? 5 : 1])) };
   panel.selectPacket(packet);
   document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
   await new Promise(resolve => setTimeout(resolve, 0));
-  expect(document.querySelector('#preview').textContent).toContain('arfcn: 1 → 2');
+  expect(document.querySelector('#preview').textContent).toContain('ARFCN12');
+  expect(document.querySelector('#preview').querySelectorAll('tbody tr')).toHaveLength(14);
+  expect(document.querySelector('#preview').querySelector('tbody tr.modify-preview-changed td').textContent).toBe('ARFCN');
+  expect(document.querySelector('#preview').querySelectorAll('pre')[3].textContent).toBe('AA\nBB');
   document.querySelector('#confirm-send').click();
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(sendModification).toHaveBeenCalledWith(5, expect.objectContaining({ arfcn: 1 }));
+  expect(showResult).toHaveBeenLastCalledWith('Packet modified and sent successfully.');
+  expect(document.querySelector('#preview-card').hidden).toBe(true);
+  expect(document.querySelector('#selected-packet').textContent).toBe('Select a decoded RX packet to edit it.');
+  expect(document.querySelector('.modify-form-actions button').disabled).toBe(true);
 });
 
 test('reports submit errors before calling the modification service', async () => {
@@ -171,12 +187,29 @@ test('renders and resets an empty modification preview', () => {
   const onConfirm = jest.fn();
   const preview = createModifyPreview({ onConfirm });
 
-  preview.show({ fieldChanges: [], originalHex: 'CA', modifiedHex: 'CB' });
-  expect(document.querySelector('#preview').textContent).toContain('No field changes.');
+  preview.show({ fieldChanges: [], originalDecoded: decoded(), modifiedDecoded: decoded() });
+  expect(document.querySelector('#preview table')).not.toBeNull();
   expect(document.querySelector('#confirm-send').disabled).toBe(false);
   document.querySelector('#confirm-send').click();
   expect(onConfirm).toHaveBeenCalled();
   preview.reset();
   expect(document.querySelector('#preview-card').hidden).toBe(true);
   expect(document.querySelector('#confirm-send').disabled).toBe(true);
+});
+
+test('retains preview and pending state when sending fails', async () => {
+  setup();
+  const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalDecoded: decoded(), modifiedDecoded: decoded() }) }));
+  const sendModification = jest.fn(async () => ({ ok: false, text: async () => 'send failed' }));
+  const showResult = jest.fn();
+  const panel = createModifyPanel({ previewModification, sendModification, showResult });
+  panel.selectPacket({ id: 15, decoded: decoded({ extensionHex: '' }) });
+  document.querySelector('#send-form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  document.querySelector('#confirm-send').click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(showResult).toHaveBeenLastCalledWith('send failed');
+  expect(document.querySelector('#preview-card').hidden).toBe(false);
+  expect(document.querySelector('#confirm-send').disabled).toBe(false);
+  expect(document.querySelector('#selected-packet').textContent).toContain('#15');
 });
