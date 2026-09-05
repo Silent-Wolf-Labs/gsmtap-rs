@@ -20,6 +20,7 @@ export function createModifyPanel({ documentRef = document, previewModification,
 
   function selectPacket(packet) {
     state = selectModifyPacket(state, packet);
+    showResult('');
     formView.setPreviewEnabled(true);
     formView.setValues(packet.decoded);
     previewView.reset();

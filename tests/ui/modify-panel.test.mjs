@@ -136,6 +136,8 @@ test('shows preview changes and sends after confirmation', async () => {
   expect(document.querySelector('#preview-card').hidden).toBe(true);
   expect(document.querySelector('#selected-packet').textContent).toBe('Select a decoded RX packet to edit it.');
   expect(document.querySelector('.modify-form-actions button').disabled).toBe(true);
+  panel.selectPacket({ id: 16, decoded: decoded() });
+  expect(showResult).toHaveBeenLastCalledWith('');
 });
 
 test('reports submit errors before calling the modification service', async () => {
