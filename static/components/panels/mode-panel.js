@@ -14,7 +14,6 @@ export function createModePanel({
   packetsNode = documentRef.querySelector('#packets'),
   filtersNode = documentRef.querySelector('#filters'),
   statusNode = documentRef.querySelector('#status'),
-  onReplay,
   onModify,
   onSelectPacket,
   renderTable = renderPacketTable,
@@ -38,7 +37,6 @@ export function createModePanel({
   function render(packets, selectedPacketId) {
     const actions = capability.actions;
     renderTable(packetsNode, filters.filter(packets), activeMode,
-      capability.replay ? (actions.replay || onReplay) : undefined,
       capability.modify ? (actions.modify || onModify) : undefined,
       { selectedPacketId, onSelectPacket });
   }

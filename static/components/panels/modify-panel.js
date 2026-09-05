@@ -57,7 +57,7 @@ export const modifyCapability = Object.freeze({
   mode: 'modify',
   inspect: true,
   modify: true,
-  replay: true,
+  replay: false,
   forwarding: false,
   actions: Object.freeze({}),
 });

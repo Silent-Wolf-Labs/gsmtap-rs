@@ -26,7 +26,7 @@ const columnTooltips = {
   Modified: 'Whether the packet was explicitly edited before sending.',
 };
 
-export function renderPacketTable(node, packets, activeMode, onReplay, onModify, {
+export function renderPacketTable(node, packets, activeMode, onModify, {
   selectedPacketId = null,
   onSelectPacket,
 } = {}) {
@@ -73,7 +73,6 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
     const detailsCell = detailsRow.insertCell();
     detailsCell.colSpan = tableColumns(activeMode).length;
     detailsCell.append(renderPacketDetails(packet, {
-      onReplay,
       onModify,
       showModifyActions: activeMode === 'modify',
       originalInputOpen: packet.id === selectedPacketId ? previousOriginalInputOpen : false,
@@ -100,19 +99,6 @@ export function renderPacketTable(node, packets, activeMode, onReplay, onModify,
       addText(row, 'td', forwarding.status, forwarding.failed ? 'error' : packet.forwardStatus ? 'success' : '');
     }
     if (showModified) addText(row, 'td', packet.modified ? 'Yes' : 'No');
-
-    if (activeMode === 'modify' && packet.direction === 'RX' && packet.decoded) {
-      const select = document.createElement('button');
-      select.type = 'button';
-      select.textContent = 'Select';
-      applyTooltip(select, 'Select', 'Select this packet for modification.');
-      select.addEventListener('click', event => {
-        event.stopPropagation();
-        expandPacket(row, packet);
-        onModify(packet);
-      });
-      packetCell.append(' ', select);
-    }
 
     row.tabIndex = 0;
     row.setAttribute('aria-selected', 'false');

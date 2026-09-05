@@ -103,7 +103,6 @@ function renderHeaderTable(decoded, documentRef) {
 
 export function renderPacketDetails(packet, {
   documentRef = document,
-  onReplay,
   onModify,
   showModifyActions = false,
   originalInputOpen = false,
@@ -142,13 +141,6 @@ export function renderPacketDetails(packet, {
   if (showModifyActions && packet.direction === 'RX' && packet.decoded) {
     const actions = documentRef.createElement('div');
     actions.className = 'packet-detail-actions';
-    if (onReplay) {
-      const replay = documentRef.createElement('button');
-      replay.type = 'button';
-      replay.textContent = 'Replay';
-      replay.addEventListener('click', () => onReplay(packet.id));
-      actions.append(replay);
-    }
     if (onModify) {
       const modify = documentRef.createElement('button');
       modify.type = 'button';

@@ -2,7 +2,6 @@ import {
   getStatus,
   getPackets,
   previewModification,
-  replayPacket as apiReplayPacket,
   sendModification,
 } from '../services/api.js';
 import { subscribeToUpdates } from '../services/events.js';
@@ -18,7 +17,6 @@ export function createAppController(documentRef = document, dependencies = {}) {
   const {
     previewModification: previewModificationRequest = previewModification,
     refreshWorkbench: refreshWorkbenchRequest = defaultRefreshWorkbench,
-    replayPacket: replayPacketRequest = apiReplayPacket,
     sendModification: sendModificationRequest = sendModification,
     subscribeToUpdates: subscribeToUpdatesRequest = subscribeToUpdates,
     setInterval: setIntervalRequest = setInterval,
@@ -44,18 +42,12 @@ export function createAppController(documentRef = document, dependencies = {}) {
   });
   const modePanel = createModePanel({
     documentRef,
-    onReplay: replayPacket,
     onModify: modifyPanel.selectPacket,
     onSelectPacket: packet => { selectedPacketId = packet?.id ?? null; },
   });
 
   function render() {
     modePanel.render(packets, selectedPacketId);
-  }
-
-  async function replayPacket(id) {
-    const response = await replayPacketRequest(id);
-    showResult(await response.text());
   }
 
   function applyStatus(status) {
