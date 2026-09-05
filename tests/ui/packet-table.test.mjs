@@ -28,6 +28,22 @@ test('shows packet details only after its row is selected', () => {
   expect(node.querySelector('.packet-details-row pre').textContent).toContain('42');
 });
 
+test('collapses details when the expanded row is clicked again', () => {
+  const node = document.createElement('div');
+  const onSelectPacket = jest.fn();
+  const packet = { id: 1, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 } };
+  renderPacketTable(node, [packet], 'listen', jest.fn(), jest.fn(), { onSelectPacket });
+  const row = node.querySelector('tbody tr');
+
+  row.click();
+  row.click();
+
+  expect(row.classList.contains('selected-row')).toBe(false);
+  expect(node.querySelector('.packet-details-row')).toBeNull();
+  expect(onSelectPacket).toHaveBeenNthCalledWith(1, packet);
+  expect(onSelectPacket).toHaveBeenNthCalledWith(2, null);
+});
+
 test('moves details to the newly selected row', () => {
   const node = document.createElement('div');
   const packets = [
@@ -76,13 +92,14 @@ test('clears a selected packet that is absent from a nonempty table', () => {
   expect(onSelectPacket).toHaveBeenCalledWith(null);
 });
 
-test('selecting a modify-mode row loads it for editing', () => {
+test('clicking a modify-mode row expands details without loading it for editing', () => {
   const node = document.createElement('div');
   const onModify = jest.fn();
   const packet = { id: 7, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 }, parseError: null, modified: false };
   renderPacketTable(node, [packet], 'modify', jest.fn(), onModify);
   node.querySelector('tbody tr td').click();
-  expect(onModify).toHaveBeenCalledWith(packet);
+  expect(node.querySelector('.packet-details-row')).not.toBeNull();
+  expect(onModify).not.toHaveBeenCalled();
 });
 
 test('provides an always-visible select action for modifyable packets', () => {
@@ -93,7 +110,11 @@ test('provides an always-visible select action for modifyable packets', () => {
   const select = [...node.querySelectorAll('button')].find(button => button.textContent === 'Select');
   expect(select).not.toBeUndefined();
   select.click();
+  expect(node.querySelectorAll('.packet-details-row')).toHaveLength(1);
   expect(onModify).toHaveBeenCalledWith(packet);
+  select.click();
+  expect(node.querySelectorAll('.packet-details-row')).toHaveLength(1);
+  expect(onModify).toHaveBeenCalledTimes(2);
 });
 
 test('supports keyboard row selection while ignoring unrelated keys', () => {
@@ -105,6 +126,9 @@ test('supports keyboard row selection while ignoring unrelated keys', () => {
   expect(row.getAttribute('aria-selected')).toBe('false');
   row.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
   expect(row.getAttribute('aria-selected')).toBe('true');
+  row.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+  expect(row.getAttribute('aria-selected')).toBe('false');
+  expect(node.querySelector('.packet-details-row')).toBeNull();
 });
 
 test('does not select a row when a nested button is clicked', () => {
