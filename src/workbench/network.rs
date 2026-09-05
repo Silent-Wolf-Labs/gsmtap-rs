@@ -35,9 +35,26 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             "/controllers/app-controller.js",
             get(api::app_controller_javascript),
         )
+        .route(
+            "/components/panels/mode-panel.js",
+            get(api::mode_panel_javascript),
+        )
+        .route(
+            "/components/panels/listen-panel.js",
+            get(api::listen_panel_javascript),
+        )
+        .route(
+            "/components/panels/relay-panel.js",
+            get(api::relay_panel_javascript),
+        )
+        .route(
+            "/components/packet/packet-schema.js",
+            get(api::packet_schema_javascript),
+        )
+        .route("/components/tooltip.js", get(api::tooltip_javascript))
         .route("/styles/style.css", get(api::stylesheet))
         .route(
-            "/components/packet-table.js",
+            "/components/packet/packet-table.js",
             get(api::packet_table_javascript),
         )
         .route("/components/filters.js", get(api::filters_javascript))
@@ -52,8 +69,32 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             get(api::status_card_javascript),
         )
         .route(
-            "/components/modify-panel.js",
+            "/components/panels/modify-panel.js",
             get(api::modify_panel_javascript),
+        )
+        .route(
+            "/components/modify/modify-fields.js",
+            get(api::modify_fields_javascript),
+        )
+        .route(
+            "/components/modify/modify-form.js",
+            get(api::modify_form_javascript),
+        )
+        .route(
+            "/components/modify/modify-preview.js",
+            get(api::modify_preview_javascript),
+        )
+        .route(
+            "/components/modify/modify-state.js",
+            get(api::modify_state_javascript),
+        )
+        .route(
+            "/components/modify/modify-validation.js",
+            get(api::modify_validation_javascript),
+        )
+        .route(
+            "/services/modification-service.js",
+            get(api::modification_service_javascript),
         )
         .route("/api/status", get(api::status))
         .route("/api/packets", get(api::packets))

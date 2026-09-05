@@ -89,7 +89,7 @@ pub async fn packet_table_javascript() -> (
 ) {
     (
         [(axum::http::header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../../static/components/packet-table.js"),
+        include_str!("../../static/components/packet/packet-table.js"),
     )
 }
 
@@ -133,6 +133,56 @@ pub async fn app_controller_javascript() -> (
     )
 }
 
+pub async fn mode_panel_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/panels/mode-panel.js"),
+    )
+}
+
+pub async fn listen_panel_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/panels/listen-panel.js"),
+    )
+}
+
+pub async fn relay_panel_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/panels/relay-panel.js"),
+    )
+}
+
+pub async fn packet_schema_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/packet/packet-schema.js"),
+    )
+}
+
+pub async fn tooltip_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/tooltip.js"),
+    )
+}
+
 pub async fn card_javascript() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static str,
@@ -159,7 +209,67 @@ pub async fn modify_panel_javascript() -> (
 ) {
     (
         [(axum::http::header::CONTENT_TYPE, "application/javascript")],
-        include_str!("../../static/components/modify-panel.js"),
+        include_str!("../../static/components/panels/modify-panel.js"),
+    )
+}
+
+pub async fn modify_fields_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/modify/modify-fields.js"),
+    )
+}
+
+pub async fn modify_form_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/modify/modify-form.js"),
+    )
+}
+
+pub async fn modify_preview_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/modify/modify-preview.js"),
+    )
+}
+
+pub async fn modify_state_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/modify/modify-state.js"),
+    )
+}
+
+pub async fn modify_validation_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/modify/modify-validation.js"),
+    )
+}
+
+pub async fn modification_service_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/services/modification-service.js"),
     )
 }
 
