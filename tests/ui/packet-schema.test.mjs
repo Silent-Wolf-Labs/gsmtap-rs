@@ -88,17 +88,17 @@ test('uses neutral placeholders for missing header and payload values', () => {
 
 test('keeps modify actions opt-in', () => {
   const packet = { id: 7, direction: 'RX', decoded: { arfcn: 1 }, rawHex: 'CA' };
-  const onReplay = jest.fn();
   const onModify = jest.fn();
-  const passive = renderPacketDetails(packet, { onReplay, onModify });
+  const passive = renderPacketDetails(packet, { onModify });
   expect(passive.querySelectorAll('button')).toHaveLength(0);
-  const editable = renderPacketDetails(packet, { onReplay, onModify, showModifyActions: true });
-  expect(editable.querySelectorAll('button')).toHaveLength(2);
+  const editable = renderPacketDetails(packet, { onModify, showModifyActions: true });
+  expect(editable.querySelectorAll('button')).toHaveLength(1);
+  expect(editable.querySelector('button').textContent).toBe('Modify');
 });
 
-test('renders each optional modify action independently', () => {
+test('does not render replay even when a replay callback is supplied', () => {
   const packet = { id: 8, direction: 'RX', decoded: { arfcn: 1 }, rawHex: 'CA' };
-  expect(renderPacketDetails(packet, { showModifyActions: true, onReplay: jest.fn() }).querySelectorAll('button')).toHaveLength(1);
-  expect(renderPacketDetails(packet, { showModifyActions: true, onModify: jest.fn() }).querySelectorAll('button')).toHaveLength(1);
-  expect(renderPacketDetails({ ...packet, direction: 'TX' }, { showModifyActions: true, onReplay: jest.fn(), onModify: jest.fn() }).querySelectorAll('button')).toHaveLength(0);
+  const details = renderPacketDetails(packet, { showModifyActions: true, onReplay: jest.fn(), onModify: jest.fn() });
+  expect(details.querySelectorAll('button')).toHaveLength(1);
+  expect(details.querySelector('button').textContent).toBe('Modify');
 });

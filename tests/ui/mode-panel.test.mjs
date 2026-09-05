@@ -30,7 +30,7 @@ test('mode panel changes capabilities without inventing controls', () => {
   panel.render([]);
   expect(panel.capability.mode).toBe('relay');
   expect(panel.capability.forwarding).toBe(true);
-  expect(renderTable).toHaveBeenCalledWith(document.querySelector('#packets'), [], 'relay', undefined, undefined,
+  expect(renderTable).toHaveBeenCalledWith(document.querySelector('#packets'), [], 'relay', undefined,
     { selectedPacketId: undefined, onSelectPacket: undefined });
 });
 
