@@ -67,6 +67,12 @@ test('uses supplied header length values and preserves original input disclosure
   expect(node.querySelector('.packet-payload pre').textContent).toBe(' CA  FE ');
 });
 
+test('restores the Original Input disclosure when requested', () => {
+  const node = renderPacketDetails({ rawHex: 'CA' }, { originalInputOpen: true });
+
+  expect(node.querySelector('.packet-original-input').open).toBe(true);
+});
+
 test('displays supplied byte and word header lengths without deriving either value', () => {
   const node = renderPacketDetails({ decoded: { headerLengthBytes: 16, headerLengthWords: 4, payloadHex: '' } });
 

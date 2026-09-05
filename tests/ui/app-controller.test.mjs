@@ -82,10 +82,12 @@ test('retains selected packet details after refresh', async () => {
 
   await controller.refresh();
   document.querySelector('#packets tbody tr td').click();
+  document.querySelector('#packets .packet-original-input').open = true;
   await controller.refresh();
 
   expect(document.querySelector('#packets .selected-row').textContent).toContain('#2');
   expect(document.querySelector('#packets .packet-details-row .gsmtap-header-table').textContent).toContain('42');
+  expect(document.querySelector('#packets .packet-original-input').open).toBe(true);
 });
 
 test('shows relay forwarding state without adding unsupported controls', async () => {

@@ -76,6 +76,31 @@ test('restores selected packet details after a table refresh', () => {
   expect(node.querySelector('.packet-details-row .gsmtap-header-table').textContent).toContain('42');
 });
 
+test('preserves Original Input disclosure state for the same selected packet', () => {
+  const node = document.createElement('div');
+  const packet = { id: 1, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 } };
+  renderPacketTable(node, [packet], 'listen', jest.fn(), jest.fn());
+  node.querySelector('tbody > tr').click();
+  node.querySelector('.packet-original-input').open = true;
+
+  renderPacketTable(node, [packet], 'listen', jest.fn(), jest.fn(), { selectedPacketId: 1 });
+
+  expect(node.querySelector('.packet-original-input').open).toBe(true);
+});
+
+test('closes Original Input when a different packet is selected', () => {
+  const node = document.createElement('div');
+  const first = { id: 1, direction: 'RX', timestampMs: Date.now(), peer: 'first', rawHex: 'CA', decoded: { arfcn: 42 } };
+  const second = { id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'second', rawHex: 'FE', decoded: { arfcn: 43 } };
+  renderPacketTable(node, [first, second], 'listen', jest.fn(), jest.fn());
+  const rows = node.querySelectorAll(':scope > table > tbody > tr');
+  rows[0].click();
+  node.querySelector('.packet-original-input').open = true;
+  rows[1].click();
+
+  expect(node.querySelector('.packet-original-input').open).toBe(false);
+});
+
 test('clears unavailable selected packet state', () => {
   const node = document.createElement('div');
   const onSelectPacket = jest.fn();
