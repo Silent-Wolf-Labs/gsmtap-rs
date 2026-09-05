@@ -8,11 +8,21 @@ test('exposes shared GSMTAP field metadata', () => {
   expect([...packetFieldNames, ...hexFieldNames].every(name => fieldTooltips[name])).toBe(true);
 });
 
-test('renders raw bytes, decoded fields, and forwarding status', () => {
-  const node = renderPacketDetails({ rawHex: 'CA FE', decoded: { arfcn: 42 }, forwardStatus: 'sent' });
-  expect(node.textContent).toContain('CA FE');
+test('renders structured header, payload, and forwarding status', () => {
+  const node = renderPacketDetails({ rawHex: 'CA FE', decoded: {
+    version: 2, headerLengthWords: 4, messageType: 1, timeslot: 3, arfcn: 42,
+    signalDbm: -71, snrDb: 18, frameNumber: 103482, subtype: 0, antennaNumber: 0,
+    payloadHex: '03 03 01\n06 1B',
+  }, forwardStatus: 'sent' });
+  expect(node.querySelector('.packet-details-header h3').textContent).toBe('GSMTAP Header');
+  expect(node.querySelectorAll('.gsmtap-header-table thead th')).toHaveLength(10);
+  expect(node.querySelector('.gsmtap-header-table').textContent).toContain('42');
+  expect(node.querySelector('.gsmtap-header-table').textContent).toContain('4 words');
+  expect(node.querySelector('.gsmtap-header-table').textContent).toContain('-71 dBm');
+  expect(node.querySelector('.gsmtap-header-table').textContent).toContain('18 dB');
+  expect(node.querySelector('.packet-payload pre').textContent).toBe('03 03 01\n06 1B');
   expect(node.textContent).toContain('sent');
-  expect(node.querySelector('pre').textContent).toContain('42');
+  expect(node.querySelector('.packet-payload')).not.toBeNull();
 });
 
 test('renders decoded fields with reusable tooltip metadata', () => {
@@ -35,7 +45,39 @@ test('renders null decoded values and fallback field tooltips', () => {
 test('renders parse errors without pretending decoded data exists', () => {
   const node = renderPacketDetails({ rawHex: 'CA', decoded: null, parseError: 'invalid header' });
   expect(node.querySelector('.error').textContent).toBe('invalid header');
-  expect(node.querySelector('pre')).toBeNull();
+  expect(node.querySelector('.packet-details-header')).toBeNull();
+  expect(node.querySelector('.packet-original-input pre').textContent).toBe('CA');
+});
+
+test('uses supplied header length values and preserves original input disclosure', () => {
+  const node = renderPacketDetails({
+    rawHex: 'DE AD',
+    originalRawHex: 'CA FE',
+    decoded: { headerLengthWords: 4, payloadHex: ' CA  FE ' },
+  });
+
+  expect(node.querySelector('.gsmtap-header-table').textContent).toContain('4 words');
+  expect(node.querySelector('.gsmtap-header-table').textContent).not.toContain('16 bytes');
+  const disclosure = node.querySelector('.packet-original-input');
+  expect(disclosure.open).toBe(false);
+  expect(disclosure.querySelector('summary').textContent).toBe('Original Input');
+  expect(disclosure.querySelector('pre').textContent).toBe('CA FE');
+  disclosure.open = true;
+  expect(disclosure.querySelector('pre').textContent).toBe('CA FE');
+  expect(node.querySelector('.packet-payload pre').textContent).toBe(' CA  FE ');
+});
+
+test('displays supplied byte and word header lengths without deriving either value', () => {
+  const node = renderPacketDetails({ decoded: { headerLengthBytes: 16, headerLengthWords: 4, payloadHex: '' } });
+
+  expect(node.querySelector('.gsmtap-header-table').textContent).toContain('16 bytes (4 words)');
+});
+
+test('uses neutral placeholders for missing header and payload values', () => {
+  const node = renderPacketDetails({ rawHex: 'CA', decoded: {} });
+
+  expect([...node.querySelectorAll('.gsmtap-header-table tbody td')].every(cell => cell.textContent === '—')).toBe(true);
+  expect(node.querySelector('.packet-payload pre').textContent).toBe('—');
 });
 
 test('keeps modify actions opt-in', () => {

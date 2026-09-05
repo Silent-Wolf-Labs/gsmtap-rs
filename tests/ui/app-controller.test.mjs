@@ -68,7 +68,7 @@ test('keeps listen packet inspection passive', async () => {
   await controller.refresh();
   document.querySelector('#packets tbody tr td').click();
 
-  expect(document.querySelector('#packets pre').textContent).toContain('42');
+  expect(document.querySelector('#packets .gsmtap-header-table').textContent).toContain('42');
   expect(document.querySelectorAll('#packets button')).toHaveLength(0);
 });
 
@@ -85,7 +85,7 @@ test('retains selected packet details after refresh', async () => {
   await controller.refresh();
 
   expect(document.querySelector('#packets .selected-row').textContent).toContain('#2');
-  expect(document.querySelector('#packets .packet-details-row pre').textContent).toContain('42');
+  expect(document.querySelector('#packets .packet-details-row .gsmtap-header-table').textContent).toContain('42');
 });
 
 test('shows relay forwarding state without adding unsupported controls', async () => {

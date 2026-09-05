@@ -24,8 +24,8 @@ test('shows packet details only after its row is selected', () => {
   expect(node.querySelector('summary')).toBeNull();
 
   node.querySelector('tbody tr td').click();
-  expect(node.querySelectorAll('tbody tr')).toHaveLength(2);
-  expect(node.querySelector('.packet-details-row pre').textContent).toContain('42');
+  expect(node.querySelectorAll(':scope > table > tbody > tr')).toHaveLength(2);
+  expect(node.querySelector('.packet-details-row .gsmtap-header-table').textContent).toContain('42');
 });
 
 test('collapses details when the expanded row is clicked again', () => {
@@ -73,7 +73,7 @@ test('restores selected packet details after a table refresh', () => {
   renderPacketTable(node, [packet], 'listen', jest.fn(), jest.fn(), { selectedPacketId: 1, onSelectPacket });
 
   expect(node.querySelector('.selected-row').textContent).toContain('#1');
-  expect(node.querySelector('.packet-details-row pre').textContent).toContain('42');
+  expect(node.querySelector('.packet-details-row .gsmtap-header-table').textContent).toContain('42');
 });
 
 test('clears unavailable selected packet state', () => {
@@ -170,7 +170,7 @@ test('renders errors, forwarding state, modified bytes, and modify actions', () 
   expect(node.textContent).not.toContain('Original: CA FE');
   node.querySelector('tbody tr td').click();
   expect(node.textContent).toContain('sent');
-  expect(node.textContent).toContain('Original: CA FE');
+  expect(node.querySelector('.packet-original-input pre').textContent).toBe('CA FE');
   [...node.querySelectorAll('button')].find(button => button.textContent === 'Replay').click();
   [...node.querySelectorAll('button')].find(button => button.textContent === 'Modify').click();
   expect(onReplay).toHaveBeenCalledWith(3);

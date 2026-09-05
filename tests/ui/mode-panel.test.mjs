@@ -18,7 +18,7 @@ test('listen mode renders decoded packet details without actions', () => {
   const panel = createModePanel();
   panel.render([{ id: 1, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA FE', decoded: { arfcn: 42 } }]);
   document.querySelector('#packets tbody tr td').click();
-  expect(document.querySelector('#packets pre').textContent).toContain('42');
+  expect(document.querySelector('#packets .gsmtap-header-table').textContent).toContain('42');
   expect(document.querySelectorAll('#packets button')).toHaveLength(0);
 });
 
