@@ -24,6 +24,13 @@ section { background:#18212b; border:1px solid #2c3a48; border-radius:8px; paddi
 .card-item strong { color:#f1f5f9; font-size:.95rem; overflow-wrap:anywhere; }
 .card-item.warning strong { color:#fca5a5; }
 label { display:inline-flex; flex-direction:column; gap:.35rem; margin:.35rem; color:#e2e8f0; font-size:.85rem; font-weight:600; letter-spacing:.02em; }
+.modify-fields { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.75rem; }
+.modify-field-group { display:flex; flex-wrap:wrap; align-content:flex-start; min-width:0; border:1px solid #344554; border-radius:6px; padding:.35rem; }
+.modify-field-group legend { padding:0 .35rem; color:#aebdca; font-size:.78rem; font-weight:700; }
+.modify-field-group label { flex:1 1 7rem; }
+.modify-form-actions { margin-top:.5rem; }
+.modify-preview-card { margin:1rem 0 0; }
+.modify-preview-card h3 { margin:.1rem 0 1rem; }
 input,textarea { background:#0e1318; color:#fff; border:1px solid #405263; padding:.4rem; }
 select { min-width:7rem; background:#0e1318; color:#dce6ef; border:1px solid #405263; border-radius:4px; padding:.4rem .55rem; font:inherit; }
 select:hover { border-color:#6b8296; }
@@ -33,12 +40,14 @@ textarea { min-width:280px; min-height:2.5rem; }
 button { margin:.5rem; padding:.5rem 1rem; }
 table { width:100%; border-collapse:collapse; }
 th,td { border-top:1px solid #344554; padding:.65rem .5rem; text-align:left; vertical-align:top; }
+tbody tr { cursor:pointer; }
+tbody tr.packet-details-row { cursor:default; }
+tbody tr.packet-details-row > td { background:#151d26; }
+tbody tr:focus { outline:2px solid #3b82f6; outline-offset:-2px; }
+tbody tr.selected-row { background:#202c38; }
 th { color:#e2e8f0; font-size:.85rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; }
-details { min-width:5rem; }
-summary { cursor:pointer; padding:.35rem .5rem; border-radius:4px; }
-summary:hover { background:#202c38; }
-details > div { padding:.5rem 1rem; min-width:24rem; }
 pre { white-space:pre-wrap; overflow:auto; }
 .success { color:#8ce0a8; }
 .error { color:#ff8f8f; }
 .empty-state { color:#aebdca; font-style:italic; }
+@media (max-width:800px) { .modify-fields { grid-template-columns:1fr; } }
