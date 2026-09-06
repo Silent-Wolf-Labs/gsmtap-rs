@@ -3,6 +3,7 @@ import {
   getPackets,
   previewModification,
   sendModification,
+  setCapturePaused,
 } from '../services/api.js';
 import { subscribeToUpdates } from '../services/events.js';
 import { createModifyPanel } from '../components/panels/modify-panel.js';
@@ -18,6 +19,7 @@ export function createAppController(documentRef = document, dependencies = {}) {
     previewModification: previewModificationRequest = previewModification,
     refreshWorkbench: refreshWorkbenchRequest = defaultRefreshWorkbench,
     sendModification: sendModificationRequest = sendModification,
+    setCapturePaused: setCapturePausedRequest = setCapturePaused,
     subscribeToUpdates: subscribeToUpdatesRequest = subscribeToUpdates,
     setInterval: setIntervalRequest = setInterval,
     clearInterval: clearIntervalRequest = clearInterval,
@@ -44,6 +46,10 @@ export function createAppController(documentRef = document, dependencies = {}) {
     documentRef,
     onModify: modifyPanel.selectPacket,
     onSelectPacket: packet => { selectedPacketId = packet?.id ?? null; },
+    onCaptureToggle: async paused => {
+      await setCapturePausedRequest(paused);
+      await refresh();
+    },
   });
 
   function render() {

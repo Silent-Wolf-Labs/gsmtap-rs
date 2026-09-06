@@ -10,6 +10,7 @@ use tokio::sync::mpsc;
 
 use super::{
     api::{self, AppState},
+    capture::CaptureControl,
     config::{Config, Mode},
     dto::{from_decoded, from_error},
     history::PacketStore,
@@ -22,11 +23,22 @@ const DEFAULT_INGRESS_CAPACITY: usize = 1_024;
 const FORWARD_RESOLUTION_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
 const FORWARD_RESOLUTION_RETRY_INTERVAL: Duration = Duration::from_secs(5);
 
+#[cfg(test)]
 pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSocket>) -> Router {
+    build_router_with_capture(config, store, sender, CaptureControl::default())
+}
+
+pub fn build_router_with_capture(
+    config: Config,
+    store: Arc<PacketStore>,
+    sender: Arc<UdpSocket>,
+    capture: CaptureControl,
+) -> Router {
     let state = AppState {
         config,
         store,
         sender,
+        capture,
     };
     Router::new()
         .route("/", get(api::index))
@@ -100,6 +112,7 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             get(api::modification_service_javascript),
         )
         .route("/api/status", get(api::status))
+        .route("/api/capture", axum::routing::put(api::set_capture))
         .route("/api/packets", get(api::packets))
         .route("/api/events", get(api::events))
         .route("/api/encode-send", axum::routing::post(api::encode_send))
@@ -121,7 +134,13 @@ pub async fn run(
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let receiver = UdpSocket::bind(config.gsmtap_listen).await?;
     let sender = Arc::new(UdpSocket::bind("0.0.0.0:0").await?);
-    let router = build_router(config.clone(), store.clone(), sender.clone());
+    let capture = CaptureControl::default();
+    let router = build_router_with_capture(
+        config.clone(),
+        store.clone(),
+        sender.clone(),
+        capture.clone(),
+    );
     let http_listen = config.http_listen;
 
     let http = async move {
@@ -130,9 +149,9 @@ pub async fn run(
             .await
     };
     let (ingress_tx, ingress_rx) = mpsc::channel(config.ingress_capacity);
-    let intake = udp_receiver(receiver, ingress_tx, store.clone());
+    let intake = udp_receiver(receiver, ingress_tx, store.clone(), capture);
     let forward = ForwardTarget::new(config.gsmtap_forward).await;
-    let processing = inspection_worker(ingress_rx, store, config.mode, forward, sender);
+    let processing = inspection_worker(ingress_rx, store, config.mode, forward, sender, None);
     tokio::select! {
         result = http => result?,
         result = intake => result?,
@@ -154,11 +173,70 @@ pub async fn receive_loop(
     forward: Option<String>,
     sender: Arc<UdpSocket>,
 ) -> Result<(), std::io::Error> {
+    receive_loop_with_capture(
+        socket,
+        store,
+        mode,
+        forward,
+        sender,
+        CaptureControl::default(),
+    )
+    .await
+}
+
+#[doc(hidden)]
+#[cfg(test)]
+pub async fn receive_loop_with_capture(
+    socket: UdpSocket,
+    store: Arc<PacketStore>,
+    mode: Mode,
+    forward: Option<String>,
+    sender: Arc<UdpSocket>,
+    capture: CaptureControl,
+) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(DEFAULT_INGRESS_CAPACITY);
     let target = ForwardTarget::new(forward).await;
     tokio::select! {
-        result = udp_receiver(socket, ingress_tx, store.clone()) => result,
-        result = inspection_worker(ingress_rx, store, mode, target, sender) => result,
+        result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
+        result = inspection_worker(ingress_rx, store, mode, target, sender, None) => result,
+    }
+}
+
+#[doc(hidden)]
+#[cfg(test)]
+pub async fn receive_loop_gated(
+    socket: UdpSocket,
+    store: Arc<PacketStore>,
+    mode: Mode,
+    sender: Arc<UdpSocket>,
+    capture: CaptureControl,
+    gate: Arc<tokio::sync::Notify>,
+) -> Result<(), std::io::Error> {
+    let (ingress_tx, ingress_rx) = mpsc::channel(DEFAULT_INGRESS_CAPACITY);
+    let target = ForwardTarget::new(None).await;
+    tokio::select! {
+        result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
+        result = inspection_worker(ingress_rx, store, mode, target, sender, Some(gate)) => result,
+    }
+}
+
+#[doc(hidden)]
+#[cfg(test)]
+pub async fn receive_loop_gated_with_capacity(
+    socket: UdpSocket,
+    store: Arc<PacketStore>,
+    mode: Mode,
+    forward: Option<String>,
+    sender: Arc<UdpSocket>,
+    capture: CaptureControl,
+    gate: Arc<tokio::sync::Notify>,
+    capacity: usize,
+) -> Result<(), std::io::Error> {
+    let (ingress_tx, ingress_rx) = mpsc::channel(capacity);
+    let target = ForwardTarget::new(forward).await;
+    tokio::select! {
+        result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
+        result = inspection_worker(ingress_rx, store, mode, target, sender, Some(gate)) => result,
     }
 }
 
@@ -166,21 +244,28 @@ struct ReceivedDatagram {
     bytes: Vec<u8>,
     peer: SocketAddr,
     timestamp_ms: u128,
+    capture_enabled: bool,
 }
 
 async fn udp_receiver(
     socket: UdpSocket,
     ingress: mpsc::Sender<ReceivedDatagram>,
     store: Arc<PacketStore>,
+    capture: CaptureControl,
 ) -> Result<(), std::io::Error> {
     let mut buffer = vec![0u8; MAX_UDP_DATAGRAM_SIZE];
     loop {
         let (length, peer) = socket.recv_from(&mut buffer).await?;
         store.counters().received();
+        let capture_enabled = !capture.is_paused();
+        if !capture_enabled {
+            store.counters().capture_skipped();
+        }
         let datagram = ReceivedDatagram {
             bytes: buffer[..length].to_vec(),
             peer,
             timestamp_ms: now_ms(),
+            capture_enabled,
         };
         match ingress.try_send(datagram) {
             Ok(()) => {}
@@ -196,8 +281,12 @@ async fn inspection_worker(
     mode: Mode,
     mut forward: ForwardTarget,
     sender: Arc<UdpSocket>,
+    gate: Option<Arc<tokio::sync::Notify>>,
 ) -> Result<(), std::io::Error> {
     while let Some(datagram) = ingress.recv().await {
+        if let Some(gate) = &gate {
+            gate.notified().await;
+        }
         inspect_datagram(datagram, &store, mode, &mut forward, &sender).await;
     }
     Ok(())
@@ -238,7 +327,9 @@ async fn inspect_datagram(
             }
         });
     }
-    store.record(record).await;
+    if datagram.capture_enabled {
+        store.record(record).await;
+    }
 }
 
 struct ForwardTarget {

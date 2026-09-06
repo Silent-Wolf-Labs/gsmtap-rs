@@ -21,6 +21,7 @@ pub struct RuntimeCounters {
     forward_sent: AtomicU64,
     forward_failed: AtomicU64,
     ui_events_dropped: AtomicU64,
+    capture_skipped: AtomicU64,
 }
 
 #[derive(serde::Serialize)]
@@ -33,6 +34,7 @@ pub struct RuntimeStats {
     pub forward_sent: u64,
     pub forward_failed: u64,
     pub ui_events_dropped: u64,
+    pub capture_skipped: u64,
 }
 
 impl RuntimeCounters {
@@ -57,6 +59,9 @@ impl RuntimeCounters {
     pub fn ui_events_dropped(&self, count: u64) {
         self.ui_events_dropped.fetch_add(count, Ordering::Relaxed);
     }
+    pub fn capture_skipped(&self) {
+        self.capture_skipped.fetch_add(1, Ordering::Relaxed);
+    }
     pub fn snapshot(&self) -> RuntimeStats {
         RuntimeStats {
             received: self.received.load(Ordering::Relaxed),
@@ -66,6 +71,7 @@ impl RuntimeCounters {
             forward_sent: self.forward_sent.load(Ordering::Relaxed),
             forward_failed: self.forward_failed.load(Ordering::Relaxed),
             ui_events_dropped: self.ui_events_dropped.load(Ordering::Relaxed),
+            capture_skipped: self.capture_skipped.load(Ordering::Relaxed),
         }
     }
 }

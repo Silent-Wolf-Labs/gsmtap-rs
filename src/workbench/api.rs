@@ -15,6 +15,7 @@ use tokio_stream::{
 use crate::gsmtap::{GsmtapEncodeInput, GsmtapHeader};
 
 use super::{
+    capture::CaptureControl,
     config::{Config, Mode},
     dto::{
         decoded_from_packet, from_decoded, from_error, hex, parse_hex, DecodedPacket,
@@ -28,6 +29,7 @@ pub struct AppState {
     pub config: Config,
     pub store: Arc<PacketStore>,
     pub sender: Arc<tokio::net::UdpSocket>,
+    pub capture: CaptureControl,
 }
 
 #[derive(serde::Serialize)]
@@ -38,6 +40,7 @@ pub struct StatusResponse {
     pub gsmtap_forward: Option<String>,
     pub http_listen: String,
     pub receive_state: &'static str,
+    pub capture_paused: bool,
     pub stats: RuntimeStats,
 }
 
@@ -56,7 +59,29 @@ pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
         gsmtap_forward: state.config.gsmtap_forward.clone(),
         http_listen: state.config.http_listen.to_string(),
         receive_state: "listening",
+        capture_paused: state.capture.is_paused(),
         stats: state.store.counters().snapshot(),
+    })
+}
+
+#[derive(serde::Deserialize)]
+pub struct CaptureRequest {
+    pub paused: bool,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CaptureResponse {
+    pub capture_paused: bool,
+}
+
+pub async fn set_capture(
+    State(state): State<AppState>,
+    Json(request): Json<CaptureRequest>,
+) -> Json<CaptureResponse> {
+    state.capture.set_paused(request.paused);
+    Json(CaptureResponse {
+        capture_paused: request.paused,
     })
 }
 

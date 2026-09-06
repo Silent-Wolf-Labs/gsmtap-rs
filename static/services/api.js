@@ -14,6 +14,12 @@ export async function getPackets(limit = 500) {
   return (await request(`/api/packets?limit=${limit}`)).json();
 }
 
+export async function setCapturePaused(paused) {
+  const response = await request('/api/capture', 'PUT', { paused });
+  if (!response.ok) throw new Error(`capture update failed (${response.status})`);
+  return response.json();
+}
+
 export async function replayPacket(id) {
   return request(`/api/packets/${id}/replay`, 'POST');
 }
