@@ -206,6 +206,19 @@ test('renders errors, forwarding state, modified bytes, and modify actions', () 
   expect(errorNode.querySelector('.packet-details-row .error').textContent).toBe('invalid header');
 });
 
+test('renders explicit and compatibility source addresses', () => {
+  const node = document.createElement('div');
+  renderPacketTable(node, [
+    { id: 1, direction: 'RX', timestampMs: Date.now(), sourceAddress: '192.0.2.1:4729', peer: 'legacy', decoded: {} },
+    { id: 2, direction: 'TX', timestampMs: Date.now(), decoded: {} },
+  ], 'listen', jest.fn());
+
+  expect(tableColumns('listen')).toContain('Source address');
+  const rows = [...node.querySelectorAll('tbody tr')].filter(row => !row.classList.contains('packet-details-row'));
+  expect(rows[0].cells[3].textContent).toBe('—');
+  expect(rows[1].cells[3].textContent).toBe('192.0.2.1:4729');
+});
+
 test('renders the per-packet relay result in its own column', () => {
   const node = document.createElement('div');
   const packet = { id: 4, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA FE', decoded: {}, parseError: null, forwardStatus: 'sent', modified: false };

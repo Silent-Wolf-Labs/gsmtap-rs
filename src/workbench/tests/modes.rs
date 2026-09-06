@@ -63,6 +63,7 @@ async fn listen_mode_receives_without_allowing_transmission() {
         json[0]["rawHex"],
         "02 04 01 00 00 01 00 00 00 00 00 01 00 00 00 00 CA"
     );
+    assert_eq!(json[0]["sourceAddress"], json[0]["peer"]);
     let response = router
         .oneshot(
             Request::post("/api/encode-send")
@@ -248,5 +249,6 @@ async fn modify_send_and_replay_transmit_expected_packets() {
     );
     assert!(store.list().await.iter().any(|packet| packet.modified
         && packet.original_raw_hex.as_deref()
-            == Some("02 04 01 00 00 01 00 00 00 00 00 01 00 00 00 00 CA")));
+            == Some("02 04 01 00 00 01 00 00 00 00 00 01 00 00 00 00 CA")
+        && packet.source_address.is_some()));
 }
