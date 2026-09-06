@@ -184,6 +184,16 @@ pub async fn packet_schema_javascript() -> (
     )
 }
 
+pub async fn packet_model_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/models/packet-model.js"),
+    )
+}
+
 pub async fn tooltip_javascript() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static str,
@@ -524,6 +534,11 @@ async fn send_record(
         ),
     };
     record.destination = Some(destination.clone());
+    record.source_address = state
+        .sender
+        .local_addr()
+        .ok()
+        .map(|address| address.to_string());
     record.modified = modified;
     record.original_raw_hex = original;
     record.final_raw_hex = Some(hex(&bytes));

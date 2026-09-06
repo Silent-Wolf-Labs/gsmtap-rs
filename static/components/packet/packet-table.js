@@ -1,4 +1,5 @@
-import { relayForwardingState, renderPacketDetails } from './packet-schema.js';
+import { packetSourceAddress, relayForwardingState } from '../../models/packet-model.js';
+import { renderPacketDetails } from './packet-schema.js';
 import { applyTooltip } from '../tooltip.js';
 
 function addText(parent, tag, text, className) {
@@ -10,7 +11,7 @@ function addText(parent, tag, text, className) {
 }
 
 export function tableColumns(activeMode) {
-  const columns = ['Packet', 'Direction', 'Timestamp', 'Peer', 'Decode'];
+  const columns = ['Packet', 'Direction', 'Timestamp', 'Source address', 'Decode'];
   if (activeMode === 'relay') columns.push('Forward');
   if (activeMode === 'modify') columns.push('Modified');
   return columns;
@@ -20,7 +21,7 @@ const columnTooltips = {
   Packet: 'Unique packet-history record number.',
   Direction: 'Traffic direction: RX was received; TX was sent by the workbench.',
   Timestamp: 'Time when the workbench captured or sent the packet.',
-  Peer: 'Remote UDP endpoint associated with the packet.',
+  'Source address': 'UDP endpoint that sent the packet to the workbench or local endpoint used to transmit it.',
   Decode: 'Whether the packet decoded successfully as GSMTAP.',
   Forward: 'Result of forwarding this relay packet to the configured UDP target.',
   Modified: 'Whether the packet was explicitly edited before sending.',
@@ -92,7 +93,7 @@ export function renderPacketTable(node, packets, activeMode, onModify, {
     const packetCell = addText(row, 'td', `#${packet.id}`);
     addText(row, 'td', packet.direction);
     addText(row, 'td', new Date(Number(packet.timestampMs)).toLocaleString());
-    addText(row, 'td', packet.peer);
+    addText(row, 'td', packetSourceAddress(packet) || '—');
     addText(row, 'td', packet.parseError ? 'Error' : 'Success', packet.parseError ? 'error' : 'success');
     if (showForward) {
       const forwarding = relayForwardingState(packet);

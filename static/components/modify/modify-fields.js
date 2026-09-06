@@ -1,4 +1,4 @@
-import { editableFieldLabels, editableHeaderFields, fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames } from '../packet/packet-schema.js';
+import { editableFieldLabels, editableHeaderFields, fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames } from '../../models/packet-model.js';
 
 export { editableFieldLabels, editableHeaderFields, fieldGroups, fieldTooltips, hexFieldNames, packetFieldNames };
 

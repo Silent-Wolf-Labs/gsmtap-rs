@@ -51,6 +51,7 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
             "/components/packet/packet-schema.js",
             get(api::packet_schema_javascript),
         )
+        .route("/models/packet-model.js", get(api::packet_model_javascript))
         .route("/components/tooltip.js", get(api::tooltip_javascript))
         .route("/styles/style.css", get(api::stylesheet))
         .route(

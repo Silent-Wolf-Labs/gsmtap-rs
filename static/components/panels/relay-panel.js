@@ -1,4 +1,4 @@
-import { relayForwardingState } from '../packet/packet-schema.js';
+import { relayForwardingState } from '../../models/packet-model.js';
 
 export { relayForwardingState };
 
