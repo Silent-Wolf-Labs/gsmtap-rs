@@ -32,6 +32,10 @@ export function createAppController(documentRef = document, dependencies = {}) {
   let selectedPacketId = null;
   let interval;
   let unsubscribe;
+  let currentStatus;
+  let refreshInFlight;
+  let refreshQueued = false;
+  let statusRevision = 0;
 
   function showResult(text) {
     resultNode.textContent = text;
@@ -47,7 +51,14 @@ export function createAppController(documentRef = document, dependencies = {}) {
     onModify: modifyPanel.selectPacket,
     onSelectPacket: packet => { selectedPacketId = packet?.id ?? null; },
     onCaptureToggle: async paused => {
-      await setCapturePausedRequest(paused);
+      const response = await setCapturePausedRequest(paused);
+      statusRevision += 1;
+      if (currentStatus) {
+        applyStatus({
+          ...currentStatus,
+          capturePaused: response?.capturePaused ?? paused,
+        });
+      }
       await refresh();
     },
   });
@@ -57,15 +68,17 @@ export function createAppController(documentRef = document, dependencies = {}) {
   }
 
   function applyStatus(status) {
+    currentStatus = status;
     activeMode = status.mode;
     modePanel.applyStatus(status);
     sendSectionNode.hidden = activeMode !== 'modify';
   }
 
-  async function refresh() {
+  async function performRefresh() {
+    const requestedStatusRevision = statusRevision;
     try {
       const data = await refreshWorkbenchRequest();
-      applyStatus(data.status);
+      if (requestedStatusRevision === statusRevision) applyStatus(data.status);
       packets = data.packets;
       render();
     } catch (error) {
@@ -75,6 +88,21 @@ export function createAppController(documentRef = document, dependencies = {}) {
       message.textContent = `Unable to load packet history: ${error.message}`;
       packetsNode.append(message);
     }
+  }
+
+  function refresh() {
+    if (refreshInFlight) {
+      refreshQueued = true;
+      return refreshInFlight;
+    }
+    refreshInFlight = performRefresh().finally(() => {
+      refreshInFlight = undefined;
+      if (refreshQueued) {
+        refreshQueued = false;
+        void refresh();
+      }
+    });
+    return refreshInFlight;
   }
 
   function start() {

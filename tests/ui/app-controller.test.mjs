@@ -30,6 +30,7 @@ const status = mode => ({
 function dependencies(overrides = {}) {
   return {
     refreshWorkbench: jest.fn(async () => ({ status: status('listen'), packets: [] })),
+    setCapturePaused: jest.fn(async paused => ({ capturePaused: paused })),
     previewModification: jest.fn(),
     sendModification: jest.fn(),
     subscribeToUpdates: jest.fn(() => jest.fn()),
@@ -49,7 +50,7 @@ test('refreshes data and updates the mode-aware UI', async () => {
   await controller.refresh();
 
   expect(api.refreshWorkbench).toHaveBeenCalledTimes(1);
-  expect(document.querySelector('.mode-badge').textContent).toBe('MODIFY');
+  expect(document.querySelector('.mode-control').textContent).toBe('Modify▾');
   expect(document.querySelector('#send-section').hidden).toBe(false);
   expect(document.querySelectorAll('#packets tbody tr')).toHaveLength(1);
 });
@@ -87,6 +88,65 @@ test('retains selected packet details after refresh', async () => {
   expect(document.querySelector('#packets .selected-row').textContent).toContain('#2');
   expect(document.querySelector('#packets .packet-details-row .gsmtap-header-table').textContent).toContain('42');
   expect(document.querySelector('#packets .packet-original-input').open).toBe(true);
+});
+
+test('coalesces refreshes and applies capture state immediately', async () => {
+  setup();
+  const releases = [];
+  const refreshWorkbench = jest.fn(() => new Promise(resolve => releases.push(resolve)));
+  const setCapturePaused = jest.fn(async paused => ({ capturePaused: paused }));
+  const api = dependencies({ refreshWorkbench, setCapturePaused });
+  const controller = createAppController(document, api);
+
+  const firstRefresh = controller.refresh();
+  const secondRefresh = controller.refresh();
+  expect(refreshWorkbench).toHaveBeenCalledTimes(1);
+
+  releases.shift()({ status: { ...status('listen'), capturePaused: false }, packets: [] });
+  await firstRefresh;
+  await secondRefresh;
+  expect(refreshWorkbench).toHaveBeenCalledTimes(2);
+  const queuedRefresh = controller.refresh();
+  releases.shift()({ status: { ...status('listen'), capturePaused: false }, packets: [] });
+  await queuedRefresh;
+  const button = document.querySelector('.capture-toggle');
+  button.click();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  expect(setCapturePaused).toHaveBeenCalledWith(true);
+  expect(document.querySelector('.capture-toggle').textContent).toBe('Resume Capture');
+});
+
+test('does not let an older refresh overwrite a completed capture change', async () => {
+  setup();
+  const refreshResolvers = [];
+  const refreshWorkbench = jest.fn(() => new Promise(resolve => refreshResolvers.push(resolve)));
+  const setCapturePaused = jest.fn(async paused => ({ capturePaused: paused }));
+  const api = dependencies({ refreshWorkbench, setCapturePaused });
+  const controller = createAppController(document, api);
+
+  const initialRefresh = controller.refresh();
+  refreshResolvers.shift()({ status: { ...status('listen'), capturePaused: false }, packets: [] });
+  await initialRefresh;
+
+  const oldRefresh = controller.refresh();
+  const button = document.querySelector('.capture-toggle');
+  const captureChange = button.click();
+  await Promise.resolve();
+
+  expect(setCapturePaused).toHaveBeenCalledWith(true);
+  expect(document.querySelector('.capture-toggle').textContent).toBe('Resume Capture');
+
+  refreshResolvers.shift()({ status: { ...status('listen'), capturePaused: false }, packets: [] });
+  await oldRefresh;
+  expect(document.querySelector('.capture-toggle').textContent).toBe('Resume Capture');
+
+  await Promise.resolve();
+  expect(refreshWorkbench).toHaveBeenCalledTimes(3);
+  refreshResolvers.shift()({ status: { ...status('listen'), capturePaused: true }, packets: [] });
+  await captureChange;
+  expect(document.querySelector('.capture-toggle').textContent).toBe('Resume Capture');
 });
 
 test('shows relay forwarding state without adding unsupported controls', async () => {
