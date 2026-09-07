@@ -1,51 +1,74 @@
 import { jest } from '@jest/globals';
 import { renderStatusCard, statusFields } from '../../static/components/cards/status-card.js';
 
-const status = mode => ({ capturePaused: false, mode, gsmtapListen: '127.0.0.1:4729', gsmtapForward: 'target:4729', stats: { received: 8, parseFailed: 1, forwardSent: 8, forwardFailed: 0, ingressDropped: 0, historyDropped: 0, uiEventsDropped: 0, captureSkipped: 0 } });
-
-test('omits forwarding from listen status', () => {
-  expect(statusFields(status('listen')).some(([label]) => label === 'Forward target')).toBe(false);
-  expect(statusFields(status('relay')).some(([label]) => label === 'Forward target')).toBe(true);
+const status = mode => ({
+  capturePaused: false,
+  mode,
+  gsmtapListen: '127.0.0.1:4729',
+  gsmtapForward: 'target:4729',
+  stats: {
+    received: 8,
+    parseFailed: 1,
+    forwardSent: 8,
+    forwardFailed: 0,
+    ingressDropped: 0,
+    historyDropped: 0,
+    uiEventsDropped: 0,
+    captureSkipped: 0,
+  },
 });
 
-test('renders mode, endpoint, metrics, and diagnostic counters', () => {
+test('status fields contain the compact primary information', () => {
+  expect(statusFields(status('listen')).map(([label]) => label)).toEqual([
+    'Workbench Mode', 'Listen on', 'Forward to',
+  ]);
+  expect(statusFields(status('listen')).find(([label]) => label === 'Forward to')[1]).toBe('target:4729');
+});
+
+test('renders mode, labeled endpoints, and no diagnostic counters', () => {
   const node = document.createElement('div');
   renderStatusCard(node, status('listen'));
-  expect(node.querySelector('.mode-badge').textContent).toBe('LISTEN');
+
+  expect(node.querySelector('.mode-control').textContent).toBe('Listen▾');
+  expect(node.textContent).toContain('Workbench Mode:');
+  expect(node.textContent).toContain('Listen on:');
   expect(node.textContent).toContain('127.0.0.1:4729');
-  expect(node.textContent).toContain('8 received');
-  expect(node.textContent).toContain('1 decode failure');
-  expect(node.textContent).toContain('queue drops');
-  expect(node.textContent).not.toContain('Forward target');
+  expect(node.textContent).toContain('Forward to:');
+  expect(node.textContent).toContain('target:4729');
+  expect(node.textContent).not.toContain('received');
+  expect(node.textContent).not.toContain('decode failure');
+  expect(node.textContent).not.toContain('queue drops');
+  expect(node.querySelector('.status-layout')).not.toBeNull();
 });
 
-test('renders relay target and warning styling for nonzero diagnostics', () => {
+test('renders listen mode without a forwarding destination as disabled', () => {
   const node = document.createElement('div');
-  renderStatusCard(node, { ...status('relay'), stats: { received: 8, parseFailed: 1, forwardSent: 7, forwardFailed: 1, ingressDropped: 2, historyDropped: 3, uiEventsDropped: 4 } });
-  expect(node.textContent).toContain('→ target:4729');
-  expect(node.textContent).toContain('7 forwarded');
-  expect(node.textContent).toContain('1 forward failures');
-  expect(node.querySelectorAll('.warning')).toHaveLength(5);
+  renderStatusCard(node, { ...status('listen'), gsmtapForward: null });
+
+  expect(node.textContent).toContain('Forward to:Disabled');
 });
 
-test('renders modify mode with a disabled forward target and no relay warnings', () => {
+test('renders the pause icon and label while capture is active', () => {
   const node = document.createElement('div');
-  renderStatusCard(node, { ...status('modify'), gsmtapForward: '', stats: { received: 8, parseFailed: 0, forwardSent: 0, forwardFailed: 0, ingressDropped: 0, historyDropped: 0, uiEventsDropped: 0 } });
-
-  expect(node.textContent).toContain('→ Disabled');
-  expect(node.textContent).not.toContain('forwarded');
-  expect(node.querySelectorAll('.warning')).toHaveLength(0);
-  expect(statusFields({ ...status('modify'), gsmtapForward: '' }).find(([label]) => label === 'Forward target')[1]).toBe('Disabled');
-});
-
-test('renders capture state, skipped metric, and accessible toggle', () => {
-  const node = document.createElement('div');
-  renderStatusCard(node, { ...status('listen'), capturePaused: true, stats: { ...status('listen').stats, captureSkipped: 3 } });
+  renderStatusCard(node, status('listen'));
   const button = node.querySelector('.capture-toggle');
-  expect(node.textContent).toContain('Capture paused');
-  expect(node.textContent).toContain('Skipped while paused');
-  expect(button.textContent).toBe('Resume capture');
+
+  expect(button.textContent).toBe('Pause Capture');
+  expect(button.querySelector('img').src).toContain('/styles/pause-icon-32x32.png');
+  expect(button.querySelector('img').getAttribute('alt')).toBe('');
+  expect(button.getAttribute('aria-pressed')).toBe('false');
+  expect(button.classList.contains('capture-paused')).toBe(false);
+});
+
+test('renders the play icon and label while capture is paused', () => {
+  const node = document.createElement('div');
+  renderStatusCard(node, { ...status('listen'), capturePaused: true });
+  const button = node.querySelector('.capture-toggle');
+
+  expect(button.textContent).toBe('Resume Capture');
+  expect(button.querySelector('img').src).toContain('/styles/play-icon-32x32.png');
   expect(button.getAttribute('aria-pressed')).toBe('true');
+  expect(button.classList.contains('capture-paused')).toBe(true);
 });
 
 test('disables the toggle while updating and reports failures', async () => {

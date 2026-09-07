@@ -109,6 +109,26 @@ pub async fn stylesheet() -> (
     )
 }
 
+pub async fn pause_icon() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static [u8],
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "image/png")],
+        include_bytes!("../../static/styles/pause-icon-32x32.png"),
+    )
+}
+
+pub async fn play_icon() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static [u8],
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "image/png")],
+        include_bytes!("../../static/styles/play-icon-32x32.png"),
+    )
+}
+
 pub async fn packet_table_javascript() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static str,

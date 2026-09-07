@@ -66,6 +66,8 @@ pub fn build_router_with_capture(
         .route("/models/packet-model.js", get(api::packet_model_javascript))
         .route("/components/tooltip.js", get(api::tooltip_javascript))
         .route("/styles/style.css", get(api::stylesheet))
+        .route("/styles/pause-icon-32x32.png", get(api::pause_icon))
+        .route("/styles/play-icon-32x32.png", get(api::play_icon))
         .route(
             "/components/packet/packet-table.js",
             get(api::packet_table_javascript),
