@@ -6,6 +6,8 @@ const captureIcons = {
   play: '/styles/play-icon-32x32.png',
 };
 
+const cardViews = new WeakMap();
+
 export function statusFields(status) {
   return [
     ['Workbench Mode', displayMode(status.mode), '', 'The active workbench operating mode: listen, relay, or modify.'],
@@ -15,43 +17,52 @@ export function statusFields(status) {
 }
 
 export function renderStatusCard(node, status, { onCaptureToggle } = {}) {
+  let view = cardViews.get(node.firstElementChild);
+  if (!view) {
+    view = createStatusCard();
+    node.replaceChildren(view.card);
+    cardViews.set(view.card, view);
+  }
+  view.update(status, onCaptureToggle);
+}
+
+function createStatusCard() {
   const card = createCard({ title: 'Workbench status', className: 'status-card' });
   const layout = document.createElement('div');
   layout.className = 'status-layout';
 
   const information = document.createElement('div');
   information.className = 'status-information';
-  information.append(
-    createStatusRow('Workbench Mode', createModeControl(status)),
-    createStatusRow('Listen on', status.gsmtapListen),
-    createStatusRow('Forward to', status.gsmtapForward || 'Disabled'),
-  );
+  const modeRow = createStatusRow('Workbench Mode');
+  const listenRow = createStatusRow('Listen on');
+  const forwardRow = createStatusRow('Forward to');
+  information.append(modeRow.row, listenRow.row, forwardRow.row);
 
   const captureControls = document.createElement('div');
   captureControls.className = 'status-capture-controls';
   const captureButton = document.createElement('button');
   captureButton.type = 'button';
-  captureButton.className = `capture-toggle${status.capturePaused ? ' capture-paused' : ''}`;
-  captureButton.setAttribute('aria-pressed', String(Boolean(status.capturePaused)));
-
+  captureButton.className = 'capture-toggle';
   const captureIcon = document.createElement('img');
   captureIcon.className = 'capture-icon';
-  captureIcon.src = status.capturePaused ? captureIcons.play : captureIcons.pause;
   captureIcon.alt = '';
   captureIcon.setAttribute('aria-hidden', 'true');
   const captureLabel = document.createElement('span');
-  captureLabel.textContent = status.capturePaused ? 'Resume Capture' : 'Pause Capture';
   captureButton.append(captureIcon, captureLabel);
 
   const captureError = document.createElement('p');
   captureError.className = 'error capture-error';
   captureError.setAttribute('role', 'status');
+  const state = { status: undefined, onCaptureToggle: undefined, requestInFlight: false };
   captureButton.addEventListener('click', async () => {
+    state.requestInFlight = true;
     captureButton.disabled = true;
     captureError.textContent = '';
     try {
-      await onCaptureToggle?.(!status.capturePaused);
+      await state.onCaptureToggle?.(!state.status.capturePaused);
+      state.requestInFlight = false;
     } catch (error) {
+      state.requestInFlight = false;
       captureButton.disabled = false;
       captureError.textContent = `Unable to update capture state: ${error.message}`;
     }
@@ -60,7 +71,25 @@ export function renderStatusCard(node, status, { onCaptureToggle } = {}) {
 
   layout.append(information, captureControls);
   card.append(layout);
-  node.replaceChildren(card);
+
+  return {
+    card,
+    update(status, onCaptureToggle) {
+      const previousStatus = state.status;
+      state.status = status;
+      state.onCaptureToggle = onCaptureToggle;
+      updateStatusRow(modeRow, createModeControl(status));
+      updateStatusRow(listenRow, status.gsmtapListen);
+      updateStatusRow(forwardRow, status.gsmtapForward || 'Disabled');
+      captureButton.className = `capture-toggle${status.capturePaused ? ' capture-paused' : ''}`;
+      captureButton.setAttribute('aria-pressed', String(Boolean(status.capturePaused)));
+      captureIcon.src = status.capturePaused ? captureIcons.play : captureIcons.pause;
+      captureLabel.textContent = status.capturePaused ? 'Resume Capture' : 'Pause Capture';
+      if (!state.requestInFlight || previousStatus?.capturePaused !== status.capturePaused) {
+        captureButton.disabled = false;
+      }
+    },
+  };
 }
 
 function createModeControl(status) {
@@ -83,11 +112,14 @@ function createStatusRow(label, value) {
   const name = document.createElement('span');
   name.className = 'status-row-label';
   name.textContent = `${label}:`;
-  const content = typeof value === 'string' ? document.createElement('strong') : value;
-  if (typeof value === 'string') content.textContent = value;
-  content.classList.add('status-row-value');
+  const content = document.createElement('strong');
+  content.className = 'status-row-value';
   row.append(name, content);
-  return row;
+  return { row, content };
+}
+
+function updateStatusRow(statusRow, value) {
+  statusRow.content.replaceChildren(value instanceof Node ? value : document.createTextNode(value));
 }
 
 function displayMode(mode) {

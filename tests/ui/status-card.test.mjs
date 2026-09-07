@@ -71,6 +71,20 @@ test('renders the play icon and label while capture is paused', () => {
   expect(button.classList.contains('capture-paused')).toBe(true);
 });
 
+test('updates the existing status card and capture button in place', () => {
+  const node = document.createElement('div');
+  renderStatusCard(node, status('listen'));
+  const card = node.querySelector('.status-card');
+  const button = node.querySelector('.capture-toggle');
+
+  renderStatusCard(node, { ...status('listen'), capturePaused: true });
+
+  expect(node.querySelector('.status-card')).toBe(card);
+  expect(node.querySelector('.capture-toggle')).toBe(button);
+  expect(button.textContent).toBe('Resume Capture');
+  expect(button.getAttribute('aria-pressed')).toBe('true');
+});
+
 test('disables the toggle while updating and reports failures', async () => {
   const node = document.createElement('div');
   let resolve;
