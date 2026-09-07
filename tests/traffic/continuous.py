@@ -11,16 +11,19 @@ import time
 GSMTAP_VERSION = 2
 GSMTAP_HEADER_WORDS = 4
 GSMTAP_MESSAGE_TYPE = 1
+GSMTAP_EXTENSION = bytes.fromhex("DE AD BE EF")
+EXTENSION_EVERY = 10
 
 
-def make_packet(sequence: int, payload_size: int) -> bytes:
+def make_packet(sequence: int, payload_size: int, extension: bytes = b"") -> bytes:
     """Build a GSMTAP v2 packet with a changing frame and payload."""
     payload_size = max(payload_size, 4)
     payload = struct.pack("!I", sequence) + bytes((sequence + index) % 256 for index in range(payload_size - 4))
+    header_words = GSMTAP_HEADER_WORDS + len(extension) // 4
     header = struct.pack(
         "!BBBBHbbIBBBB",
         GSMTAP_VERSION,
-        GSMTAP_HEADER_WORDS,
+        header_words,
         GSMTAP_MESSAGE_TYPE,
         sequence % 8,
         sequence % 65536,
@@ -32,7 +35,7 @@ def make_packet(sequence: int, payload_size: int) -> bytes:
         0,
         0,
     )
-    return header + payload
+    return header + extension + payload
 
 
 def run(args: argparse.Namespace) -> int:
@@ -44,7 +47,8 @@ def run(args: argparse.Namespace) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
         try:
             while deadline is None or time.monotonic() < deadline:
-                sender.sendto(make_packet(sent, args.payload_size), destination)
+                extension = GSMTAP_EXTENSION if sent % EXTENSION_EVERY == 0 else b""
+                sender.sendto(make_packet(sent, args.payload_size, extension), destination)
                 sent += 1
                 if sent == 1 or sent % args.report_every == 0:
                     print(f"sent {sent} packets to {args.host}:{args.port}", flush=True)
