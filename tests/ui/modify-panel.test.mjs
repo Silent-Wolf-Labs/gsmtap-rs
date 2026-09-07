@@ -29,6 +29,34 @@ test('adds descriptions to every modify field', () => {
   }
 });
 
+test('keeps numeric groups and places full-width byte editors after them', () => {
+  setup();
+  createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+
+  expect([...document.querySelectorAll('.modify-field-group legend')].map(legend => legend.textContent))
+    .toEqual(['Header', 'Radio metadata', 'Message metadata']);
+  expect(document.querySelector('.modify-byte-fields')).not.toBeNull();
+  expect([...document.querySelectorAll('.modify-byte-group legend')].map(legend => legend.textContent))
+    .toEqual(['Header extension (hex) · 0 bytes', 'Payload (hex) · 0 bytes']);
+  expect(document.querySelector('.modify-byte-fields').previousElementSibling.className).toBe('modify-field-group');
+  expect(document.querySelector('#fields').lastElementChild.className).toBe('modify-byte-fields');
+});
+
+test('updates complete byte counts while preserving informational handling of incomplete input', () => {
+  setup();
+  createModifyPanel({ previewModification: jest.fn(), sendModification: jest.fn(), showResult: jest.fn() });
+  const extension = document.querySelector('[name="extensionHex"]');
+  const payload = document.querySelector('[name="payloadHex"]');
+
+  extension.value = '01 02\n03\t04 5';
+  extension.dispatchEvent(new Event('input', { bubbles: true }));
+  payload.value = 'AA\n BB    CC';
+  payload.dispatchEvent(new Event('input', { bubbles: true }));
+
+  expect(document.querySelector('.modify-byte-group-extensionHex legend').textContent).toBe('Header extension (hex) · 4 bytes');
+  expect(document.querySelector('.modify-byte-group-payloadHex legend').textContent).toBe('Payload (hex) · 3 bytes');
+});
+
 test('keeps the send action in a separate preview card', async () => {
   setup();
   const previewModification = jest.fn(async () => ({ ok: true, json: async () => ({ fieldChanges: [], originalDecoded: decoded(), modifiedDecoded: decoded() }) }));

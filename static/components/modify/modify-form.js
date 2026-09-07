@@ -10,8 +10,43 @@ function createLabel(documentRef, name, input) {
   return label;
 }
 
+function countCompleteHexBytes(value) {
+  return Math.floor((value ?? '').replace(/\s/g, '').length / 2);
+}
+
+function createByteField(documentRef, fields, name, labelText, onFieldChange, countNodes) {
+  const group = documentRef.createElement('fieldset');
+  group.className = `modify-byte-group modify-byte-group-${name}`;
+  const legend = documentRef.createElement('legend');
+  legend.textContent = `${labelText} · `;
+  const count = documentRef.createElement('span');
+  count.className = 'modify-byte-count';
+  legend.append(count);
+  applyTooltip(legend, name, fieldTooltips[name]);
+  group.append(legend);
+
+  const input = documentRef.createElement('textarea');
+  input.name = name;
+  input.className = `modify-byte-input modify-byte-input-${name}`;
+  input.required = name === 'payloadHex';
+  input.setAttribute('aria-label', labelText);
+  if (name === 'extensionHex') input.pattern = '[0-9a-fA-F\\s]*';
+  applyTooltip(input, name, fieldTooltips[name]);
+
+  const updateCount = () => {
+    count.textContent = `${countCompleteHexBytes(input.value)} bytes`;
+    onFieldChange?.(name, input.value);
+  };
+  input.addEventListener('input', updateCount);
+  group.append(input);
+  fields.append(group);
+  countNodes[name] = count;
+  updateCount();
+}
+
 export function createModifyForm({ documentRef = document, form = documentRef.querySelector('#send-form'), onSubmit, onFieldChange }) {
   const fields = form.querySelector('#fields');
+  const countNodes = {};
   fields.replaceChildren();
   for (const [groupName, names] of fieldGroups) {
     const group = documentRef.createElement('fieldset');
@@ -32,14 +67,11 @@ export function createModifyForm({ documentRef = document, form = documentRef.qu
     }
     fields.append(group);
   }
-  for (const name of hexFieldNames) {
-    const input = documentRef.createElement('textarea');
-    input.name = name;
-    input.required = name === 'payloadHex';
-    if (name === 'extensionHex') input.pattern = '[0-9a-fA-F\\s]*';
-    input.addEventListener('input', () => onFieldChange?.(name, input.value));
-    form.append(createLabel(documentRef, name, input));
-  }
+  const byteFields = documentRef.createElement('div');
+  byteFields.className = 'modify-byte-fields';
+  fields.append(byteFields);
+  for (const [name, label] of [['extensionHex', 'Header extension (hex)'], ['payloadHex', 'Payload (hex)']])
+    createByteField(documentRef, byteFields, name, label, onFieldChange, countNodes);
   const actions = documentRef.createElement('div');
   actions.className = 'modify-form-actions';
   const previewButton = documentRef.createElement('button');
@@ -54,9 +86,19 @@ export function createModifyForm({ documentRef = document, form = documentRef.qu
     return Object.fromEntries(new FormData(form));
   }
   return {
-    setValues(values) { for (const name of Object.keys(values)) if (form.elements[name]) form.elements[name].value = values[name] ?? ''; },
+    setValues(values) {
+      for (const name of Object.keys(values)) {
+        if (!form.elements[name]) continue;
+        form.elements[name].value = values[name] ?? '';
+        if (countNodes[name]) countNodes[name].textContent = `${countCompleteHexBytes(form.elements[name].value)} bytes`;
+      }
+    },
     readValues,
     setPreviewEnabled(enabled) { previewButton.disabled = !enabled; },
-    reset() { form.reset(); previewButton.disabled = true; },
+    reset() {
+      form.reset();
+      for (const [name, count] of Object.entries(countNodes)) count.textContent = `${countCompleteHexBytes(form.elements[name].value)} bytes`;
+      previewButton.disabled = true;
+    },
   };
 }
