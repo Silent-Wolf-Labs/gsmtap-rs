@@ -19,7 +19,8 @@ use super::{
     config::{Config, Mode},
     dto::{
         decoded_from_packet, from_decoded, from_error, hex, parse_hex, DecodedPacket,
-        EncodeSendRequest, PacketRecord, SendResponse,
+        EncodeSendRequest, ForwardPacketsRequest, ForwardPacketsResponse, PacketForwardResult,
+        PacketRecord, SendResponse,
     },
     history::{PacketStore, RuntimeStats},
 };
@@ -109,6 +110,50 @@ pub async fn stylesheet() -> (
     )
 }
 
+pub async fn base_stylesheet() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    stylesheet_asset(include_str!("../../static/styles/base.css"))
+}
+
+pub async fn forms_stylesheet() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    stylesheet_asset(include_str!("../../static/styles/forms.css"))
+}
+
+pub async fn status_card_stylesheet() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    stylesheet_asset(include_str!("../../static/styles/status-card.css"))
+}
+
+pub async fn modify_stylesheet() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    stylesheet_asset(include_str!("../../static/styles/modify.css"))
+}
+
+pub async fn packet_table_stylesheet() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    stylesheet_asset(include_str!("../../static/styles/packet-table.css"))
+}
+
+fn stylesheet_asset(
+    asset: &'static str,
+) -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    ([(axum::http::header::CONTENT_TYPE, "text/css")], asset)
+}
+
 pub async fn pause_icon() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static [u8],
@@ -136,6 +181,36 @@ pub async fn packet_table_javascript() -> (
     (
         [(axum::http::header::CONTENT_TYPE, "application/javascript")],
         include_str!("../../static/components/packet/packet-table.js"),
+    )
+}
+
+pub async fn column_filter_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/packet/column-filter.js"),
+    )
+}
+
+pub async fn select_filter_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/packet/select-filter.js"),
+    )
+}
+
+pub async fn text_filter_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/packet/text-filter.js"),
     )
 }
 
@@ -358,6 +433,123 @@ pub async fn packets(
         .unwrap_or(DEFAULT_PACKET_LIMIT)
         .min(MAX_PACKET_LIMIT);
     Json(state.store.list_recent(limit).await)
+}
+
+pub async fn clear_packets(State(state): State<AppState>) -> StatusCode {
+    state.store.clear().await;
+    StatusCode::NO_CONTENT
+}
+
+pub const MAX_FORWARD_BATCH_SIZE: usize = 1_000;
+
+pub async fn forward_packets(
+    State(state): State<AppState>,
+    Json(request): Json<ForwardPacketsRequest>,
+) -> Result<Json<ForwardPacketsResponse>, (StatusCode, String)> {
+    if state.config.mode != Mode::Relay {
+        return Err((
+            StatusCode::FORBIDDEN,
+            "packet forwarding is available only in relay mode".into(),
+        ));
+    }
+    if request.packet_ids.is_empty() {
+        return Err(bad_request("packetIds must not be empty"));
+    }
+    if request.packet_ids.len() > MAX_FORWARD_BATCH_SIZE {
+        return Err(bad_request("batch size exceeds maximum allowed limit of 1000"));
+    }
+    let mut seen = std::collections::HashSet::new();
+    for &id in &request.packet_ids {
+        if !seen.insert(id) {
+            return Err(bad_request(format!("duplicate packet id: {id}")));
+        }
+    }
+
+    let destination = state
+        .config
+        .gsmtap_forward
+        .clone()
+        .ok_or_else(|| (StatusCode::BAD_REQUEST, "a forward endpoint is required".into()))?;
+
+    let resolved_destination = match tokio::net::lookup_host(&destination).await {
+        Ok(mut addresses) => match addresses.find(std::net::SocketAddr::is_ipv4) {
+            Some(address) => Ok(address),
+            None => Err("UDP destination resolved to no IPv4 addresses".to_string()),
+        },
+        Err(error) => Err(format!("UDP destination lookup failed: {error}")),
+    };
+
+    let mut results = Vec::with_capacity(request.packet_ids.len());
+    for id in request.packet_ids {
+        let packet = state.store.get(id).await;
+        let Some(packet) = packet else {
+            results.push(PacketForwardResult {
+                packet_id: id,
+                status: "not found".into(),
+            });
+            continue;
+        };
+
+        let bytes = match parse_hex(&packet.raw_hex) {
+            Ok(bytes) => bytes,
+            Err(error) => {
+                let status = format!("error: {error}");
+                state
+                    .store
+                    .update_forward_status(id, Some(status.clone()))
+                    .await;
+                state.store.counters().forward_failed();
+                results.push(PacketForwardResult {
+                    packet_id: id,
+                    status,
+                });
+                continue;
+            }
+        };
+
+        match &resolved_destination {
+            Ok(addr) => match state.sender.send_to(&bytes, *addr).await {
+                Ok(_) => {
+                    let status = "sent".to_string();
+                    state
+                        .store
+                        .update_forward_status(id, Some(status.clone()))
+                        .await;
+                    state.store.counters().forward_sent();
+                    results.push(PacketForwardResult {
+                        packet_id: id,
+                        status,
+                    });
+                }
+                Err(error) => {
+                    let status = format!("error: UDP send failed: {error}");
+                    state
+                        .store
+                        .update_forward_status(id, Some(status.clone()))
+                        .await;
+                    state.store.counters().forward_failed();
+                    results.push(PacketForwardResult {
+                        packet_id: id,
+                        status,
+                    });
+                }
+            },
+            Err(lookup_err) => {
+                let status = format!("error: {lookup_err}");
+                state
+                    .store
+                    .update_forward_status(id, Some(status.clone()))
+                    .await;
+                state.store.counters().forward_failed();
+                results.push(PacketForwardResult {
+                    packet_id: id,
+                    status,
+                });
+            }
+        }
+    }
+
+    Ok(Json(ForwardPacketsResponse { results }))
 }
 
 pub async fn encode_send(

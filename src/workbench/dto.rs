@@ -93,6 +93,25 @@ pub struct SendResponse {
     pub encoded_hex: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ForwardPacketsRequest {
+    pub packet_ids: Vec<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PacketForwardResult {
+    pub packet_id: u64,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct ForwardPacketsResponse {
+    pub results: Vec<PacketForwardResult>,
+}
+
 pub fn from_decoded(
     direction: &'static str,
     mode: Mode,

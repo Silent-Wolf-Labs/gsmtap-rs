@@ -78,7 +78,7 @@ async fn listen_mode_receives_without_allowing_transmission() {
 }
 
 #[tokio::test]
-async fn relay_forwards_valid_and_malformed_datagrams_unchanged() {
+async fn relay_records_valid_and_malformed_datagrams_without_automatic_forwarding() {
     let target = socket().await;
     let receiver = socket().await;
     let source = socket().await;
@@ -89,23 +89,29 @@ async fn relay_forwards_valid_and_malformed_datagrams_unchanged() {
         receiver,
         store.clone(),
         Mode::Relay,
-        Some(forward),
+        Some(forward.clone()),
         Arc::new(socket().await),
     ));
     for expected in [PACKET.to_vec(), vec![0xde, 0xad, 0xbe, 0xef]] {
         source.send_to(&expected, listen).await.unwrap();
-        let mut received = [0u8; 64];
-        let (length, _) = target.recv_from(&mut received).await.unwrap();
-        assert_eq!(&received[..length], expected.as_slice());
     }
     wait_for_records(&store, 2).await;
-    assert!(store
-        .list()
-        .await
+    let mut received = [0u8; 64];
+    assert!(tokio::time::timeout(
+        std::time::Duration::from_millis(50),
+        target.recv_from(&mut received)
+    )
+    .await
+    .is_err());
+    let records = store.list().await;
+    assert_eq!(records.len(), 2);
+    assert!(records.iter().all(|packet| packet.direction == "RX"));
+    assert!(records.iter().all(|packet| packet.forward_status.is_none()));
+    assert!(records
         .iter()
-        .all(|packet| packet.forward_status.as_deref() == Some("sent")));
+        .all(|packet| packet.destination.as_deref() == Some(&forward)));
     let stats = store.counters().snapshot();
-    assert_eq!(stats.forward_sent, 2);
+    assert_eq!(stats.forward_sent, 0);
     assert_eq!(stats.forward_failed, 0);
     task.abort();
 }
@@ -133,6 +139,53 @@ async fn relay_mode_rejects_manual_packet_transmission() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn relay_mode_batch_forwarding_sends_selected_packets() {
+    let target = socket().await;
+    let target_addr = target.local_addr().unwrap();
+    let receiver = socket().await;
+    let source = socket().await;
+    let store = store();
+    let forward = target_addr.to_string();
+    let listen = receiver.local_addr().unwrap();
+    let router = build_router(
+        config(
+            Mode::Relay,
+            listen,
+            Some(forward.clone()),
+        ),
+        store.clone(),
+        Arc::new(socket().await),
+    );
+    let task = tokio::spawn(receive_loop(
+        receiver,
+        store.clone(),
+        Mode::Relay,
+        Some(forward),
+        Arc::new(socket().await),
+    ));
+    source.send_to(&PACKET, listen).await.unwrap();
+    wait_for_records(&store, 1).await;
+    let id = store.list().await[0].id;
+
+    let request_body = serde_json::json!({ "packetIds": [id] });
+    let response = router
+        .oneshot(
+            Request::post("/api/packets/forward")
+                .header("content-type", "application/json")
+                .body(Body::from(request_body.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let mut received = [0u8; 64];
+    let (length, _) = target.recv_from(&mut received).await.unwrap();
+    assert_eq!(&received[..length], &PACKET);
+    assert_eq!(store.get(id).await.unwrap().forward_status.as_deref(), Some("sent"));
+    task.abort();
 }
 
 async fn modify_fixture() -> (

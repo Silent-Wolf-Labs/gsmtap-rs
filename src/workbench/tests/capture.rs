@@ -51,7 +51,7 @@ async fn paused_capture_counts_traffic_without_history_or_sse() {
 }
 
 #[tokio::test]
-async fn paused_relay_still_forwards_and_counts_forwarding() {
+async fn paused_relay_does_not_forward_and_counts_skipped() {
     let target = socket().await;
     let receiver = socket().await;
     let receiver_addr = receiver.local_addr().unwrap();
@@ -80,13 +80,12 @@ async fn paused_relay_still_forwards_and_counts_forwarding() {
     .unwrap();
     gate.notify_one();
     let mut forwarded = [0u8; 64];
-    let (length, _) = timeout(Duration::from_secs(1), target.recv_from(&mut forwarded))
+    assert!(timeout(Duration::from_millis(50), target.recv_from(&mut forwarded))
         .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(&forwarded[..length], &PACKET);
+        .is_err());
     assert!(store.list().await.is_empty());
-    assert_eq!(store.counters().snapshot().forward_sent, 1);
+    assert_eq!(store.counters().snapshot().forward_sent, 0);
+    assert_eq!(store.counters().snapshot().capture_skipped, 1);
     task.abort();
 }
 

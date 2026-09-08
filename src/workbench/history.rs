@@ -109,6 +109,19 @@ impl PacketStore {
             .cloned()
     }
 
+    pub async fn update_forward_status(&self, id: u64, status: Option<String>) -> bool {
+        let mut packets = self.packets.lock().await;
+        if let Some(packet) = packets.iter_mut().find(|packet| packet.id == id) {
+            packet.forward_status = status;
+            let packet = packet.clone();
+            drop(packets);
+            let _ = self.events.send(packet);
+            true
+        } else {
+            false
+        }
+    }
+
     #[cfg(test)]
     pub async fn list(&self) -> Vec<PacketRecord> {
         self.packets.lock().await.iter().cloned().collect()
@@ -118,6 +131,10 @@ impl PacketStore {
         let packets = self.packets.lock().await;
         let start = packets.len().saturating_sub(limit);
         packets.iter().skip(start).cloned().collect()
+    }
+
+    pub async fn clear(&self) {
+        self.packets.lock().await.clear();
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<PacketRecord> {

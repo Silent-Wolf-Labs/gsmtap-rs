@@ -1,8 +1,4 @@
-use std::{
-    net::SocketAddr,
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::{net::SocketAddr, sync::Arc};
 
 use axum::{routing::get, Router};
 use tokio::net::UdpSocket;
@@ -20,8 +16,6 @@ use crate::gsmtap::parse;
 const MAX_UDP_DATAGRAM_SIZE: usize = 65_535;
 #[cfg(test)]
 const DEFAULT_INGRESS_CAPACITY: usize = 1_024;
-const FORWARD_RESOLUTION_REFRESH_INTERVAL: Duration = Duration::from_secs(60);
-const FORWARD_RESOLUTION_RETRY_INTERVAL: Duration = Duration::from_secs(5);
 
 #[cfg(test)]
 pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSocket>) -> Router {
@@ -66,11 +60,31 @@ pub fn build_router_with_capture(
         .route("/models/packet-model.js", get(api::packet_model_javascript))
         .route("/components/tooltip.js", get(api::tooltip_javascript))
         .route("/styles/style.css", get(api::stylesheet))
+        .route("/styles/base.css", get(api::base_stylesheet))
+        .route("/styles/forms.css", get(api::forms_stylesheet))
+        .route("/styles/status-card.css", get(api::status_card_stylesheet))
+        .route("/styles/modify.css", get(api::modify_stylesheet))
+        .route(
+            "/styles/packet-table.css",
+            get(api::packet_table_stylesheet),
+        )
         .route("/styles/pause-icon-32x32.png", get(api::pause_icon))
         .route("/styles/play-icon-32x32.png", get(api::play_icon))
         .route(
             "/components/packet/packet-table.js",
             get(api::packet_table_javascript),
+        )
+        .route(
+            "/components/packet/column-filter.js",
+            get(api::column_filter_javascript),
+        )
+        .route(
+            "/components/packet/select-filter.js",
+            get(api::select_filter_javascript),
+        )
+        .route(
+            "/components/packet/text-filter.js",
+            get(api::text_filter_javascript),
         )
         .route("/components/filters.js", get(api::filters_javascript))
         .route(
@@ -115,7 +129,14 @@ pub fn build_router_with_capture(
         )
         .route("/api/status", get(api::status))
         .route("/api/capture", axum::routing::put(api::set_capture))
-        .route("/api/packets", get(api::packets))
+        .route(
+            "/api/packets",
+            get(api::packets).delete(api::clear_packets),
+        )
+        .route(
+            "/api/packets/forward",
+            axum::routing::post(api::forward_packets),
+        )
         .route("/api/events", get(api::events))
         .route("/api/encode-send", axum::routing::post(api::encode_send))
         .route("/api/packets/:id/replay", axum::routing::post(api::replay))
@@ -152,8 +173,7 @@ pub async fn run(
     };
     let (ingress_tx, ingress_rx) = mpsc::channel(config.ingress_capacity);
     let intake = udp_receiver(receiver, ingress_tx, store.clone(), capture);
-    let forward = ForwardTarget::new(config.gsmtap_forward).await;
-    let processing = inspection_worker(ingress_rx, store, config.mode, forward, sender, None);
+    let processing = inspection_worker(ingress_rx, store, config.mode, config.gsmtap_forward, None);
     tokio::select! {
         result = http => result?,
         result = intake => result?,
@@ -193,14 +213,13 @@ pub async fn receive_loop_with_capture(
     store: Arc<PacketStore>,
     mode: Mode,
     forward: Option<String>,
-    sender: Arc<UdpSocket>,
+    _sender: Arc<UdpSocket>,
     capture: CaptureControl,
 ) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(DEFAULT_INGRESS_CAPACITY);
-    let target = ForwardTarget::new(forward).await;
     tokio::select! {
         result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
-        result = inspection_worker(ingress_rx, store, mode, target, sender, None) => result,
+        result = inspection_worker(ingress_rx, store, mode, forward, None) => result,
     }
 }
 
@@ -210,15 +229,14 @@ pub async fn receive_loop_gated(
     socket: UdpSocket,
     store: Arc<PacketStore>,
     mode: Mode,
-    sender: Arc<UdpSocket>,
+    _sender: Arc<UdpSocket>,
     capture: CaptureControl,
     gate: Arc<tokio::sync::Notify>,
 ) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(DEFAULT_INGRESS_CAPACITY);
-    let target = ForwardTarget::new(None).await;
     tokio::select! {
         result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
-        result = inspection_worker(ingress_rx, store, mode, target, sender, Some(gate)) => result,
+        result = inspection_worker(ingress_rx, store, mode, None, Some(gate)) => result,
     }
 }
 
@@ -229,16 +247,15 @@ pub async fn receive_loop_gated_with_capacity(
     store: Arc<PacketStore>,
     mode: Mode,
     forward: Option<String>,
-    sender: Arc<UdpSocket>,
+    _sender: Arc<UdpSocket>,
     capture: CaptureControl,
     gate: Arc<tokio::sync::Notify>,
     capacity: usize,
 ) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(capacity);
-    let target = ForwardTarget::new(forward).await;
     tokio::select! {
         result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
-        result = inspection_worker(ingress_rx, store, mode, target, sender, Some(gate)) => result,
+        result = inspection_worker(ingress_rx, store, mode, forward, Some(gate)) => result,
     }
 }
 
@@ -281,15 +298,14 @@ async fn inspection_worker(
     mut ingress: mpsc::Receiver<ReceivedDatagram>,
     store: Arc<PacketStore>,
     mode: Mode,
-    mut forward: ForwardTarget,
-    sender: Arc<UdpSocket>,
+    destination: Option<String>,
     gate: Option<Arc<tokio::sync::Notify>>,
 ) -> Result<(), std::io::Error> {
     while let Some(datagram) = ingress.recv().await {
         if let Some(gate) = &gate {
             gate.notified().await;
         }
-        inspect_datagram(datagram, &store, mode, &mut forward, &sender).await;
+        inspect_datagram(datagram, &store, mode, destination.as_deref()).await;
     }
     Ok(())
 }
@@ -298,8 +314,7 @@ async fn inspect_datagram(
     datagram: ReceivedDatagram,
     store: &PacketStore,
     mode: Mode,
-    forward: &mut ForwardTarget,
-    sender: &UdpSocket,
+    destination: Option<&str>,
 ) {
     let bytes = &datagram.bytes;
     let mut record = match parse(bytes) {
@@ -316,89 +331,9 @@ async fn inspect_datagram(
         }
     };
     record.timestamp_ms = datagram.timestamp_ms;
-    record.destination = forward.configured.clone();
-    if mode == Mode::Relay {
-        record.forward_status = Some(match forward.send(sender, bytes).await {
-            Ok(()) => {
-                store.counters().forward_sent();
-                "sent".into()
-            }
-            Err(error) => {
-                store.counters().forward_failed();
-                format!("error: {error}")
-            }
-        });
-    }
+    record.destination = destination.map(String::from);
     if datagram.capture_enabled {
         store.record(record).await;
-    }
-}
-
-struct ForwardTarget {
-    configured: Option<String>,
-    address: Option<SocketAddr>,
-    last_error: Option<String>,
-    next_resolution_attempt: Instant,
-}
-
-impl ForwardTarget {
-    async fn new(configured: Option<String>) -> Self {
-        let mut target = Self {
-            configured,
-            address: None,
-            last_error: None,
-            next_resolution_attempt: Instant::now(),
-        };
-        target.refresh().await;
-        target
-    }
-
-    async fn send(&mut self, sender: &UdpSocket, bytes: &[u8]) -> Result<(), String> {
-        if self.configured.is_none() {
-            return Err("relay forward endpoint is missing".into());
-        }
-        if self.address.is_none() || Instant::now() >= self.next_resolution_attempt {
-            self.refresh().await;
-        }
-        let address = self.address.ok_or_else(|| {
-            self.last_error
-                .clone()
-                .unwrap_or_else(|| "destination resolved to no addresses".into())
-        })?;
-        if let Err(error) = sender.send_to(bytes, address).await {
-            let message = format!("UDP send to {address} failed: {error}");
-            self.address = None;
-            self.refresh().await;
-            return Err(message);
-        }
-        Ok(())
-    }
-
-    async fn refresh(&mut self) {
-        let Some(destination) = self.configured.as_deref() else {
-            return;
-        };
-        match tokio::net::lookup_host(destination).await {
-            Ok(mut addresses) => match addresses.find(SocketAddr::is_ipv4) {
-                Some(address) => {
-                    self.address = Some(address);
-                    self.last_error = None;
-                    self.next_resolution_attempt =
-                        Instant::now() + FORWARD_RESOLUTION_REFRESH_INTERVAL;
-                }
-                None => {
-                    self.address = None;
-                    self.last_error = Some("destination resolved to no IPv4 addresses".into());
-                    self.next_resolution_attempt =
-                        Instant::now() + FORWARD_RESOLUTION_RETRY_INTERVAL;
-                }
-            },
-            Err(error) => {
-                self.address = None;
-                self.last_error = Some(format!("destination lookup failed: {error}"));
-                self.next_resolution_attempt = Instant::now() + FORWARD_RESOLUTION_RETRY_INTERVAL;
-            }
-        }
     }
 }
 
