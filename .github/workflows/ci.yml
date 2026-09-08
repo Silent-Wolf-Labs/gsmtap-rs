@@ -17,20 +17,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Check JavaScript syntax
-        run: |
-          node --check static/app.js
-          node --check static/components/cards/card.js
-          node --check static/components/cards/status-card.js
-          node --check static/components/filters.js
-          node --check static/components/modify-panel.js
-          node --check static/components/packet-table.js
-          node --check static/components/select-control.js
-          node --check static/services/api.js
-          node --check static/controllers/app-controller.js
-      - name: Run UI tests
+      - name: Install frontend dependencies
         run: npm ci
-      - run: npm run test:ui
+      - name: Check frontend JavaScript syntax
+        run: find static -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Run frontend tests
+        # Includes DOM behavior and stylesheet contract tests under tests/ui.
+        run: npm run test:ui
 
   rust:
     runs-on: ubuntu-latest
