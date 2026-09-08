@@ -169,17 +169,19 @@ test('keeps the row expanded when the details Modify action is clicked', () => {
   expect(onModify).toHaveBeenCalledWith(packet);
 });
 
-test('renders pending relay status when no forwarding result exists', () => {
+test('renders not sent relay status when no forwarding result exists', () => {
   const node = document.createElement('div');
   const packet = { id: 9, direction: 'TX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {} };
 
   renderPacketTable(node, [packet], 'relay', jest.fn());
-  expect(node.querySelector('tbody tr').textContent).toContain('Pending');
+  expect(node.querySelector('tbody tr').textContent).toContain('Not sent');
 });
 
 test('renders empty state and replaces selected details', () => {
   const node = document.createElement('div');
   renderPacketTable(node, [], 'listen', jest.fn());
+  expect(node.textContent).toContain('No packets captured');
+  renderPacketTable(node, [], 'listen', jest.fn(), { hasPackets: true });
   expect(node.textContent).toContain('No packets match');
   const packet = { id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {}, parseError: null, modified: false };
   renderPacketTable(node, [packet], 'listen', jest.fn());
@@ -223,6 +225,156 @@ test('renders the per-packet relay result in its own column', () => {
   const node = document.createElement('div');
   const packet = { id: 4, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA FE', decoded: {}, parseError: null, forwardStatus: 'sent', modified: false };
   renderPacketTable(node, [packet], 'relay', jest.fn());
-  expect(node.querySelectorAll('th')[5].textContent).toBe('Forward');
+  expect(node.querySelectorAll('th')[6].textContent).toBe('Forward');
   expect(node.querySelector('tbody tr').textContent).toContain('sent');
+});
+
+test('renders mode-appropriate header filters and emits categorical changes', () => {
+  const node = document.createElement('div');
+  const onFilterChange = jest.fn();
+  renderPacketTable(node, [{ id: 1, direction: 'RX', timestampMs: Date.now(), decoded: {} }], 'listen', jest.fn(), {
+    filters: { decode: null, sourceAddress: '' },
+    onFilterChange,
+  });
+
+  expect([...node.querySelectorAll('.packet-column-filter-trigger')].map(button => button.getAttribute('aria-label')))
+    .toEqual(['Filter Packet', 'Filter Timestamp', 'Filter Source address', 'Filter Decode']);
+  node.querySelector('[aria-label="Filter Decode"]').click();
+  const failed = node.querySelector('input[value="error"]');
+  failed.checked = true;
+  failed.dispatchEvent(new Event('change', { bubbles: true }));
+  expect(onFilterChange).toHaveBeenCalledWith({ field: 'decode', value: 'error' });
+});
+
+test('renders Modify-only filters and marks active filters', () => {
+  const node = document.createElement('div');
+  renderPacketTable(node, [{ id: 1, direction: 'TX', timestampMs: Date.now(), decoded: {}, modified: true }], 'modify', jest.fn(), {
+    filters: { direction: 'TX', decode: null, modified: 'yes', sourceAddress: '' },
+    onFilterChange: jest.fn(),
+  });
+
+  expect(node.querySelectorAll('.packet-column-filter-trigger')).toHaveLength(6);
+  expect(node.querySelector('[aria-label="Filter Direction, active"]')).not.toBeNull();
+  expect(node.querySelector('[aria-label="Filter Modified, active"]')).not.toBeNull();
+  expect(node.querySelector('[aria-label="Filter Decode"]')).not.toBeNull();
+});
+
+test('supports keyboard closing and text entry in a header filter', () => {
+  const node = document.createElement('div');
+  const onFilterChange = jest.fn();
+  renderPacketTable(node, [{ id: 1, direction: 'RX', timestampMs: Date.now(), decoded: {} }], 'listen', jest.fn(), {
+    filters: { decode: null, sourceAddress: '' },
+    onFilterChange,
+  });
+  const trigger = node.querySelector('[aria-label="Filter Source address"]');
+  trigger.click();
+  const search = trigger.closest('.packet-column-filter').querySelector('.packet-column-search');
+  search.value = '192.168';
+  search.dispatchEvent(new Event('input', { bubbles: true }));
+  expect(onFilterChange).toHaveBeenCalledWith({ field: 'sourceAddress', value: '192.168' });
+  search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  expect(trigger.getAttribute('aria-expanded')).toBe('false');
+});
+
+test('opens only the selected column filter', () => {
+  const node = document.createElement('div');
+  renderPacketTable(node, [{ id: 1, direction: 'RX', timestampMs: Date.now(), decoded: {} }], 'listen', jest.fn(), {
+    filters: { packet: '', timestamp: '', decode: null, sourceAddress: '' },
+    onFilterChange: jest.fn(),
+  });
+
+  const packetTrigger = node.querySelector('[aria-label="Filter Packet"]');
+  const sourceTrigger = node.querySelector('[aria-label="Filter Source address"]');
+  sourceTrigger.click();
+
+  expect(sourceTrigger.getAttribute('aria-expanded')).toBe('true');
+  expect(sourceTrigger.closest('.packet-column-filter').querySelector('.packet-column-filter-menu').classList.contains('open')).toBe(true);
+  expect(packetTrigger.getAttribute('aria-expanded')).toBe('false');
+  expect(packetTrigger.closest('.packet-column-filter').querySelector('.packet-column-filter-menu').classList.contains('open')).toBe(false);
+});
+
+test('renders selection column and checkboxes exclusively in relay mode', () => {
+  const node = document.createElement('div');
+  const packets = [
+    { id: 10, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {} },
+    { id: 11, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CB', decoded: {} },
+  ];
+
+  // In listen mode: no select column or checkboxes
+  renderPacketTable(node, packets, 'listen', jest.fn());
+  expect(node.querySelector('.packet-column-select')).toBeNull();
+  expect(node.querySelector('.packet-row-checkbox')).toBeNull();
+
+  // In relay mode: select column and checkboxes present
+  const onSelectionChange = jest.fn();
+  const onSelectAllChange = jest.fn();
+  const selectedPacketIds = new Set([10]);
+
+  renderPacketTable(node, packets, 'relay', jest.fn(), {
+    selectedPacketIds,
+    onSelectionChange,
+    onSelectAllChange,
+  });
+
+  const headerSelect = node.querySelector('.packet-select-all');
+  expect(headerSelect).not.toBeNull();
+  expect(headerSelect.getAttribute('aria-label')).toBe('Select all visible packets');
+  expect(headerSelect.indeterminate).toBe(true);
+  expect(headerSelect.checked).toBe(false);
+
+  const rowCheckboxes = node.querySelectorAll('.packet-row-checkbox');
+  expect(rowCheckboxes).toHaveLength(2);
+  // Note: reverse ordering in table: first row is #11, second is #10
+  const checkbox11 = node.querySelector('input[aria-label="Select packet 11"]');
+  const checkbox10 = node.querySelector('input[aria-label="Select packet 10"]');
+  expect(checkbox11.checked).toBe(false);
+  expect(checkbox10.checked).toBe(true);
+
+  // Changing row checkbox triggers onSelectionChange and does not expand row
+  checkbox11.checked = true;
+  checkbox11.dispatchEvent(new Event('change', { bubbles: true }));
+  expect(onSelectionChange).toHaveBeenCalledWith(11, true);
+  expect(node.querySelector('.packet-details-row')).toBeNull();
+
+  // Clicking row checkbox directly does not expand details
+  checkbox11.click();
+  expect(node.querySelector('.packet-details-row')).toBeNull();
+
+  // Header select-all change event
+  headerSelect.checked = true;
+  headerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  expect(onSelectAllChange).toHaveBeenCalledWith([10, 11], true);
+});
+
+test('header select-all reflects fully selected and unselected states', () => {
+  const node = document.createElement('div');
+  const packets = [
+    { id: 10, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {} },
+    { id: 11, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CB', decoded: {} },
+  ];
+
+  // All selected
+  renderPacketTable(node, packets, 'relay', jest.fn(), {
+    selectedPacketIds: new Set([10, 11]),
+  });
+  const selectAll = node.querySelector('.packet-select-all');
+  expect(selectAll.checked).toBe(true);
+  expect(selectAll.indeterminate).toBe(false);
+
+  // None selected
+  renderPacketTable(node, packets, 'relay', jest.fn(), {
+    selectedPacketIds: new Set(),
+  });
+  expect(node.querySelector('.packet-select-all').checked).toBe(false);
+  expect(node.querySelector('.packet-select-all').indeterminate).toBe(false);
+});
+
+test('expands details with correct colSpan in relay mode', () => {
+  const node = document.createElement('div');
+  const packet = { id: 10, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {} };
+  renderPacketTable(node, [packet], 'relay', jest.fn());
+  node.querySelector('tbody tr td:nth-child(2)').click();
+  const detailsCell = node.querySelector('.packet-details-row td');
+  expect(detailsCell).not.toBeNull();
+  expect(detailsCell.colSpan).toBe(7);
 });

@@ -34,8 +34,8 @@ test('mode panel changes capabilities without inventing controls', () => {
     { selectedPacketId: undefined, onSelectPacket: undefined });
 });
 
-test('maps relay forwarding success, failure, and pending states', () => {
+test('maps relay forwarding success, failure, and not sent states', () => {
   expect(relayForwardingState({ forwardStatus: 'sent' })).toEqual({ status: 'sent', failed: false });
   expect(relayForwardingState({ forwardStatus: 'error: destination unreachable' })).toEqual({ status: 'error: destination unreachable', failed: true });
-  expect(relayForwardingState({})).toEqual({ status: 'Pending', failed: false });
+  expect(relayForwardingState({})).toEqual({ status: 'Not sent', failed: false });
 });

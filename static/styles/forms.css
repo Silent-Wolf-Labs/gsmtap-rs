@@ -1,0 +1,11 @@
+label { display:inline-flex; flex-direction:column; gap:.35rem; margin:.35rem; color:#e2e8f0; font-size:.85rem; font-weight:600; letter-spacing:.02em; }
+input,textarea { background:var(--bg-input); color:#fff; border:1px solid var(--border-control); padding:.4rem; }
+select { min-width:7rem; background:var(--bg-input); color:var(--text); border:1px solid var(--border-control); border-radius:4px; padding:.4rem .55rem; font:inherit; }
+select:hover { border-color:#6b8296; }
+select:focus { outline:2px solid var(--focus-strong); outline-offset:1px; border-color:var(--focus); }
+option { background:var(--bg-card); color:var(--text); }
+textarea { min-width:280px; min-height:2.5rem; }
+button { margin:.5rem; padding:.5rem 1rem; background:var(--bg-control); border:1px solid var(--border-control-strong); border-radius:5px; color:var(--text-strong); font:inherit; font-weight:600; cursor:pointer; }
+button:hover:not(:disabled) { background:var(--bg-control-hover); border-color:#6b8296; }
+button:disabled { cursor:not-allowed; opacity:.55; }
+button:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }

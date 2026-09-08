@@ -43,6 +43,6 @@ export function packetModifiedState(packet) {
 }
 
 export function relayForwardingState(packet) {
-  const status = packet.forwardStatus || 'Pending';
+  const status = packet.forwardStatus || 'Not sent';
   return { status, failed: status.startsWith('error:') };
 }

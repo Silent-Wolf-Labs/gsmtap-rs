@@ -1,9 +1,21 @@
-import { createSelectControl } from './select-control.js';
+import { packetSourceAddress } from '../models/packet-model.js';
+
+export const defaultPacketFilters = Object.freeze({
+  packet: '',
+  direction: null,
+  timestamp: '',
+  decode: null,
+  modified: null,
+  sourceAddress: '',
+});
 
 const definitions = [
-  { id: 'direction', label: 'Direction', options: [['all', 'All'], ['RX', 'RX'], ['TX', 'TX']] },
-  { id: 'parse', label: 'Decode', options: [['all', 'All'], ['success', 'Success'], ['error', 'Error']] },
-  { id: 'modified', label: 'Modified', options: [['all', 'All'], ['yes', 'Modified'], ['no', 'Unmodified']] },
+  { id: 'packet', label: 'Packet' },
+  { id: 'direction', label: 'Direction', options: [['RX', 'RX'], ['TX', 'TX']] },
+  { id: 'timestamp', label: 'Timestamp' },
+  { id: 'decode', label: 'Decode', options: [['success', 'Decoded'], ['error', 'Failed']] },
+  { id: 'modified', label: 'Modified', options: [['yes', 'Yes'], ['no', 'No']] },
+  { id: 'sourceAddress', label: 'Source address' },
 ];
 
 export function visibleFilterIds(mode) {
@@ -14,49 +26,29 @@ export function visibleFilterIds(mode) {
     .map(definition => definition.id);
 }
 
-export function filterPackets(packets, filters) {
-  const direction = filters.direction ?? 'all';
-  const parse = filters.parse ?? 'all';
-  const modified = filters.modified ?? 'all';
+export function filterPackets(packets, filters = defaultPacketFilters) {
+  const direction = filters.direction;
+  const packetQuery = String(filters.packet ?? '').trim().toLocaleLowerCase();
+  const timestamp = String(filters.timestamp ?? '').trim().toLocaleLowerCase();
+  const decode = filters.decode;
+  const modified = filters.modified;
+  const sourceAddress = String(filters.sourceAddress ?? '').trim().toLocaleLowerCase();
   return packets.filter(packet =>
-    (direction === 'all' || packet.direction === direction) &&
-    (parse === 'all' || (parse === 'success') === !packet.parseError) &&
-    (modified === 'all' || (modified === 'yes') === packet.modified));
+    (!packetQuery || String(packet.id ?? '').toLocaleLowerCase().includes(packetQuery)) &&
+    (!timestamp || new Date(Number(packet.timestampMs)).toLocaleString().toLocaleLowerCase().includes(timestamp)) &&
+    (!direction || packet.direction === direction) &&
+    (!decode || (decode === 'success') === !packet.parseError) &&
+    (!modified || (modified === 'yes') === Boolean(packet.modified)) &&
+    (!sourceAddress || String(packetSourceAddress(packet) ?? '').toLocaleLowerCase().includes(sourceAddress)));
 }
 
-export function createFilters(node, onChange) {
-  let mode = 'listen';
-  let controls = new Map();
+export function isFilterActive(filters = defaultPacketFilters, mode = 'listen') {
+  return visibleFilterIds(mode).some(field => {
+    const value = filters[field];
+    return typeof value === 'string' ? Boolean(value.trim()) : value !== null && value !== undefined;
+  });
+}
 
-  function mount() {
-    node.replaceChildren();
-    controls = new Map();
-    for (const definition of definitions) {
-      if (!visibleFilterIds(mode).includes(definition.id)) continue;
-      const control = createSelectControl({
-        id: `filter-${definition.id}`,
-        label: definition.label,
-        options: definition.options,
-        onChange,
-      });
-      node.append(control.node);
-      controls.set(definition.id, control);
-    }
-  }
-
-  mount();
-
-  return {
-    read() {
-      return Object.fromEntries([...controls].map(([id, control]) => [id, control.value()]));
-    },
-    filter(packets) {
-      return filterPackets(packets, this.read());
-    },
-    setMode(nextMode) {
-      if (mode === nextMode) return;
-      mode = nextMode;
-      mount();
-    },
-  };
+export function filterDefinition(field) {
+  return definitions.find(definition => definition.id === field);
 }

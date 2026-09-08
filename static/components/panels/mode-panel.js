@@ -1,4 +1,3 @@
-import { createFilters } from '../filters.js';
 import { renderPacketTable } from '../packet/packet-table.js';
 import { renderStatusCard } from '../cards/status-card.js';
 import { listenCapability } from './listen-panel.js';
@@ -12,7 +11,6 @@ export const modeCapabilities = Object.freeze({ listen: listenCapability, relay:
 export function createModePanel({
   documentRef = document,
   packetsNode = documentRef.querySelector('#packets'),
-  filtersNode = documentRef.querySelector('#filters'),
   statusNode = documentRef.querySelector('#status'),
   onModify,
   onSelectPacket,
@@ -22,12 +20,9 @@ export function createModePanel({
 } = {}) {
   let capability = listenCapability;
   let activeMode = capability.mode;
-  const filters = createFilters(filtersNode, render);
-
   function setMode(mode) {
     activeMode = mode;
     capability = modeCapabilities[mode] || listenCapability;
-    filters.setMode(mode);
   }
 
   function applyStatus(status) {
@@ -35,16 +30,15 @@ export function createModePanel({
     renderStatus(statusNode, status, { onCaptureToggle });
   }
 
-  function render(packets, selectedPacketId) {
+  function render(packets, selectedPacketId, tableOptions = {}) {
     const actions = capability.actions;
-    renderTable(packetsNode, filters.filter(packets), activeMode,
+    renderTable(packetsNode, packets, activeMode,
       capability.modify ? (actions.modify || onModify) : undefined,
-      { selectedPacketId, onSelectPacket });
+      { selectedPacketId, onSelectPacket, ...tableOptions });
   }
 
   return {
     get capability() { return capability; },
-    filters,
     setMode,
     applyStatus,
     render,

@@ -9,7 +9,8 @@ beforeEach(() => {
 test('provides the stable, labeled workbench shell', () => {
   const requiredIds = [
     'status', 'send-section', 'selected-packet', 'send-form', 'fields',
-    'preview-card', 'preview', 'confirm-send', 'result', 'filters', 'packets',
+    'preview-card', 'preview', 'confirm-send', 'result', 'clear-filters', 'clear-history',
+    'clear-history-dialog', 'clear-history-skip', 'confirm-clear-history', 'cancel-clear-history', 'packets',
   ];
 
   for (const id of requiredIds) {
@@ -42,4 +43,7 @@ test('provides the stable, labeled workbench shell', () => {
   expect(document.getElementById('send-form').querySelector('#fields')).not.toBeNull();
   expect(document.getElementById('confirm-send').getAttribute('type')).toBe('button');
   expect(document.getElementById('confirm-send').disabled).toBe(true);
+  expect(document.getElementById('clear-history-dialog').getAttribute('aria-labelledby'))
+    .toBe('clear-history-dialog-heading');
+  expect(document.getElementById('clear-history-dialog').classList.contains('card')).toBe(true);
 });

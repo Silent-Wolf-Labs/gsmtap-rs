@@ -1,0 +1,45 @@
+table { width:100%; border-collapse:collapse; }
+.packet-history-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+.packet-history-actions { display:flex; align-items:center; gap:.25rem; flex-wrap:wrap; }
+.packet-history-heading h2 { margin:.1rem 0 1rem; }
+.packet-history-heading button { margin:0 0 1rem; }
+.packet-column-select, .packet-select-cell { width:2.5rem; text-align:center; vertical-align:middle; padding:.65rem .35rem; }
+.packet-select-all, .packet-row-checkbox { cursor:pointer; margin:0; width:1rem; height:1rem; vertical-align:middle; }
+.packet-select-all:focus-visible, .packet-row-checkbox:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.clear-history-dialog { position:fixed; inset:50% auto auto 50%; max-width:28rem; margin:0; transform:translate(-50%, -50%); border:1px solid var(--border); border-radius:8px; background:var(--bg-card); color:var(--text); }
+.clear-history-dialog::backdrop { background:#0008; }
+.clear-history-dialog-form { min-width: min(24rem, 75vw); }
+.clear-history-dialog-form h2 { margin-top:0; color:var(--text-strong); }
+.clear-history-dialog-checkbox { display:flex; flex-direction:row; align-items:center; margin:.75rem 0; }
+.clear-history-dialog-actions { display:flex; justify-content:flex-end; gap:.25rem; }
+th,td { border-top:1px solid var(--border-detail); padding:.65rem .5rem; text-align:left; vertical-align:top; }
+tbody tr { cursor:pointer; }
+tbody tr.packet-details-row { cursor:default; }
+tbody tr.packet-details-row > td { background:var(--bg-details); border-top:2px solid #526579; border-bottom:2px solid #526579; padding:0; }
+tbody tr:focus { outline:2px solid var(--focus-strong); outline-offset:-2px; }
+tbody tr.selected-row { background:var(--bg-selected); }
+th { color:#e2e8f0; font-size:.85rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; }
+.packet-column-header { white-space:nowrap; }
+.packet-column-header-label { vertical-align:middle; }
+.packet-column-filter { position:relative; display:inline-block; margin-left:.2rem; vertical-align:middle; }
+.packet-column-filter-trigger { margin:0; padding:.05rem .25rem; border:0; background:transparent; color:var(--text-muted); font-size:.9rem; line-height:1; }
+.packet-column-filter-trigger.active { color:var(--focus); }
+.packet-column-filter-menu { display:none; position:absolute; z-index:2; top:calc(100% + .35rem); right:0; min-width:9rem; padding:.55rem; border:1px solid var(--border-control); border-radius:5px; background:var(--bg-control); box-shadow:0 4px 12px #0008; color:var(--text); font-size:.8rem; font-weight:400; letter-spacing:normal; text-transform:none; }
+.packet-column-filter-menu.open { display:block; }
+.packet-column-filter-menu-label { display:block; margin-bottom:.35rem; color:var(--text-strong); font-weight:700; }
+.packet-column-filter-option { display:flex; gap:.35rem; align-items:center; padding:.2rem 0; }
+.packet-column-search { width:10rem; box-sizing:border-box; }
+.packet-details { display:grid; gap:.65rem; padding:.65rem; }
+.packet-details > section, .packet-details > details { margin:0; padding:.6rem; border:1px solid var(--border-detail); border-radius:5px; background:var(--bg-card); }
+.packet-details h3 { margin:0 0 .5rem; color:#e2e8f0; font-size:.82rem; letter-spacing:.04em; text-transform:uppercase; }
+.gsmtap-header-scroll { overflow-x:auto; }
+.gsmtap-header-table { width:max-content; min-width:100%; border-collapse:collapse; }
+.gsmtap-header-table th, .gsmtap-header-table td { padding:.35rem .55rem; white-space:nowrap; border:1px solid var(--border-detail); }
+.gsmtap-header-table th { color:var(--text-muted); font-size:.72rem; }
+.gsmtap-header-table td { color:var(--text-strong); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.84rem; }
+.packet-payload pre, .packet-original-input pre { margin:.2rem 0 0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+.packet-payload pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+.packet-original-input summary { cursor:pointer; color:var(--text-secondary); font-weight:600; }
+.packet-detail-actions { display:flex; justify-content:flex-end; gap:.25rem; }
+.packet-detail-actions button { margin:0; }
+.packet-forward-status { color:var(--text-muted); }

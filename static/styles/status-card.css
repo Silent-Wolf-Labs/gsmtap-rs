@@ -1,0 +1,29 @@
+.status-card { padding-bottom:.85rem; }
+.status-layout { display:grid; grid-template-columns:minmax(0, 7fr) minmax(11rem, 3fr); align-items:center; gap:1.5rem; }
+.status-information { display:grid; gap:.55rem; min-width:0; }
+.status-row { display:grid; grid-template-columns:8rem minmax(0, 1fr); align-items:center; gap:.8rem; min-width:0; }
+.status-row-label { color:var(--text-muted); font-size:.85rem; font-weight:600; }
+.status-row-value { min-width:0; color:var(--text-strong); overflow-wrap:anywhere; }
+.status-capture-controls { display:flex; flex:0 0 auto; flex-direction:column; align-items:center; }
+.capture-toggle { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; box-sizing:border-box; width:11rem; min-height:2.5rem; margin:0; padding:.5rem .8rem; background:var(--bg-control); border:1px solid var(--border-control-strong); border-radius:5px; color:#f2f4f7; font:inherit; font-weight:600; }
+.capture-toggle:hover { background:var(--bg-control-hover); border-color:#6b8296; }
+.capture-toggle.capture-paused { border-color:#d97706; }
+.capture-icon { width:1.25rem; height:1.25rem; object-fit:contain; }
+.capture-error { margin:.35rem 0 0; max-width:18rem; text-align:center; }
+.mode-control { display:inline-flex; align-items:center; justify-content:space-between; gap:.75rem; min-width:7rem; padding:.3rem .65rem .3rem .75rem; border-radius:5px; font-size:.9rem; font-weight:700; letter-spacing:.02em; }
+.mode-chevron { color:currentColor; font-size:.85rem; line-height:1; }
+.mode-listen { color:#bfdbfe; background:#1e3a5f; border:1px solid var(--accent-listen); }
+.mode-relay { color:#bbf7d0; background:#14532d; border:1px solid var(--accent-relay); }
+.mode-modify { color:var(--accent-modify-text); background:rgba(249,115,22,.15); border:1px solid var(--accent-modify); }
+.card-grid { display:flex; flex-wrap:wrap; gap:.55rem 0; }
+.card-item { display:inline-flex; align-items:baseline; gap:.35rem; padding:0 .85rem; border-right:1px solid var(--border-detail); }
+.card-item:first-child { padding-left:0; }
+.card-item:last-child { border-right:0; }
+.card-item-label { color:var(--text-secondary); font-size:.82rem; font-weight:600; letter-spacing:.02em; }
+.card-item strong { color:var(--text-strong); font-size:.95rem; overflow-wrap:anywhere; }
+.card-item.warning strong { color:#fca5a5; }
+@media (max-width:800px) {
+  .status-layout { grid-template-columns:1fr; gap:1rem; }
+  .status-capture-controls { align-items:flex-start; }
+  .capture-error { text-align:left; }
+}

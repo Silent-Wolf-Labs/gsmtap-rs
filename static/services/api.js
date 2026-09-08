@@ -14,6 +14,11 @@ export async function getPackets(limit = 500) {
   return (await request(`/api/packets?limit=${limit}`)).json();
 }
 
+export async function clearPacketHistory() {
+  const response = await request('/api/packets', 'DELETE');
+  if (!response.ok) throw new Error(`packet history clear failed (${response.status})`);
+}
+
 export async function setCapturePaused(paused) {
   const response = await request('/api/capture', 'PUT', { paused });
   if (!response.ok) throw new Error(`capture update failed (${response.status})`);
@@ -22,6 +27,10 @@ export async function setCapturePaused(paused) {
 
 export async function replayPacket(id) {
   return request(`/api/packets/${id}/replay`, 'POST');
+}
+
+export async function forwardPackets(packetIds) {
+  return request('/api/packets/forward', 'POST', { packetIds });
 }
 
 export async function previewModification(id, payload) {
