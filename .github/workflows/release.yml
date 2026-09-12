@@ -114,9 +114,10 @@ jobs:
         run: |
           set -eu
           compose_file=tests/integration/compose.yaml
+          export GSMTAP_MODE="${{ matrix.mode }}"
           trap 'docker compose -f "$compose_file" down --remove-orphans --volumes' EXIT
-          GSMTAP_MODE="${{ matrix.mode }}" docker compose -f "$compose_file" build
-          GSMTAP_MODE="${{ matrix.mode }}" docker compose -f "$compose_file" up \
+          docker compose -f "$compose_file" build
+          docker compose -f "$compose_file" up \
             --abort-on-container-exit \
             --exit-code-from traffic
 
