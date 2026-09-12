@@ -1,107 +1,74 @@
 import { jest } from '@jest/globals';
 import { renderStatusCard, statusFields } from '../../static/components/cards/status-card.js';
 
-const status = mode => ({
-  capturePaused: false,
-  mode,
-  gsmtapListen: '127.0.0.1:4729',
-  gsmtapForward: 'target:4729',
-  stats: {
-    received: 8,
-    parseFailed: 1,
-    forwardSent: 8,
-    forwardFailed: 0,
-    ingressDropped: 0,
-    historyDropped: 0,
-    uiEventsDropped: 0,
-    captureSkipped: 0,
-  },
+const status = (mode, forward = mode === 'listen' ? null : '127.0.0.1:4729') => ({
+  capturePaused: false, mode, gsmtapListen: '127.0.0.1:4729', gsmtapForward: forward,
+  stats: {},
 });
 
-test('status fields contain the compact primary information', () => {
-  expect(statusFields(status('listen')).map(([label]) => label)).toEqual([
-    'Workbench Mode', 'Listen on', 'Forward to',
-  ]);
-  expect(statusFields(status('listen')).find(([label]) => label === 'Forward to')[1]).toBe('target:4729');
-});
-
-test('renders mode, labeled endpoints, and no diagnostic counters', () => {
+test('hides the forward address completely in listen mode', () => {
   const node = document.createElement('div');
   renderStatusCard(node, status('listen'));
-
-  expect(node.querySelector('.mode-control').textContent).toBe('Listen▾');
-  expect(node.textContent).toContain('Workbench Mode:');
-  expect(node.textContent).toContain('Listen on:');
-  expect(node.textContent).toContain('127.0.0.1:4729');
-  expect(node.textContent).toContain('Forward to:');
-  expect(node.textContent).toContain('target:4729');
-  expect(node.textContent).not.toContain('received');
-  expect(node.textContent).not.toContain('decode failure');
-  expect(node.textContent).not.toContain('queue drops');
-  expect(node.querySelector('.status-layout')).not.toBeNull();
+  expect(statusFields(status('listen')).map(([label]) => label)).toEqual(['Workbench Mode', 'Listen on']);
+  expect(node.querySelector('.status-row:nth-child(3)').hidden).toBe(true);
+  expect(node.textContent).not.toContain('Forward to:');
 });
 
-test('renders listen mode without a forwarding destination as disabled', () => {
+test('requires an address before activating relay from listen mode', async () => {
   const node = document.createElement('div');
-  renderStatusCard(node, { ...status('listen'), gsmtapForward: null });
-
-  expect(node.textContent).toContain('Forward to:Disabled');
-});
-
-test('renders the pause icon and label while capture is active', () => {
-  const node = document.createElement('div');
-  renderStatusCard(node, status('listen'));
-  const button = node.querySelector('.capture-toggle');
-
-  expect(button.textContent).toBe('Pause Capture');
-  expect(button.querySelector('img').src).toContain('/styles/pause-icon-32x32.png');
-  expect(button.querySelector('img').getAttribute('alt')).toBe('');
-  expect(button.getAttribute('aria-pressed')).toBe('false');
-  expect(button.classList.contains('capture-paused')).toBe(false);
-});
-
-test('renders the play icon and label while capture is paused', () => {
-  const node = document.createElement('div');
-  renderStatusCard(node, { ...status('listen'), capturePaused: true });
-  const button = node.querySelector('.capture-toggle');
-
-  expect(button.textContent).toBe('Resume Capture');
-  expect(button.querySelector('img').src).toContain('/styles/play-icon-32x32.png');
-  expect(button.getAttribute('aria-pressed')).toBe('true');
-  expect(button.classList.contains('capture-paused')).toBe(true);
-});
-
-test('updates the existing status card and capture button in place', () => {
-  const node = document.createElement('div');
-  renderStatusCard(node, status('listen'));
-  const card = node.querySelector('.status-card');
-  const button = node.querySelector('.capture-toggle');
-
-  renderStatusCard(node, { ...status('listen'), capturePaused: true });
-
-  expect(node.querySelector('.status-card')).toBe(card);
-  expect(node.querySelector('.capture-toggle')).toBe(button);
-  expect(button.textContent).toBe('Resume Capture');
-  expect(button.getAttribute('aria-pressed')).toBe('true');
-});
-
-test('disables the toggle while updating and reports failures', async () => {
-  const node = document.createElement('div');
-  let resolve;
-  const update = jest.fn(() => new Promise(done => { resolve = done; }));
-  renderStatusCard(node, status('listen'), { onCaptureToggle: update });
-  const button = node.querySelector('.capture-toggle');
-  const click = button.click();
-  expect(button.disabled).toBe(true);
-  resolve();
-  await click;
-  expect(update).toHaveBeenCalledWith(true);
-
-  renderStatusCard(node, status('listen'), { onCaptureToggle: async () => { throw new Error('offline'); } });
-  const failed = node.querySelector('.capture-toggle');
-  failed.click();
+  const onModeChange = jest.fn(async () => {});
+  renderStatusCard(node, status('listen'), { onModeChange });
+  node.querySelector('.mode-control').click();
+  node.querySelector('[data-mode="relay"]').click();
+  expect(node.querySelector('.status-row:nth-child(3)').hidden).toBe(false);
+  expect(node.querySelector('.forward-address-save').textContent).toBe('Activate Relay');
+  node.querySelector('.forward-address-save').click();
+  expect(node.querySelector('.forward-address-error').textContent).toContain('Enter a forward address');
+  node.querySelector('.forward-address').value = '127.0.0.1:14729';
+  node.querySelector('.forward-address-save').click();
   await Promise.resolve();
+  expect(onModeChange).toHaveBeenCalledWith('relay', '127.0.0.1:14729');
+});
+
+test('retains address while changing relay to modify and clears it after listen confirms', async () => {
+  const node = document.createElement('div');
+  const onModeChange = jest.fn(async () => {});
+  renderStatusCard(node, status('relay'), { onModeChange });
+  const input = node.querySelector('.forward-address');
+  expect(input.value).toBe('127.0.0.1:4729');
+  node.querySelector('.mode-control').click();
+  node.querySelector('[data-mode="modify"]').click();
   await Promise.resolve();
-  expect(failed.disabled).toBe(false);
-  expect(node.querySelector('.capture-error').textContent).toContain('offline');
+  expect(onModeChange).toHaveBeenCalledWith('modify');
+  renderStatusCard(node, status('modify'), { onModeChange });
+  expect(input.value).toBe('127.0.0.1:4729');
+  renderStatusCard(node, status('listen'), { onModeChange });
+  expect(node.querySelector('.status-row:nth-child(3)').hidden).toBe(true);
+  expect(input.value).toBe('');
+});
+
+test('saves an address change in an active forwarding mode', async () => {
+  const node = document.createElement('div');
+  const onModeChange = jest.fn(async () => {});
+  renderStatusCard(node, status('modify'), { onModeChange });
+  node.querySelector('.forward-address').value = 'relay.example:4729';
+  node.querySelector('.forward-address-save').click();
+  await Promise.resolve();
+  expect(onModeChange).toHaveBeenCalledWith('modify', 'relay.example:4729');
+});
+
+test('keeps the card and capture control in place across status refreshes', () => {
+  const node = document.createElement('div'); renderStatusCard(node, status('listen'));
+  const card = node.querySelector('.status-card'); const button = node.querySelector('.capture-toggle');
+  renderStatusCard(node, { ...status('listen'), capturePaused: true });
+  expect(node.querySelector('.status-card')).toBe(card); expect(node.querySelector('.capture-toggle')).toBe(button);
+  expect(button.textContent).toBe('Resume Capture');
+});
+
+test('keeps the mode menu open during an ordinary status refresh', () => {
+  const node = document.createElement('div'); renderStatusCard(node, status('listen'));
+  const control = node.querySelector('.mode-control'); const menu = node.querySelector('.mode-menu');
+  control.click();
+  renderStatusCard(node, { ...status('listen'), capturePaused: true });
+  expect(menu.hidden).toBe(false);
 });

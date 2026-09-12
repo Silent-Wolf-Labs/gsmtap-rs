@@ -19,6 +19,7 @@ function createView() {
   return {
     render: jest.fn(),
     renderError: jest.fn(),
+    setClearHistoryState: jest.fn(),
   };
 }
 
@@ -285,10 +286,13 @@ test('reports clear-history failures and restores the action state', async () =>
     showResult,
   });
   controller.updatePackets([{ id: 1 }]);
+  const rendersBeforeRequest = view.render.mock.calls.length;
   lastState(view).onClearHistory();
   await new Promise(resolve => setTimeout(resolve, 0));
 
   expect(showResult).toHaveBeenCalledWith('Unable to clear packet history: server unavailable');
   expect(lastState(view).clearHistoryInFlight).toBe(false);
   expect(lastState(view).packets).toEqual([{ id: 1 }]);
+  expect(view.render).toHaveBeenCalledTimes(rendersBeforeRequest);
+  expect(view.setClearHistoryState).toHaveBeenLastCalledWith({ hasPackets: true, clearHistoryInFlight: false });
 });

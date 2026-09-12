@@ -32,7 +32,7 @@ function setup() {
 const status = mode => ({
   mode,
   gsmtapListen: '127.0.0.1:4729',
-  gsmtapForward: null,
+  gsmtapForward: mode === 'listen' ? null : 'target:4729',
   stats: { received: 1, parseFailed: 0, ingressDropped: 0, historyDropped: 0, uiEventsDropped: 0 },
 });
 
@@ -63,6 +63,73 @@ test('refreshes data and updates the mode-aware UI', async () => {
   expect(document.querySelector('.mode-control').textContent).toBe('Modify▾');
   expect(document.querySelector('#send-section').hidden).toBe(false);
   expect(document.querySelectorAll('#packets tbody tr')).toHaveLength(1);
+});
+
+test('refreshes packets without closing the open mode menu', async () => {
+  setup();
+  const refreshPackets = jest.fn(async () => []);
+  const api = dependencies({ refreshPackets });
+  const controller = createAppController(document, api);
+
+  await controller.refresh();
+  const control = document.querySelector('.mode-control');
+  const menu = document.querySelector('.mode-menu');
+  control.click();
+  expect(menu.hidden).toBe(false);
+
+  await controller.refresh();
+
+  expect(refreshPackets).toHaveBeenCalledTimes(1);
+  expect(menu.hidden).toBe(false);
+  expect(control.getAttribute('aria-expanded')).toBe('true');
+});
+
+test('changes mode through the backend and reconciles confirmed status', async () => {
+  setup();
+  let currentMode = 'listen';
+  const setMode = jest.fn(async mode => {
+    currentMode = mode;
+    return { mode };
+  });
+  const refreshWorkbench = jest.fn(async () => ({ status: status(currentMode), packets: [] }));
+  const api = dependencies({ setMode, refreshWorkbench });
+  const controller = createAppController(document, api);
+
+  await controller.refresh();
+  document.querySelector('.mode-control').click();
+  document.querySelector('[data-mode="relay"]').click();
+  document.querySelector('.forward-address').value = 'target:4729';
+  document.querySelector('.forward-address-save').click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  expect(setMode).toHaveBeenCalledWith('relay', 'target:4729');
+  expect(refreshWorkbench).toHaveBeenCalledTimes(2);
+  expect(document.querySelector('.mode-control').textContent).toBe('Relay▾');
+});
+
+test('keeps mode selection disabled when a refresh occurs during a pending change', async () => {
+  setup();
+  let resolveModeChange;
+  const setMode = jest.fn(() => new Promise(resolve => { resolveModeChange = resolve; }));
+  const api = dependencies({
+    setMode,
+    refreshWorkbench: jest.fn(async () => ({ status: status('relay'), packets: [] })),
+  });
+  const controller = createAppController(document, api);
+  await controller.refresh();
+
+  document.querySelector('.mode-control').click();
+  document.querySelector('[data-mode="modify"]').click();
+  await Promise.resolve();
+  await controller.refresh();
+  const modeControl = document.querySelector('.mode-control');
+  expect(modeControl.disabled).toBe(true);
+  modeControl.click();
+  expect(setMode).toHaveBeenCalledWith('modify', undefined);
+
+  resolveModeChange({ mode: 'modify', forwardAddress: 'target:4729' });
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(modeControl.disabled).toBe(false);
 });
 
 test('keeps listen packet inspection passive', async () => {
@@ -98,6 +165,29 @@ test('retains selected packet details after refresh', async () => {
   expect(document.querySelector('#packets .selected-row').textContent).toContain('#2');
   expect(document.querySelector('#packets .packet-details-row .gsmtap-header-table').textContent).toContain('42');
   expect(document.querySelector('#packets .packet-original-input').open).toBe(true);
+});
+
+test('keeps the selected Modify packet and unsaved edits through a packet refresh', async () => {
+  setup();
+  const packet = { id: 7, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 } };
+  const api = dependencies({
+    refreshWorkbench: jest.fn(async () => ({ status: status('modify'), packets: [packet] })),
+  });
+  const controller = createAppController(document, api);
+
+  await controller.refresh();
+  document.querySelector('#packets tbody tr td').click();
+  [...document.querySelectorAll('#packets button')].find(button => button.textContent === 'Modify').click();
+  const arfcn = document.querySelector('[name="arfcn"]');
+  expect(document.querySelector('#selected-packet').textContent).toContain('#7');
+  expect(arfcn.value).toBe('42');
+  arfcn.value = '99';
+  arfcn.dispatchEvent(new Event('input', { bubbles: true }));
+
+  await controller.refresh();
+
+  expect(document.querySelector('#selected-packet').textContent).toContain('#7');
+  expect(document.querySelector('[name="arfcn"]').value).toBe('99');
 });
 
 test('coalesces refreshes and applies capture state immediately', async () => {
