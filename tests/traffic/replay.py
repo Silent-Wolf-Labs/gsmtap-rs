@@ -134,6 +134,25 @@ def check(args, vectors):
     if not args.sink_port:
         raise RuntimeError("--sink-port is required for relay and modify")
     if args.mode == "relay":
+        new_records = records[-expected:]
+        if len(new_records) != expected:
+            raise RuntimeError(
+                f"relay selected {len(new_records)} new records, expected {expected}"
+            )
+        _, forward_response = http_json(
+            base,
+            "/api/packets/forward",
+            "POST",
+            {"packetIds": [record["id"] for record in new_records]},
+        )
+        results = forward_response.get("results", [])
+        if len(results) != expected or any(
+            result.get("status") != "sent" for result in results
+        ):
+            raise RuntimeError(
+                f"relay selected-batch forwarding returned unexpected results: {results}"
+            )
+        status = workbench_status(base)
         forwarded = status["stats"].get("forwardSent", 0) - forwarded_before
         forward_failures = status["stats"].get("forwardFailed", 0) - forward_failures_before
         if forwarded != expected:
