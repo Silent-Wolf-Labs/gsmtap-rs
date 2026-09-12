@@ -1,7 +1,9 @@
 use super::super::{
+    capture::CaptureControl,
     config::{Config, Mode},
     history::PacketStore,
-    network::build_router,
+    network::{build_router, build_router_with_runtime},
+    runtime::{PipelineFactory, RuntimeHandle},
 };
 use axum::{
     body::Body,
@@ -10,6 +12,245 @@ use axum::{
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tower::ServiceExt;
+
+const PACKET: [u8; 17] = [2, 4, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0xca];
+
+struct RejectRelayPipeline;
+
+impl PipelineFactory for RejectRelayPipeline {
+    fn preflight(&self, mode: Mode, _forward: Option<&str>) -> Result<(), std::io::Error> {
+        if mode == Mode::Relay {
+            Err(std::io::Error::other("replacement startup failed"))
+        } else {
+            Ok(())
+        }
+    }
+}
+
+async fn put_mode(router: axum::Router, mode: &str) -> axum::response::Response {
+    put_mode_with_forward(router, mode, None).await
+}
+
+async fn put_mode_with_forward(
+    router: axum::Router,
+    mode: &str,
+    forward_address: Option<&str>,
+) -> axum::response::Response {
+    router
+        .oneshot(
+            Request::put("/api/mode")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "mode": mode, "forwardAddress": forward_address })
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap()
+}
+
+#[tokio::test]
+async fn mode_transition_sets_retains_and_clears_the_runtime_forward_address() {
+    let config = Config::from_values(
+        Mode::Listen,
+        "127.0.0.1:0".parse().unwrap(),
+        None,
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+        16,
+    )
+    .unwrap();
+    let store = Arc::new(PacketStore::new(8));
+    let runtime = RuntimeHandle::start(config.clone(), store.clone(), CaptureControl::default())
+        .await
+        .unwrap();
+    let router = build_router_with_runtime(
+        config,
+        store,
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+        CaptureControl::default(),
+        runtime.clone(),
+    );
+
+    let response = put_mode_with_forward(router.clone(), "relay", Some("127.0.0.1:14729")).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(runtime.mode().await, Mode::Relay);
+    assert_eq!(runtime.forward().await.as_deref(), Some("127.0.0.1:14729"));
+
+    let response = put_mode(router.clone(), "modify").await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(runtime.mode().await, Mode::Modify);
+    assert_eq!(runtime.forward().await.as_deref(), Some("127.0.0.1:14729"));
+
+    let response = put_mode(router, "listen").await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(runtime.mode().await, Mode::Listen);
+    assert_eq!(runtime.forward().await, None);
+}
+
+async fn wait_for_records(store: &PacketStore, count: usize) {
+    tokio::time::timeout(std::time::Duration::from_secs(1), async {
+        while store.list().await.len() < count {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .expect("packet history did not reach the expected size");
+}
+
+#[tokio::test]
+async fn mode_api_switches_live_pipeline_clears_history_and_updates_authorization() {
+    let target = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+    let config = Config::from_values(
+        Mode::Listen,
+        "127.0.0.1:0".parse().unwrap(),
+        Some(target.local_addr().unwrap().to_string()),
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+        16,
+    )
+    .unwrap();
+    let store = Arc::new(PacketStore::new(8));
+    let runtime = RuntimeHandle::start(config.clone(), store.clone(), CaptureControl::default())
+        .await
+        .unwrap();
+    let listener = runtime.listen_addr().unwrap();
+    let router = build_router_with_runtime(
+        config,
+        store.clone(),
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+        CaptureControl::default(),
+        runtime.clone(),
+    );
+
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 1).await;
+    let response = put_mode(router.clone(), "relay").await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(store.list().await.is_empty());
+    assert_eq!(runtime.mode().await, Mode::Relay);
+    assert_eq!(runtime.listen_addr(), Some(listener));
+
+    let response = router
+        .clone()
+        .oneshot(
+            Request::post("/api/encode-send")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "version": 2, "headerLengthWords": 4, "messageType": 1,
+                        "timeslot": 0, "arfcn": 1, "signalDbm": 0, "snrDb": 0,
+                        "frameNumber": 1, "subtype": 0, "antennaNumber": 0,
+                        "subSlot": 0, "reserved": 0,
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 1).await;
+    assert_eq!(store.list().await[0].mode, Mode::Relay);
+}
+
+#[tokio::test]
+async fn failed_mode_preflight_retains_listener_mode_and_packet_history() {
+    let config = Config::from_values(
+        Mode::Listen,
+        "127.0.0.1:0".parse().unwrap(),
+        Some("127.0.0.1:4729".into()),
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+        16,
+    )
+    .unwrap();
+    let store = Arc::new(PacketStore::new(8));
+    let runtime = RuntimeHandle::start_with_test_factory(
+        config.clone(),
+        store.clone(),
+        CaptureControl::default(),
+        Arc::new(RejectRelayPipeline),
+    )
+    .await
+    .unwrap();
+    let listener = runtime.listen_addr().unwrap();
+    let router = build_router_with_runtime(
+        config,
+        store.clone(),
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+        CaptureControl::default(),
+        runtime.clone(),
+    );
+
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 1).await;
+    let response = put_mode(router, "relay").await;
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(runtime.mode().await, Mode::Listen);
+    assert_eq!(runtime.listen_addr(), Some(listener));
+    assert_eq!(store.list().await.len(), 1);
+
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 2).await;
+    assert!(store
+        .list()
+        .await
+        .iter()
+        .all(|record| record.mode == Mode::Listen));
+}
+
+#[tokio::test]
+async fn concurrent_mode_changes_are_serialized_in_request_order() {
+    let config = Config::from_values(
+        Mode::Listen,
+        "127.0.0.1:0".parse().unwrap(),
+        Some("127.0.0.1:4729".into()),
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+        16,
+    )
+    .unwrap();
+    let runtime = RuntimeHandle::start(
+        config,
+        Arc::new(PacketStore::new(8)),
+        CaptureControl::default(),
+    )
+    .await
+    .unwrap();
+
+    let (relay, modify) = tokio::join!(
+        runtime.change_mode(Mode::Relay, None),
+        runtime.change_mode(Mode::Modify, None),
+    );
+
+    assert_eq!(relay.unwrap().0, Mode::Relay);
+    assert_eq!(modify.unwrap().0, Mode::Modify);
+    assert_eq!(runtime.mode().await, Mode::Modify);
+}
 
 #[tokio::test]
 async fn status_reports_the_active_mode_and_endpoints() {
@@ -101,7 +342,11 @@ async fn stylesheet_entry_point_and_imported_assets_are_served() {
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK, "{path}");
-        assert_eq!(response.headers()["content-type"], "application/javascript", "{path}");
+        assert_eq!(
+            response.headers()["content-type"],
+            "application/javascript",
+            "{path}"
+        );
     }
 }
 
@@ -223,7 +468,9 @@ async fn forward_packets_validates_request_payload() {
         .oneshot(
             Request::post("/api/packets/forward")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::json!({ "packetIds": [] }).to_string()))
+                .body(Body::from(
+                    serde_json::json!({ "packetIds": [] }).to_string(),
+                ))
                 .unwrap(),
         )
         .await
@@ -236,7 +483,9 @@ async fn forward_packets_validates_request_payload() {
         .oneshot(
             Request::post("/api/packets/forward")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::json!({ "packetIds": [1, 2, 1] }).to_string()))
+                .body(Body::from(
+                    serde_json::json!({ "packetIds": [1, 2, 1] }).to_string(),
+                ))
                 .unwrap(),
         )
         .await
@@ -250,7 +499,9 @@ async fn forward_packets_validates_request_payload() {
         .oneshot(
             Request::post("/api/packets/forward")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::json!({ "packetIds": large_ids }).to_string()))
+                .body(Body::from(
+                    serde_json::json!({ "packetIds": large_ids }).to_string(),
+                ))
                 .unwrap(),
         )
         .await

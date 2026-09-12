@@ -80,9 +80,11 @@ async fn paused_relay_does_not_forward_and_counts_skipped() {
     .unwrap();
     gate.notify_one();
     let mut forwarded = [0u8; 64];
-    assert!(timeout(Duration::from_millis(50), target.recv_from(&mut forwarded))
-        .await
-        .is_err());
+    assert!(
+        timeout(Duration::from_millis(50), target.recv_from(&mut forwarded))
+            .await
+            .is_err()
+    );
     assert!(store.list().await.is_empty());
     assert_eq!(store.counters().snapshot().forward_sent, 0);
     assert_eq!(store.counters().snapshot().capture_skipped, 1);

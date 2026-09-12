@@ -151,11 +151,7 @@ async fn relay_mode_batch_forwarding_sends_selected_packets() {
     let forward = target_addr.to_string();
     let listen = receiver.local_addr().unwrap();
     let router = build_router(
-        config(
-            Mode::Relay,
-            listen,
-            Some(forward.clone()),
-        ),
+        config(Mode::Relay, listen, Some(forward.clone())),
         store.clone(),
         Arc::new(socket().await),
     );
@@ -184,7 +180,10 @@ async fn relay_mode_batch_forwarding_sends_selected_packets() {
     let mut received = [0u8; 64];
     let (length, _) = target.recv_from(&mut received).await.unwrap();
     assert_eq!(&received[..length], &PACKET);
-    assert_eq!(store.get(id).await.unwrap().forward_status.as_deref(), Some("sent"));
+    assert_eq!(
+        store.get(id).await.unwrap().forward_status.as_deref(),
+        Some("sent")
+    );
     task.abort();
 }
 

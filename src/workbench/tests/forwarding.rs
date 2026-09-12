@@ -26,7 +26,11 @@ async fn relay_ingress_records_without_forwarding_and_does_not_stop_receiving() 
             .unwrap();
     }
     wait_for_records(&store, 2).await;
-    assert!(store.list().await.iter().all(|packet| packet.forward_status.is_none()));
+    assert!(store
+        .list()
+        .await
+        .iter()
+        .all(|packet| packet.forward_status.is_none()));
     assert_eq!(store.counters().snapshot().forward_failed, 0);
     assert_eq!(store.counters().snapshot().forward_sent, 0);
     assert!(!task.is_finished());
@@ -74,7 +78,10 @@ async fn relay_batch_forwarding_records_errors_and_increments_counters() {
         .starts_with("error:"));
     assert_eq!(store.counters().snapshot().forward_failed, 1);
     assert_eq!(store.counters().snapshot().forward_sent, 0);
-    assert!(store.get(id).await.unwrap()
+    assert!(store
+        .get(id)
+        .await
+        .unwrap()
         .forward_status
         .as_deref()
         .unwrap()
