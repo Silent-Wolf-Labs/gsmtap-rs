@@ -101,8 +101,27 @@ jobs:
         if: steps.sbom-scan.outcome == 'failure'
         run: exit 1
 
+  integration:
+    needs: verify
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [listen, relay, modify]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ${{ matrix.mode }}-mode Compose verification
+        run: |
+          set -eu
+          compose_file=tests/integration/compose.yaml
+          trap 'docker compose -f "$compose_file" down --remove-orphans --volumes' EXIT
+          GSMTAP_MODE="${{ matrix.mode }}" docker compose -f "$compose_file" build
+          GSMTAP_MODE="${{ matrix.mode }}" docker compose -f "$compose_file" up \
+            --abort-on-container-exit \
+            --exit-code-from traffic
+
   publish-crate:
-    needs: [verify, scan-container]
+    needs: [verify, integration, scan-container]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,7 +138,7 @@ jobs:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
   build-container:
-    needs: verify
+    needs: [verify, integration]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -190,7 +209,7 @@ jobs:
         run: exit 1
 
   publish-container:
-    needs: [verify, scan-container]
+    needs: [verify, integration, scan-container]
     runs-on: ubuntu-latest
     permissions:
       contents: read
