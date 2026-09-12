@@ -1,12 +1,17 @@
 use std::collections::VecDeque;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use tokio::sync::{broadcast, Mutex};
 
 use super::dto::PacketRecord;
 
+const DEFAULT_MAX_HISTORY_BYTES: usize = 256 * 1024 * 1024;
+const MAX_EVENT_CAPACITY: usize = 1_024;
+
 pub struct PacketStore {
     packets: Mutex<VecDeque<PacketRecord>>,
     capacity: usize,
+    bytes: AtomicUsize,
+    max_bytes: usize,
     events: broadcast::Sender<PacketRecord>,
     next_id: AtomicU64,
     counters: RuntimeCounters,
@@ -78,10 +83,12 @@ impl RuntimeCounters {
 
 impl PacketStore {
     pub fn new(capacity: usize) -> Self {
-        let (events, _) = broadcast::channel(capacity.max(1));
+        let (events, _) = broadcast::channel(capacity.clamp(1, MAX_EVENT_CAPACITY));
         Self {
-            packets: Mutex::new(VecDeque::with_capacity(capacity)),
+            packets: Mutex::new(VecDeque::with_capacity(capacity.min(MAX_EVENT_CAPACITY))),
             capacity: capacity.max(1),
+            bytes: AtomicUsize::new(0),
+            max_bytes: DEFAULT_MAX_HISTORY_BYTES,
             events,
             next_id: AtomicU64::new(1),
             counters: RuntimeCounters::default(),
@@ -90,11 +97,23 @@ impl PacketStore {
 
     pub async fn record(&self, mut packet: PacketRecord) {
         packet.id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let packet_bytes = packet_memory_bytes(&packet);
         let mut packets = self.packets.lock().await;
-        if packets.len() >= self.capacity {
-            packets.pop_front();
+        while packets.len() >= self.capacity
+            || (!packets.is_empty()
+                && self
+                    .bytes
+                    .load(Ordering::Relaxed)
+                    .saturating_add(packet_bytes)
+                    > self.max_bytes)
+        {
+            if let Some(evicted) = packets.pop_front() {
+                self.bytes
+                    .fetch_sub(packet_memory_bytes(&evicted), Ordering::Relaxed);
+            }
             self.counters.history_dropped();
         }
+        self.bytes.fetch_add(packet_bytes, Ordering::Relaxed);
         packets.push_back(packet.clone());
         drop(packets);
         let _ = self.events.send(packet);
@@ -135,6 +154,7 @@ impl PacketStore {
 
     pub async fn clear(&self) {
         self.packets.lock().await.clear();
+        self.bytes.store(0, Ordering::Relaxed);
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<PacketRecord> {
@@ -144,4 +164,19 @@ impl PacketStore {
     pub fn counters(&self) -> &RuntimeCounters {
         &self.counters
     }
+}
+
+fn packet_memory_bytes(packet: &PacketRecord) -> usize {
+    let decoded_bytes = packet.decoded.as_ref().map_or(0, |decoded| {
+        decoded.extension_hex.len() + decoded.payload_hex.len()
+    });
+    packet.raw_hex.len()
+        + packet.peer.len()
+        + packet.source_address.as_ref().map_or(0, String::len)
+        + packet.destination.as_ref().map_or(0, String::len)
+        + packet.parse_error.as_ref().map_or(0, String::len)
+        + packet.forward_status.as_ref().map_or(0, String::len)
+        + packet.original_raw_hex.as_ref().map_or(0, String::len)
+        + packet.final_raw_hex.as_ref().map_or(0, String::len)
+        + decoded_bytes
 }
