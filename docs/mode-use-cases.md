@@ -1,8 +1,9 @@
 # GSMTAP workbench mode use cases
 
 The workbench receives GSMTAP UDP datagrams on its listen endpoint. Depending
-on the selected mode, it either observes the datagrams, forwards them
-unchanged, or makes an explicitly edited copy available for forwarding.
+on the selected mode, it observes the datagrams, makes selected batches
+available for byte-preserving forwarding, or makes an explicitly edited copy
+available for forwarding.
 
 ![Listen, relay, and modify mode relationships](mode_use_cases.svg)
 
@@ -32,20 +33,23 @@ docker run --rm \
   --http-listen 0.0.0.0:8080
 ```
 
-## Relay mode: connect two endpoints
+## Relay mode: inspect and forward selected batches
 
-**Use case:** An engineer places the workbench between a GSMTAP producer and a
-consumer to observe traffic while keeping the existing packet bytes intact.
+**Use case:** An engineer captures traffic from a GSMTAP producer, inspects it
+in the web UI, and forwards a selected batch to a consumer while keeping the
+existing packet bytes intact.
 
 ```text
-GSMTAP source  ── original datagram ──>  gsmtap-workbench
-                                             ── same bytes ──> GSMTAP target
+GSMTAP source  ── original datagram ──>  gsmtap-workbench  ── selected batch ──> GSMTAP target
+                                             ▲
+                                             └─ web UI: select and Forward selected
 ```
 
-Relay mode forwards the received datagram to `--gsmtap-forward`. Forwarding is
-payload-transparent: the workbench does not decode and re-encode the normal
-relay path. The target will generally see the workbench host/container as the
-UDP source address.
+Relay mode records incoming datagrams and does not forward them automatically.
+Select one or more records in the web UI and use **Forward selected** to send a
+batch to `--gsmtap-forward`. Forwarding is payload-transparent: the workbench
+does not decode and re-encode the selected datagrams. The target will generally
+see the workbench host/container as the UDP source address.
 
 ```bash
 docker run --rm \

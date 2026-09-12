@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="930" viewBox="0 0 1200 930" role="img" aria-labelledby="title description">
   <title id="title">GSMTAP workbench operating modes</title>
-  <desc id="description">Three diagrams show listen, relay, and modify mode. Traffic is received by the workbench over GSMTAP UDP. Listen mode does not forward, relay mode forwards the same datagram bytes, and modify mode sends an edited packet only after explicit confirmation in the web UI.</desc>
+  <desc id="description">Three diagrams show listen, relay, and modify mode. Traffic is received by the workbench over GSMTAP UDP. Listen mode does not forward, relay mode records packets and forwards selected batches with an explicit web UI action, and modify mode sends an edited packet only after explicit confirmation in the web UI.</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8fafc"/><stop offset="1" stop-color="#eef2f7"/></linearGradient>
     <linearGradient id="workbench" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dbeafe"/><stop offset="1" stop-color="#bfdbfe"/></linearGradient>
@@ -28,15 +28,15 @@
   <rect x="455" y="304" width="290" height="25" rx="12" fill="#fee2e2" stroke="#ef4444"/><text x="600" y="321" class="note" fill="#b91c1c">&#10005; No UDP forwarding</text>
 
   <rect x="35" y="365" width="1130" height="235" rx="14" class="panel"/>
-  <text x="65" y="403" class="mode">RELAY</text><text x="65" y="427" class="purpose">Inline observation: forward the original datagram bytes to a configured target.</text>
+  <text x="65" y="403" class="mode">RELAY</text><text x="65" y="427" class="purpose">Inspect received packets and explicitly forward a selected batch.</text>
   <rect x="90" y="465" width="190" height="75" rx="10" fill="url(#endpoint)" stroke="#d97706" class="node"/><text x="185" y="494" class="node-title">GSMTAP producer</text><text x="185" y="516" class="node-text">source endpoint</text>
-  <rect x="480" y="455" width="240" height="95" rx="10" fill="url(#workbench)" stroke="#2563eb" class="node"/><text x="600" y="489" class="node-title">gsmtap-workbench</text><text x="600" y="512" class="node-text">receive + inspect</text><text x="600" y="532" class="node-text">forward unchanged</text>
+  <rect x="480" y="455" width="240" height="95" rx="10" fill="url(#workbench)" stroke="#2563eb" class="node"/><text x="600" y="489" class="node-title">gsmtap-workbench</text><text x="600" y="512" class="node-text">receive + record</text><text x="600" y="532" class="node-text">await selected batch</text>
   <rect x="920" y="465" width="190" height="75" rx="10" fill="url(#endpoint)" stroke="#d97706" class="node"/><text x="1015" y="494" class="node-title">GSMTAP consumer</text><text x="1015" y="516" class="node-text">target endpoint</text>
   <line x1="280" y1="502" x2="470" y2="502" stroke="#2563eb" stroke-width="2.5" marker-end="url(#blue-arrow)"/><text x="375" y="486" class="edge">original datagram</text>
-  <line x1="720" y1="502" x2="910" y2="502" stroke="#15803d" stroke-width="2.5" marker-end="url(#green-arrow)"/><text x="815" y="486" class="edge">same bytes</text>
+  <line x1="720" y1="502" x2="910" y2="502" stroke="#15803d" stroke-width="2.5" marker-end="url(#green-arrow)"/><text x="815" y="486" class="edge">selected batch / same bytes</text>
   <line x1="600" y1="550" x2="600" y2="555" stroke="#15803d" stroke-width="2"/>
-  <rect x="480" y="555" width="240" height="25" rx="12" fill="url(#ui)" stroke="#15803d" class="node"/><text x="600" y="572" class="node-text">Web UI: inspect + filter</text>
-  <text x="600" y="595" class="note" fill="#166534">Payload-transparent forwarding; the target sees the workbench as the UDP sender.</text>
+  <rect x="480" y="555" width="240" height="25" rx="12" fill="url(#ui)" stroke="#15803d" class="node"/><text x="600" y="572" class="node-text">Web UI: select + Forward selected</text>
+  <text x="600" y="595" class="note" fill="#166534">No automatic forwarding; selected packets keep their original bytes.</text>
 
   <rect x="35" y="625" width="1130" height="265" rx="14" class="panel"/>
   <text x="65" y="663" class="mode">MODIFY</text><text x="65" y="687" class="purpose">Capture and replay: edit, preview, and explicitly send a selected packet.</text>

@@ -45,15 +45,22 @@ cargo run --bin gsmtap-workbench -- \
 Open `http://localhost:8080`. The equivalent environment variables are
 `GSMTAP_MODE`, `GSMTAP_LISTEN`, `GSMTAP_FORWARD`, and `HTTP_LISTEN`;
 command-line values take precedence. `PACKET_HISTORY_CAPACITY` bounds
-in-memory RX/TX history (default 10,000 packets), while
+in-memory RX/TX history (default 10,000 packets and a fixed 256 MiB ceiling for
+retained record data), while
 `PACKET_INGRESS_CAPACITY` independently bounds unprocessed incoming datagrams
 (default 1,024). The API and browser render only a recent page:
 `/api/packets` defaults to 500 and caps requests at 1,000.
 
+The 256 MiB history-data ceiling is intentionally fixed in this release and is
+separate from the packet-count setting. If a deployment needs a different
+memory limit, the ceiling should be made configurable through a dedicated
+environment variable in a future change.
+
 The native workbench binds its HTTP interface to `127.0.0.1:8080` by default;
 set `HTTP_LISTEN` or `--http-listen` deliberately when remote access is
 required. The current UDP listener and forwarding path are IPv4-only. Hostname
-forward targets are supported, with IPv4 DNS results refreshed periodically.
+forward targets are supported; the hostname is resolved for each explicit send
+operation and only an IPv4 result is used.
 
 The container image exposes TCP port 8080 and UDP port 4729:
 
@@ -78,10 +85,11 @@ For the mode-by-mode use cases and Docker examples, see
 [Mode use cases](docs/mode-use-cases.md).
 
 Use `--mode listen` for passive inspection. Use `--mode relay` with
-`--gsmtap-forward HOST:PORT` to forward original UDP datagrams byte-for-byte.
-Use `--mode modify` with the same forward option to hold packets for explicit
-replay or field editing from the UI. Relay forwarding remains payload-
-transparent; the downstream peer will see the workbench as the UDP source.
+`--gsmtap-forward HOST:PORT` to record incoming datagrams for inspection and
+forward explicitly selected batches from the UI. Forwarded relay packets retain
+their original bytes; the downstream peer will see the workbench as the UDP
+source. Use `--mode modify` with the same forward option to hold packets for
+explicit replay or field editing from the UI.
 
 Modify mode is capture-and-replay, not an inline human-held proxy: incoming
 packets are never paused waiting for an edit. The service retains only a
@@ -111,8 +119,9 @@ docker run --rm -p 8080:8080 -p 4729:4729/udp gsmtap-workbench \
 
 For a local container smoke check, start the image in the intended mode and
 open `http://localhost:8080`. Listen mode must not forward received packets;
-relay mode must forward original bytes unchanged; modify mode requires using
-the UI's Preview changes and Confirm and send controls. GitHub Actions runs
+relay mode records received packets and forwards only the packets selected with
+the UI's Forward selected action; modify mode requires using the UI's Preview
+changes and Confirm and send controls. GitHub Actions runs
 formatting, linting, tests, a release build, security checks, and Docker
 integration checks on pushes and pull requests. Releases are created from
 matching semantic-version tags such as `v0.1.0`: the crate is published to
@@ -146,8 +155,9 @@ docker compose -f tests/integration/compose.yaml down --remove-orphans --volumes
 Each invocation is an isolated Compose project with one workbench and one
 traffic verifier service.
 The verifier is the test assertion: it confirms receive counts through the
-status/API, checks relay datagrams byte-for-byte, monitors the listen sink for
-unexpected forwarding, and validates modify preview/replay/send effects.
+status/API, checks explicitly batch-forwarded relay datagrams byte-for-byte,
+monitors the listen sink for unexpected forwarding, and validates modify
+preview/replay/send effects.
 
 For direct local checks, use the mode-specific scripts. For example, after
 starting the workbench in relay mode with
