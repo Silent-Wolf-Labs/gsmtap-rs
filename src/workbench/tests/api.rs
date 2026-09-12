@@ -91,6 +91,9 @@ async fn stylesheet_entry_point_and_imported_assets_are_served() {
     for path in [
         "/components/packet/select-filter.js",
         "/components/packet/text-filter.js",
+        "/controllers/packet-history-controller.js",
+        "/components/packet/packet-history-view.js",
+        "/components/dialogs/clear-history-dialog.js",
     ] {
         let response = router
             .clone()

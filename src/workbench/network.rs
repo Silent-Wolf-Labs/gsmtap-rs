@@ -42,6 +42,18 @@ pub fn build_router_with_capture(
             get(api::app_controller_javascript),
         )
         .route(
+            "/controllers/packet-history-controller.js",
+            get(api::packet_history_controller_javascript),
+        )
+        .route(
+            "/components/packet/packet-history-view.js",
+            get(api::packet_history_view_javascript),
+        )
+        .route(
+            "/components/dialogs/clear-history-dialog.js",
+            get(api::clear_history_dialog_javascript),
+        )
+        .route(
             "/components/panels/mode-panel.js",
             get(api::mode_panel_javascript),
         )

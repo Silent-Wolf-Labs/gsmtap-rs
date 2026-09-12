@@ -264,6 +264,36 @@ pub async fn app_controller_javascript() -> (
     )
 }
 
+pub async fn packet_history_controller_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/controllers/packet-history-controller.js"),
+    )
+}
+
+pub async fn packet_history_view_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/packet/packet-history-view.js"),
+    )
+}
+
+pub async fn clear_history_dialog_javascript() -> (
+    [(axum::http::header::HeaderName, &'static str); 1],
+    &'static str,
+) {
+    (
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        include_str!("../../static/components/dialogs/clear-history-dialog.js"),
+    )
+}
+
 pub async fn mode_panel_javascript() -> (
     [(axum::http::header::HeaderName, &'static str); 1],
     &'static str,
