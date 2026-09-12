@@ -267,7 +267,6 @@ pub async fn receive_loop_gated_with_capacity(
     store: Arc<PacketStore>,
     mode: Mode,
     forward: Option<String>,
-    _sender: Arc<UdpSocket>,
     capture: CaptureControl,
     gate: Arc<tokio::sync::Notify>,
     capacity: usize,
