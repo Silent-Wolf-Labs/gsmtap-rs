@@ -23,6 +23,7 @@ use super::{
         PacketRecord, SendResponse,
     },
     history::{PacketStore, RuntimeStats},
+    runtime::RuntimeHandle,
 };
 
 #[derive(Clone)]
@@ -31,6 +32,7 @@ pub struct AppState {
     pub store: Arc<PacketStore>,
     pub sender: Arc<tokio::net::UdpSocket>,
     pub capture: CaptureControl,
+    pub runtime: RuntimeHandle,
 }
 
 #[derive(serde::Serialize)]
@@ -46,6 +48,20 @@ pub struct StatusResponse {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModeRequest {
+    pub mode: Mode,
+    pub forward_address: Option<String>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModeResponse {
+    pub mode: Mode,
+    pub forward_address: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
 pub struct PacketQuery {
     pub limit: Option<usize>,
 }
@@ -54,15 +70,41 @@ const DEFAULT_PACKET_LIMIT: usize = 500;
 const MAX_PACKET_LIMIT: usize = 1_000;
 
 pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
+    let mode = state.runtime.mode().await;
+    let gsmtap_forward = state.runtime.forward().await;
     Json(StatusResponse {
         gsmtap_listen: state.config.gsmtap_listen.to_string(),
-        mode: state.config.mode,
-        gsmtap_forward: state.config.gsmtap_forward.clone(),
+        mode,
+        gsmtap_forward,
         http_listen: state.config.http_listen.to_string(),
         receive_state: "listening",
         capture_paused: state.capture.is_paused(),
         stats: state.store.counters().snapshot(),
     })
+}
+
+pub async fn change_mode(
+    State(state): State<AppState>,
+    Json(request): Json<ModeRequest>,
+) -> Result<Json<ModeResponse>, (StatusCode, String)> {
+    state
+        .runtime
+        .change_mode(request.mode, request.forward_address)
+        .await
+        .map(|(mode, forward_address)| {
+            Json(ModeResponse {
+                mode,
+                forward_address,
+            })
+        })
+        .map_err(|error| {
+            let status = if error.kind() == std::io::ErrorKind::InvalidInput {
+                StatusCode::BAD_REQUEST
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            (status, error.to_string())
+        })
 }
 
 #[derive(serde::Deserialize)]
@@ -476,7 +518,7 @@ pub async fn forward_packets(
     State(state): State<AppState>,
     Json(request): Json<ForwardPacketsRequest>,
 ) -> Result<Json<ForwardPacketsResponse>, (StatusCode, String)> {
-    if state.config.mode != Mode::Relay {
+    if state.runtime.mode().await != Mode::Relay {
         return Err((
             StatusCode::FORBIDDEN,
             "packet forwarding is available only in relay mode".into(),
@@ -486,7 +528,9 @@ pub async fn forward_packets(
         return Err(bad_request("packetIds must not be empty"));
     }
     if request.packet_ids.len() > MAX_FORWARD_BATCH_SIZE {
-        return Err(bad_request("batch size exceeds maximum allowed limit of 1000"));
+        return Err(bad_request(
+            "batch size exceeds maximum allowed limit of 1000",
+        ));
     }
     let mut seen = std::collections::HashSet::new();
     for &id in &request.packet_ids {
@@ -495,11 +539,12 @@ pub async fn forward_packets(
         }
     }
 
-    let destination = state
-        .config
-        .gsmtap_forward
-        .clone()
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, "a forward endpoint is required".into()))?;
+    let destination = state.runtime.forward().await.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            "a forward endpoint is required".into(),
+        )
+    })?;
 
     let resolved_destination = match tokio::net::lookup_host(&destination).await {
         Ok(mut addresses) => match addresses.find(std::net::SocketAddr::is_ipv4) {
@@ -586,7 +631,7 @@ pub async fn encode_send(
     State(state): State<AppState>,
     Json(request): Json<EncodeSendRequest>,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
-    require_modify(&state)?;
+    require_modify(&state).await?;
     send_record(&state, encode_request(&request)?, None, true).await
 }
 
@@ -594,7 +639,7 @@ pub async fn replay(
     State(state): State<AppState>,
     Path(id): Path<u64>,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
-    require_modify(&state)?;
+    require_modify(&state).await?;
     let packet = state
         .store
         .get(id)
@@ -609,7 +654,7 @@ pub async fn modify_send(
     Path(id): Path<u64>,
     Json(request): Json<EncodeSendRequest>,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
-    require_modify(&state)?;
+    require_modify(&state).await?;
     let packet = state
         .store
         .get(id)
@@ -649,7 +694,7 @@ pub async fn modify_preview(
     Path(id): Path<u64>,
     Json(request): Json<EncodeSendRequest>,
 ) -> Result<Json<ModifyPreview>, (StatusCode, String)> {
-    require_modify(&state)?;
+    require_modify(&state).await?;
     let packet = state
         .store
         .get(id)
@@ -786,9 +831,9 @@ async fn send_record(
     modified: bool,
 ) -> Result<Json<SendResponse>, (StatusCode, String)> {
     let destination = state
-        .config
-        .gsmtap_forward
-        .clone()
+        .runtime
+        .forward()
+        .await
         .ok_or_else(|| bad_request("a forward endpoint is required"))?;
     let mut record = match crate::gsmtap::parse(&bytes) {
         Ok(packet) => from_decoded("TX", Mode::Modify, "workbench".into(), &bytes, &packet),
@@ -847,8 +892,8 @@ fn bad_request(error: impl ToString) -> (StatusCode, String) {
     (StatusCode::BAD_REQUEST, error.to_string())
 }
 
-fn require_modify(state: &AppState) -> Result<(), (StatusCode, String)> {
-    if state.config.mode == Mode::Modify {
+async fn require_modify(state: &AppState) -> Result<(), (StatusCode, String)> {
+    if state.runtime.mode().await == Mode::Modify {
         Ok(())
     } else {
         Err((

@@ -2,7 +2,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum::{routing::get, Router};
 use tokio::net::UdpSocket;
-use tokio::sync::mpsc;
+use tokio::sync::{broadcast, mpsc};
 
 use super::{
     api::{self, AppState},
@@ -10,6 +10,7 @@ use super::{
     config::{Config, Mode},
     dto::{from_decoded, from_error},
     history::PacketStore,
+    runtime::RuntimeHandle,
 };
 use crate::gsmtap::parse;
 
@@ -22,17 +23,30 @@ pub fn build_router(config: Config, store: Arc<PacketStore>, sender: Arc<UdpSock
     build_router_with_capture(config, store, sender, CaptureControl::default())
 }
 
+#[cfg(test)]
 pub fn build_router_with_capture(
     config: Config,
     store: Arc<PacketStore>,
     sender: Arc<UdpSocket>,
     capture: CaptureControl,
 ) -> Router {
+    let runtime = RuntimeHandle::detached(config.clone(), store.clone(), capture.clone());
+    build_router_with_runtime(config, store, sender, capture, runtime)
+}
+
+pub fn build_router_with_runtime(
+    config: Config,
+    store: Arc<PacketStore>,
+    sender: Arc<UdpSocket>,
+    capture: CaptureControl,
+    runtime: RuntimeHandle,
+) -> Router {
     let state = AppState {
         config,
         store,
         sender,
         capture,
+        runtime,
     };
     Router::new()
         .route("/", get(api::index))
@@ -140,11 +154,9 @@ pub fn build_router_with_capture(
             get(api::modification_service_javascript),
         )
         .route("/api/status", get(api::status))
+        .route("/api/mode", axum::routing::put(api::change_mode))
         .route("/api/capture", axum::routing::put(api::set_capture))
-        .route(
-            "/api/packets",
-            get(api::packets).delete(api::clear_packets),
-        )
+        .route("/api/packets", get(api::packets).delete(api::clear_packets))
         .route(
             "/api/packets/forward",
             axum::routing::post(api::forward_packets),
@@ -167,14 +179,15 @@ pub async fn run(
     config: Config,
     store: Arc<PacketStore>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let receiver = UdpSocket::bind(config.gsmtap_listen).await?;
     let sender = Arc::new(UdpSocket::bind("0.0.0.0:0").await?);
     let capture = CaptureControl::default();
-    let router = build_router_with_capture(
+    let runtime = RuntimeHandle::start(config.clone(), store.clone(), capture.clone()).await?;
+    let router = build_router_with_runtime(
         config.clone(),
         store.clone(),
         sender.clone(),
         capture.clone(),
+        runtime,
     );
     let http_listen = config.http_listen;
 
@@ -183,14 +196,7 @@ pub async fn run(
             .serve(router.into_make_service())
             .await
     };
-    let (ingress_tx, ingress_rx) = mpsc::channel(config.ingress_capacity);
-    let intake = udp_receiver(receiver, ingress_tx, store.clone(), capture);
-    let processing = inspection_worker(ingress_rx, store, config.mode, config.gsmtap_forward, None);
-    tokio::select! {
-        result = http => result?,
-        result = intake => result?,
-        result = processing => result?,
-    }
+    http.await?;
     Ok(())
 }
 
@@ -229,9 +235,10 @@ pub async fn receive_loop_with_capture(
     capture: CaptureControl,
 ) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(DEFAULT_INGRESS_CAPACITY);
+    let (shutdown, _) = broadcast::channel(1);
     tokio::select! {
-        result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
-        result = inspection_worker(ingress_rx, store, mode, forward, None) => result,
+        result = udp_receiver_until(Arc::new(socket), ingress_tx, store.clone(), capture, shutdown.subscribe()) => result,
+        result = inspection_worker_until(ingress_rx, store, mode, forward, None, shutdown.subscribe()) => result,
     }
 }
 
@@ -246,9 +253,10 @@ pub async fn receive_loop_gated(
     gate: Arc<tokio::sync::Notify>,
 ) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(DEFAULT_INGRESS_CAPACITY);
+    let (shutdown, _) = broadcast::channel(1);
     tokio::select! {
-        result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
-        result = inspection_worker(ingress_rx, store, mode, None, Some(gate)) => result,
+        result = udp_receiver_until(Arc::new(socket), ingress_tx, store.clone(), capture, shutdown.subscribe()) => result,
+        result = inspection_worker_until(ingress_rx, store, mode, None, Some(gate), shutdown.subscribe()) => result,
     }
 }
 
@@ -265,28 +273,33 @@ pub async fn receive_loop_gated_with_capacity(
     capacity: usize,
 ) -> Result<(), std::io::Error> {
     let (ingress_tx, ingress_rx) = mpsc::channel(capacity);
+    let (shutdown, _) = broadcast::channel(1);
     tokio::select! {
-        result = udp_receiver(socket, ingress_tx, store.clone(), capture) => result,
-        result = inspection_worker(ingress_rx, store, mode, forward, Some(gate)) => result,
+        result = udp_receiver_until(Arc::new(socket), ingress_tx, store.clone(), capture, shutdown.subscribe()) => result,
+        result = inspection_worker_until(ingress_rx, store, mode, forward, Some(gate), shutdown.subscribe()) => result,
     }
 }
 
-struct ReceivedDatagram {
+pub(crate) struct ReceivedDatagram {
     bytes: Vec<u8>,
     peer: SocketAddr,
     timestamp_ms: u128,
     capture_enabled: bool,
 }
 
-async fn udp_receiver(
-    socket: UdpSocket,
+pub(crate) async fn udp_receiver_until(
+    socket: Arc<UdpSocket>,
     ingress: mpsc::Sender<ReceivedDatagram>,
     store: Arc<PacketStore>,
     capture: CaptureControl,
+    mut shutdown: broadcast::Receiver<()>,
 ) -> Result<(), std::io::Error> {
     let mut buffer = vec![0u8; MAX_UDP_DATAGRAM_SIZE];
     loop {
-        let (length, peer) = socket.recv_from(&mut buffer).await?;
+        let (length, peer) = tokio::select! {
+            _ = shutdown.recv() => return Ok(()),
+            result = socket.recv_from(&mut buffer) => result?,
+        };
         store.counters().received();
         let capture_enabled = !capture.is_paused();
         if !capture_enabled {
@@ -306,20 +319,27 @@ async fn udp_receiver(
     }
 }
 
-async fn inspection_worker(
+pub(crate) async fn inspection_worker_until(
     mut ingress: mpsc::Receiver<ReceivedDatagram>,
     store: Arc<PacketStore>,
     mode: Mode,
     destination: Option<String>,
     gate: Option<Arc<tokio::sync::Notify>>,
+    mut shutdown: broadcast::Receiver<()>,
 ) -> Result<(), std::io::Error> {
-    while let Some(datagram) = ingress.recv().await {
+    loop {
+        let datagram = tokio::select! {
+            _ = shutdown.recv() => return Ok(()),
+            datagram = ingress.recv() => match datagram {
+                Some(datagram) => datagram,
+                None => return Ok(()),
+            },
+        };
         if let Some(gate) = &gate {
             gate.notified().await;
         }
         inspect_datagram(datagram, &store, mode, destination.as_deref()).await;
     }
-    Ok(())
 }
 
 async fn inspect_datagram(
