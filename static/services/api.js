@@ -10,6 +10,12 @@ export async function getStatus() {
   return (await request('/api/status')).json();
 }
 
+export async function setMode(mode, forwardAddress = undefined) {
+  const response = await request('/api/mode', 'PUT', { mode, ...(forwardAddress === undefined ? {} : { forwardAddress }) });
+  if (!response.ok) throw new Error((await response.text()) || `mode change failed (${response.status})`);
+  return response.json();
+}
+
 export async function getPackets(limit = 500) {
   return (await request(`/api/packets?limit=${limit}`)).json();
 }

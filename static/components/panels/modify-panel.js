@@ -64,7 +64,7 @@ export function createModifyPanel({ documentRef = document, previewModification,
     resetSelection();
   }
 
-  return { selectPacket };
+  return { selectPacket, resetSelection };
 }
 
 export const modifyCapability = Object.freeze({

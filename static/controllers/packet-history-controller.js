@@ -70,7 +70,11 @@ export function createPacketHistoryController({
   function setMode(nextMode) {
     const modeChanged = mode !== nextMode;
     mode = nextMode;
-    if (modeChanged) openFilterField = null;
+    if (modeChanged) {
+      openFilterField = null;
+      selectedPacketId = null;
+      selectedRelayPacketIds.clear();
+    }
     if (mode !== 'modify') {
       packetFilters = { ...packetFilters, direction: null, modified: null };
     }
@@ -131,7 +135,7 @@ export function createPacketHistoryController({
 
   async function clearHistory() {
     clearHistoryInFlight = true;
-    render();
+    view.setClearHistoryState?.({ hasPackets: packets.length > 0, clearHistoryInFlight });
     try {
       await clearPacketHistoryRequest();
       packets = [];
@@ -143,7 +147,7 @@ export function createPacketHistoryController({
       render();
     } catch (error) {
       clearHistoryInFlight = false;
-      render();
+      view.setClearHistoryState?.({ hasPackets: packets.length > 0, clearHistoryInFlight });
       showResult(`Unable to clear packet history: ${error.message}`);
     }
   }

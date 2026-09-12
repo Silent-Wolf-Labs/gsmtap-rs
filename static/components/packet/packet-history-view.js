@@ -51,8 +51,7 @@ export function createPacketHistoryView({ documentRef = document, modePanel } = 
       forwardSelectedNode.onclick = onForward;
     }
     if (clearHistoryNode) {
-      clearHistoryNode.hidden = false;
-      clearHistoryNode.disabled = !hasPackets || clearHistoryInFlight;
+      setClearHistoryState({ hasPackets, clearHistoryInFlight });
       clearHistoryNode.onclick = onClearHistory;
     }
     if (focusedTextFilter) {
@@ -66,6 +65,12 @@ export function createPacketHistoryView({ documentRef = document, modePanel } = 
     }
   }
 
+  function setClearHistoryState({ hasPackets, clearHistoryInFlight }) {
+    if (!clearHistoryNode) return;
+    clearHistoryNode.hidden = false;
+    clearHistoryNode.disabled = !hasPackets || clearHistoryInFlight;
+  }
+
   function renderError(error) {
     packetsNode?.replaceChildren();
     if (!packetsNode) return;
@@ -75,5 +80,5 @@ export function createPacketHistoryView({ documentRef = document, modePanel } = 
     packetsNode.append(message);
   }
 
-  return { render, renderError };
+  return { render, renderError, setClearHistoryState };
 }

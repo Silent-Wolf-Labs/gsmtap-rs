@@ -6,6 +6,7 @@ import {
   previewModification,
   sendModification,
   setCapturePaused,
+  setMode,
 } from '../services/api.js';
 import { subscribeToUpdates } from '../services/events.js';
 import { createModifyPanel } from '../components/panels/modify-panel.js';
@@ -26,10 +27,16 @@ export function createAppController(documentRef = document, dependencies = {}) {
     clearPacketHistory: clearPacketHistoryRequest = clearPacketHistory,
     sendModification: sendModificationRequest = sendModification,
     setCapturePaused: setCapturePausedRequest = setCapturePaused,
+    setMode: setModeRequest = setMode,
     subscribeToUpdates: subscribeToUpdatesRequest = subscribeToUpdates,
     setInterval: setIntervalRequest = setInterval,
     clearInterval: clearIntervalRequest = clearInterval,
   } = dependencies;
+  const refreshPacketsRequest = dependencies.refreshPackets
+    || (dependencies.refreshWorkbench
+      ? async () => (await refreshWorkbenchRequest()).packets
+      : getPackets);
+  const hasDedicatedPacketRefresh = Boolean(dependencies.refreshPackets);
   const sendSectionNode = documentRef.querySelector('#send-section');
   const resultNode = documentRef.querySelector('#result');
   let activeMode = 'listen';
@@ -39,6 +46,7 @@ export function createAppController(documentRef = document, dependencies = {}) {
   let refreshInFlight;
   let refreshQueued = false;
   let statusRevision = 0;
+  let modeChangeInFlight = false;
 
   function showResult(text) {
     resultNode.textContent = text;
@@ -65,6 +73,33 @@ export function createAppController(documentRef = document, dependencies = {}) {
       }
       await refresh();
     },
+    onModeChange: async (mode, forwardAddress) => {
+      if (modeChangeInFlight) return;
+      modeChangeInFlight = true;
+      statusRevision += 1;
+      try {
+        const response = await setModeRequest(mode, forwardAddress);
+        if (currentStatus) {
+          applyStatus({
+            ...currentStatus,
+            mode: response?.mode ?? mode,
+            gsmtapForward: response?.forwardAddress ?? (mode === 'listen' ? null : currentStatus.gsmtapForward),
+          });
+        }
+        const data = await refreshWorkbenchRequest();
+        applyStatus(data.status);
+        packetHistory.updatePackets(data.packets);
+      } catch (error) {
+        await refreshWorkbenchRequest().then(data => {
+          applyStatus(data.status);
+          packetHistory.updatePackets(data.packets);
+        });
+        throw error;
+      } finally {
+        modeChangeInFlight = false;
+      }
+    },
+    onModeError: error => showResult(`Unable to change mode: ${error.message}`),
   });
   const packetHistoryView = createPacketHistoryView({ documentRef, modePanel });
   packetHistory = createPacketHistoryController({
@@ -77,19 +112,31 @@ export function createAppController(documentRef = document, dependencies = {}) {
   });
 
   function applyStatus(status) {
+    const modeChanged = currentStatus?.mode !== status.mode;
     currentStatus = status;
     activeMode = status.mode;
     modePanel.applyStatus(status);
     packetHistory.setMode(status.mode);
     sendSectionNode.hidden = activeMode !== 'modify';
+    if (modeChanged) modifyPanel.resetSelection();
   }
 
   async function performRefresh() {
     const requestedStatusRevision = statusRevision;
     try {
-      const data = await refreshWorkbenchRequest();
-      if (requestedStatusRevision === statusRevision) applyStatus(data.status);
-      packetHistory.updatePackets(data.packets);
+      if (!currentStatus) {
+        const data = await refreshWorkbenchRequest();
+        if (requestedStatusRevision === statusRevision) applyStatus(data.status);
+        packetHistory.updatePackets(data.packets);
+        return;
+      }
+      if (hasDedicatedPacketRefresh) {
+        packetHistory.updatePackets(await refreshPacketsRequest());
+      } else {
+        const data = await refreshWorkbenchRequest();
+        if (requestedStatusRevision === statusRevision) applyStatus(data.status);
+        packetHistory.updatePackets(data.packets);
+      }
     } catch (error) {
       packetHistory.renderError(error);
     }
