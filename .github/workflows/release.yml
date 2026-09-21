@@ -81,7 +81,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cargo package --locked
+          cargo package --locked --allow-dirty
           crate="target/package/gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
           if tar -tzf "$crate" | grep -Eq '^[^/]+/(docs/|tests/|README\.md$)'; then
             echo "Release crate unexpectedly contains documentation or tests" >&2

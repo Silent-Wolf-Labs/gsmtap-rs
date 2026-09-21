@@ -15,6 +15,7 @@ exclude = [
     "reference/**",
     "scripts/**",
     ".github/**",
+    ".cache/**",
     ".dockerignore",
     ".gitignore",
     "Dockerfile",
@@ -24,6 +25,7 @@ exclude = [
     "package.json",
     "package-lock.json",
     "static/components/package.json",
+    "*.sarif",
     "tests/**",
 ]
 
