@@ -8,7 +8,10 @@ license = "Apache-2.0"
 repository = "https://github.com/bucketking657/gsmtap-rs"
 keywords = ["gsm", "gsmtap", "osmocom", "telecom"]
 categories = ["network-programming", "parser-implementations"]
+readme = false
 exclude = [
+    "docs/**",
+    "README.md",
     "reference/**",
     "scripts/**",
     ".github/**",

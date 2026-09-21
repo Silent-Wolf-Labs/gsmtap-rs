@@ -83,6 +83,10 @@ jobs:
           set -euo pipefail
           cargo package --locked
           crate="target/package/gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
+          if tar -tzf "$crate" | grep -Eq '/(docs/|README\.md$)'; then
+            echo "Release crate unexpectedly contains documentation" >&2
+            exit 1
+          fi
           cp "$crate" "gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
           sha256sum "$crate" > SHA256SUMS.txt
           sha256sum gsmtap-rs.cdx.json >> SHA256SUMS.txt
