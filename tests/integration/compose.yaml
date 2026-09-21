@@ -6,6 +6,7 @@ services:
     image: ${WORKBENCH_IMAGE:-gsmtap-workbench:compose}
     environment:
       GSMTAP_MODE: ${GSMTAP_MODE}
+      GSMTAP_LISTEN: 0.0.0.0:4729
       GSMTAP_FORWARD: traffic:9000
       HTTP_LISTEN: 0.0.0.0:8080
 
