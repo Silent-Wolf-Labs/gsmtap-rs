@@ -24,9 +24,7 @@ exclude = [
     "package.json",
     "package-lock.json",
     "static/components/package.json",
-    "tests/integration/**",
-    "tests/traffic/**",
-    "tests/ui/**",
+    "tests/**",
 ]
 
 [lib]

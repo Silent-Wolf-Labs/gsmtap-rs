@@ -83,8 +83,8 @@ jobs:
           set -euo pipefail
           cargo package --locked
           crate="target/package/gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
-          if tar -tzf "$crate" | grep -Eq '/(docs/|README\.md$)'; then
-            echo "Release crate unexpectedly contains documentation" >&2
+          if tar -tzf "$crate" | grep -Eq '^[^/]+/(docs/|tests/|README\.md$)'; then
+            echo "Release crate unexpectedly contains documentation or tests" >&2
             exit 1
           fi
           cp "$crate" "gsmtap-rs-${GITHUB_REF_NAME#v}.crate"
