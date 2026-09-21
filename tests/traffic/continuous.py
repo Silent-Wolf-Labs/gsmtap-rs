@@ -61,7 +61,7 @@ def run(args: argparse.Namespace) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--host", default="127.0.0.1", help="workbench UDP host (default: 127.0.0.1)")
+    parser.add_argument("--host", default="10.200.0.10", help="workbench UDP host (default: 10.200.0.10)")
     parser.add_argument("--port", type=int, default=4729, help="workbench UDP port (default: 4729)")
     parser.add_argument("--interval", type=float, default=0.1, help="seconds between packets (default: 0.1)")
     parser.add_argument("--payload-size", type=int, default=16, help="payload size in bytes (default: 16)")

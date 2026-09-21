@@ -50,6 +50,20 @@ async fn put_mode_with_forward(
         .unwrap()
 }
 
+async fn put_listen(router: axum::Router, listen_address: &str) -> axum::response::Response {
+    router
+        .oneshot(
+            Request::put("/api/listen")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({ "listenAddress": listen_address }).to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap()
+}
+
 #[tokio::test]
 async fn mode_transition_sets_retains_and_clears_the_runtime_forward_address() {
     let config = Config::from_values(
@@ -115,7 +129,7 @@ async fn mode_api_switches_live_pipeline_clears_history_and_updates_authorizatio
     let runtime = RuntimeHandle::start(config.clone(), store.clone(), CaptureControl::default())
         .await
         .unwrap();
-    let listener = runtime.listen_addr().unwrap();
+    let listener = runtime.listen_addr().await.unwrap();
     let router = build_router_with_runtime(
         config,
         store.clone(),
@@ -135,7 +149,7 @@ async fn mode_api_switches_live_pipeline_clears_history_and_updates_authorizatio
     assert_eq!(response.status(), StatusCode::OK);
     assert!(store.list().await.is_empty());
     assert_eq!(runtime.mode().await, Mode::Relay);
-    assert_eq!(runtime.listen_addr(), Some(listener));
+    assert_eq!(runtime.listen_addr().await, Some(listener));
 
     let response = router
         .clone()
@@ -187,7 +201,7 @@ async fn failed_mode_preflight_retains_listener_mode_and_packet_history() {
     )
     .await
     .unwrap();
-    let listener = runtime.listen_addr().unwrap();
+    let listener = runtime.listen_addr().await.unwrap();
     let router = build_router_with_runtime(
         config,
         store.clone(),
@@ -206,7 +220,7 @@ async fn failed_mode_preflight_retains_listener_mode_and_packet_history() {
     let response = put_mode(router, "relay").await;
     assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     assert_eq!(runtime.mode().await, Mode::Listen);
-    assert_eq!(runtime.listen_addr(), Some(listener));
+    assert_eq!(runtime.listen_addr().await, Some(listener));
     assert_eq!(store.list().await.len(), 1);
 
     UdpSocket::bind("127.0.0.1:0")
@@ -278,6 +292,97 @@ async fn status_reports_the_active_mode_and_endpoints() {
     let status: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(status["mode"], "modify");
     assert_eq!(status["gsmtapForward"], forward);
+}
+
+#[tokio::test]
+async fn listen_api_rebinds_without_clearing_history_or_changing_mode() {
+    let config = Config::from_values(
+        Mode::Relay,
+        "127.0.0.1:0".parse().unwrap(),
+        Some("127.0.0.1:14729".into()),
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+        16,
+    )
+    .unwrap();
+    let store = Arc::new(PacketStore::new(8));
+    let runtime = RuntimeHandle::start(config.clone(), store.clone(), CaptureControl::default())
+        .await
+        .unwrap();
+    let old_listener = runtime.listen_addr().await.unwrap();
+    let router = build_router_with_runtime(
+        config,
+        store.clone(),
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+        CaptureControl::default(),
+        runtime.clone(),
+    );
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, old_listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 1).await;
+
+    let requested_listener = UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .local_addr()
+        .unwrap();
+    let response = put_listen(router.clone(), &requested_listener.to_string()).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    let new_listener = runtime.listen_addr().await.unwrap();
+    assert_ne!(new_listener, old_listener);
+    assert_eq!(runtime.mode().await, Mode::Relay);
+    assert_eq!(runtime.forward().await.as_deref(), Some("127.0.0.1:14729"));
+    assert_eq!(store.list().await.len(), 1);
+
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, new_listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 2).await;
+    let response = put_listen(router, "[::1]:4729").await;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(runtime.listen_addr().await, Some(new_listener));
+}
+
+#[tokio::test]
+async fn failed_listen_rebind_keeps_the_old_listener_active() {
+    let config = Config::from_values(
+        Mode::Listen,
+        "127.0.0.1:0".parse().unwrap(),
+        None,
+        "127.0.0.1:0".parse().unwrap(),
+        8,
+        16,
+    )
+    .unwrap();
+    let store = Arc::new(PacketStore::new(8));
+    let runtime = RuntimeHandle::start(config.clone(), store.clone(), CaptureControl::default())
+        .await
+        .unwrap();
+    let listener = runtime.listen_addr().await.unwrap();
+    let router = build_router_with_runtime(
+        config,
+        store.clone(),
+        Arc::new(UdpSocket::bind("127.0.0.1:0").await.unwrap()),
+        CaptureControl::default(),
+        runtime.clone(),
+    );
+    let response = put_listen(router, "203.0.113.1:4729").await;
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    assert_eq!(runtime.listen_addr().await, Some(listener));
+    UdpSocket::bind("127.0.0.1:0")
+        .await
+        .unwrap()
+        .send_to(&PACKET, listener)
+        .await
+        .unwrap();
+    wait_for_records(&store, 1).await;
 }
 
 #[tokio::test]

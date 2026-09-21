@@ -107,6 +107,24 @@ test('changes mode through the backend and reconciles confirmed status', async (
   expect(document.querySelector('.mode-control').textContent).toBe('Relay▾');
 });
 
+test('changes the listener through the backend without resetting the selected packet', async () => {
+  setup();
+  const packet = { id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: { arfcn: 42 } };
+  const setListenAddress = jest.fn(async listenAddress => ({ listenAddress }));
+  const api = dependencies({
+    setListenAddress,
+    refreshWorkbench: jest.fn(async () => ({ status: status('listen'), packets: [packet] })),
+  });
+  const controller = createAppController(document, api);
+  await controller.refresh();
+  document.querySelector('#packets tbody tr td').click();
+  document.querySelector('.listen-address').value = '10.200.0.10:4729';
+  document.querySelector('.listen-address-save').click();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(setListenAddress).toHaveBeenCalledWith('10.200.0.10:4729');
+  expect(document.querySelector('#packets .selected-row').textContent).toContain('#2');
+});
+
 test('keeps mode selection disabled when a refresh occurs during a pending change', async () => {
   setup();
   let resolveModeChange;

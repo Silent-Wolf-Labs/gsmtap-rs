@@ -14,6 +14,18 @@ test('hides the forward address completely in listen mode', () => {
   expect(node.textContent).not.toContain('Forward to:');
 });
 
+test('saves a listener address without changing the current mode', async () => {
+  const node = document.createElement('div');
+  const onListenChange = jest.fn(async () => {});
+  renderStatusCard(node, status('listen'), { onListenChange });
+  const input = node.querySelector('.listen-address');
+  expect(input.value).toBe('127.0.0.1:4729');
+  input.value = '10.200.0.10:4729';
+  node.querySelector('.listen-address-save').click();
+  await Promise.resolve();
+  expect(onListenChange).toHaveBeenCalledWith('10.200.0.10:4729');
+});
+
 test('requires an address before activating relay from listen mode', async () => {
   const node = document.createElement('div');
   const onModeChange = jest.fn(async () => {});
