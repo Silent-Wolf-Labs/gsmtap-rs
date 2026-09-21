@@ -7,8 +7,16 @@ available for forwarding.
 
 ![Listen, relay, and modify mode relationships](mode_use_cases.svg)
 
-All examples below use the workbench container built by the default Dockerfile
-target. GSMTAP uses UDP port `4729`; the web UI uses TCP port `8080`.
+Build and run the workbench once. It starts in Listen mode; select Relay or
+Modify, and configure its `host:port` forward target, from the status card in
+the web UI. GSMTAP uses UDP port `4729`; the web UI uses TCP port `8080`.
+
+```bash
+docker build -t gsmtap-workbench .
+docker run --rm \
+  -p 8080:8080 -p 4729:4729/udp \
+  gsmtap-workbench
+```
 
 ## Listen mode: inspect one source
 
@@ -24,15 +32,6 @@ GSMTAP source  ── UDP datagrams ──>  gsmtap-workbench
 The workbench is passive in this mode. It binds to the listen endpoint, records
 the packets in its bounded history, and does not forward them.
 
-```bash
-docker run --rm \
-  -p 8080:8080 -p 4729:4729/udp \
-  gsmtap-workbench \
-  --mode listen \
-  --gsmtap-listen 0.0.0.0:4729 \
-  --http-listen 0.0.0.0:8080
-```
-
 ## Relay mode: inspect and forward selected batches
 
 **Use case:** An engineer captures traffic from a GSMTAP producer, inspects it
@@ -47,19 +46,10 @@ GSMTAP source  ── original datagram ──>  gsmtap-workbench  ── select
 
 Relay mode records incoming datagrams and does not forward them automatically.
 Select one or more records in the web UI and use **Forward selected** to send a
-batch to `--gsmtap-forward`. Forwarding is payload-transparent: the workbench
-does not decode and re-encode the selected datagrams. The target will generally
-see the workbench host/container as the UDP source address.
-
-```bash
-docker run --rm \
-  -p 8080:8080 -p 4729:4729/udp \
-  gsmtap-workbench \
-  --mode relay \
-  --gsmtap-listen 0.0.0.0:4729 \
-  --gsmtap-forward 192.168.1.50:4729 \
-  --http-listen 0.0.0.0:8080
-```
+batch to the forward target configured in the status card. Forwarding is
+payload-transparent: the workbench does not decode and re-encode the selected
+datagrams. The target will generally see the workbench host/container as the
+UDP source address.
 
 ## Modify mode: capture, edit, and send
 
@@ -77,16 +67,6 @@ Modify mode is capture-and-replay. Incoming packets are retained for later
 selection; they are not paused while a person edits them. A packet is sent to
 the forward endpoint only after an explicit replay or edit-and-send action.
 
-```bash
-docker run --rm \
-  -p 8080:8080 -p 4729:4729/udp \
-  gsmtap-workbench \
-  --mode modify \
-  --gsmtap-listen 0.0.0.0:4729 \
-  --gsmtap-forward 192.168.1.50:4729 \
-  --http-listen 0.0.0.0:8080
-```
-
 ## Dockerfile terminology
 
 The Dockerfile contains build/runtime stages, not separate workbench modes:
@@ -97,5 +77,4 @@ The Dockerfile contains build/runtime stages, not separate workbench modes:
 | `traffic-test` | Python image used to replay test vectors against a workbench |
 | `default` | The default output image; currently based on `workbench` |
 
-The operating mode is selected at runtime with `--mode listen`, `--mode relay`,
-or `--mode modify` (or with the equivalent `GSMTAP_MODE` environment variable).
+The operating mode is selected at runtime from the workbench status card.
