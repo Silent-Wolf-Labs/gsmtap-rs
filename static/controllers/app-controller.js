@@ -6,6 +6,7 @@ import {
   previewModification,
   sendModification,
   setCapturePaused,
+  setListenAddress,
   setMode,
 } from '../services/api.js';
 import { subscribeToUpdates } from '../services/events.js';
@@ -27,6 +28,7 @@ export function createAppController(documentRef = document, dependencies = {}) {
     clearPacketHistory: clearPacketHistoryRequest = clearPacketHistory,
     sendModification: sendModificationRequest = sendModification,
     setCapturePaused: setCapturePausedRequest = setCapturePaused,
+    setListenAddress: setListenAddressRequest = setListenAddress,
     setMode: setModeRequest = setMode,
     subscribeToUpdates: subscribeToUpdatesRequest = subscribeToUpdates,
     setInterval: setIntervalRequest = setInterval,
@@ -72,6 +74,19 @@ export function createAppController(documentRef = document, dependencies = {}) {
         });
       }
       await refresh();
+    },
+    onListenChange: async listenAddress => {
+      statusRevision += 1;
+      const response = await setListenAddressRequest(listenAddress);
+      if (currentStatus) {
+        applyStatus({
+          ...currentStatus,
+          gsmtapListen: response?.listenAddress ?? listenAddress,
+        });
+      }
+      const data = await refreshWorkbenchRequest();
+      applyStatus(data.status);
+      packetHistory.updatePackets(data.packets);
     },
     onModeChange: async (mode, forwardAddress) => {
       if (modeChangeInFlight) return;

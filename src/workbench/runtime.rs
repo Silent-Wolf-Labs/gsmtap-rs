@@ -124,6 +124,8 @@ fn join_error(error: tokio::task::JoinError) -> io::Error {
 struct RuntimeState {
     mode: Mode,
     forward: Option<String>,
+    listen_address: std::net::SocketAddr,
+    receiver: Option<Arc<UdpSocket>>,
     pipeline: Option<PipelineHandle>,
 }
 
@@ -131,7 +133,6 @@ struct RuntimeInner {
     config: Config,
     store: Arc<PacketStore>,
     capture: CaptureControl,
-    receiver: Option<Arc<UdpSocket>>,
     pipeline_factory: Arc<dyn PipelineFactory>,
     state: Mutex<RuntimeState>,
     transition: Mutex<()>,
@@ -159,6 +160,7 @@ impl RuntimeHandle {
         let forward = config.gsmtap_forward.clone();
         pipeline_factory.preflight(mode, forward.as_deref())?;
         let receiver = Arc::new(UdpSocket::bind(config.gsmtap_listen).await?);
+        let listen_address = receiver.local_addr()?;
         let pipeline = PipelineHandle::start(
             &config,
             mode,
@@ -171,11 +173,12 @@ impl RuntimeHandle {
             config,
             store,
             capture,
-            receiver: Some(receiver),
             pipeline_factory,
             state: Mutex::new(RuntimeState {
                 mode,
                 forward,
+                listen_address,
+                receiver: Some(receiver),
                 pipeline: Some(pipeline),
             }),
             transition: Mutex::new(()),
@@ -196,15 +199,17 @@ impl RuntimeHandle {
     pub fn detached(config: Config, store: Arc<PacketStore>, capture: CaptureControl) -> Self {
         let mode = config.mode;
         let forward = config.gsmtap_forward.clone();
+        let listen_address = config.gsmtap_listen;
         Self(Arc::new(RuntimeInner {
             config,
             store,
             capture,
-            receiver: None,
             pipeline_factory: Arc::new(DefaultPipelineFactory),
             state: Mutex::new(RuntimeState {
                 mode,
                 forward,
+                listen_address,
+                receiver: None,
                 pipeline: None,
             }),
             transition: Mutex::new(()),
@@ -220,11 +225,78 @@ impl RuntimeHandle {
     }
 
     #[cfg(test)]
-    pub(crate) fn listen_addr(&self) -> Option<SocketAddr> {
+    pub(crate) async fn listen_addr(&self) -> Option<SocketAddr> {
         self.0
+            .state
+            .lock()
+            .await
             .receiver
             .as_ref()
             .and_then(|socket| socket.local_addr().ok())
+    }
+
+    pub async fn listen_address(&self) -> std::net::SocketAddr {
+        self.0.state.lock().await.listen_address
+    }
+
+    pub async fn change_listen_address(
+        &self,
+        requested_address: std::net::SocketAddr,
+    ) -> Result<std::net::SocketAddr, io::Error> {
+        if !requested_address.is_ipv4() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "the workbench currently supports IPv4 listen addresses only",
+            ));
+        }
+        let _transition = self.0.transition.lock().await;
+        let (mode, forward, previous_address, previous_pipeline, previous_receiver) = {
+            let mut state = self.0.state.lock().await;
+            if state.listen_address == requested_address {
+                return Ok(requested_address);
+            }
+            (
+                state.mode,
+                state.forward.clone(),
+                state.listen_address,
+                state.pipeline.take(),
+                state.receiver.take(),
+            )
+        };
+
+        if let Some(pipeline) = previous_pipeline {
+            if let Err(error) = pipeline.stop().await {
+                self.restore_listener(previous_address, mode, forward, previous_receiver)
+                    .await;
+                return Err(error);
+            }
+        }
+        drop(previous_receiver);
+
+        match UdpSocket::bind(requested_address).await {
+            Ok(receiver) => {
+                let receiver = Arc::new(receiver);
+                let active_address = receiver.local_addr()?;
+                let pipeline = PipelineHandle::start(
+                    &self.0.config,
+                    mode,
+                    forward,
+                    receiver.clone(),
+                    self.0.store.clone(),
+                    self.0.capture.clone(),
+                );
+                let mut state = self.0.state.lock().await;
+                state.listen_address = active_address;
+                state.receiver = Some(receiver);
+                state.pipeline = Some(pipeline);
+                Ok(active_address)
+            }
+            Err(error) => {
+                self.restore_listener(previous_address, mode, forward, None)
+                    .await;
+                Err(error)
+            }
+        }
     }
 
     pub async fn change_mode(
@@ -260,7 +332,8 @@ impl RuntimeHandle {
             }
         }
 
-        let replacement = self.0.receiver.as_ref().map(|receiver| {
+        let receiver = self.0.state.lock().await.receiver.clone();
+        let replacement = receiver.map(|receiver| {
             PipelineHandle::start(
                 &self.0.config,
                 mode,
@@ -280,7 +353,8 @@ impl RuntimeHandle {
     }
 
     async fn restore_pipeline(&self, mode: Mode, forward: Option<String>) {
-        let pipeline = self.0.receiver.as_ref().map(|receiver| {
+        let receiver = self.0.state.lock().await.receiver.clone();
+        let pipeline = receiver.map(|receiver| {
             PipelineHandle::start(
                 &self.0.config,
                 mode,
@@ -291,6 +365,35 @@ impl RuntimeHandle {
             )
         });
         let mut state = self.0.state.lock().await;
+        state.pipeline = pipeline;
+        state.mode = mode;
+        state.forward = forward;
+    }
+
+    async fn restore_listener(
+        &self,
+        listen_address: std::net::SocketAddr,
+        mode: Mode,
+        forward: Option<String>,
+        receiver: Option<Arc<UdpSocket>>,
+    ) {
+        let receiver = match receiver {
+            Some(receiver) => Some(receiver),
+            None => UdpSocket::bind(listen_address).await.ok().map(Arc::new),
+        };
+        let pipeline = receiver.as_ref().map(|receiver| {
+            PipelineHandle::start(
+                &self.0.config,
+                mode,
+                forward.clone(),
+                receiver.clone(),
+                self.0.store.clone(),
+                self.0.capture.clone(),
+            )
+        });
+        let mut state = self.0.state.lock().await;
+        state.listen_address = listen_address;
+        state.receiver = receiver;
         state.pipeline = pipeline;
         state.mode = mode;
         state.forward = forward;

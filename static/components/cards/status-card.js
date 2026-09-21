@@ -22,7 +22,7 @@ function createStatusCard() {
   const information = document.createElement('div'); information.className = 'status-information';
   const modeRow = row('Workbench Mode'); const listenRow = row('Listen on'); const forwardRow = row('Forward to');
   information.append(modeRow.row, listenRow.row, forwardRow.row);
-  const state = { status: undefined, callbacks: {}, captureInFlight: false, modeInFlight: false, pendingMode: null };
+  const state = { status: undefined, callbacks: {}, captureInFlight: false, listenInFlight: false, modeInFlight: false, pendingMode: null };
   let forwardControl;
   const refreshForward = () => {
     const visible = forwards(state.status?.mode) || state.pendingMode !== null;
@@ -33,6 +33,8 @@ function createStatusCard() {
   };
   const modeControl = createModeControl(state, refreshForward);
   update(modeRow, modeControl.wrapper);
+  const listenControl = createListenControl(state);
+  update(listenRow, listenControl.wrapper);
   forwardControl = createForwardControl(state, refreshForward);
   update(forwardRow, forwardControl.wrapper);
 
@@ -52,12 +54,29 @@ function createStatusCard() {
     const previous = state.status; const modeChanged = previous && previous.mode !== status.mode; state.status = status; state.callbacks = callbacks;
     if (status.mode !== 'listen') state.pendingMode = null;
     if (status.mode === 'listen' && previous?.mode !== 'listen') forwardControl.clear();
-    modeControl.update(modeChanged); update(listenRow, status.gsmtapListen); refreshForward();
+    modeControl.update(modeChanged); listenControl.update(); refreshForward();
     captureButton.className = `capture-toggle${status.capturePaused ? ' capture-paused' : ''}`;
     captureButton.setAttribute('aria-pressed', String(Boolean(status.capturePaused))); captureIcon.src = status.capturePaused ? captureIcons.play : captureIcons.pause;
     captureLabel.textContent = status.capturePaused ? 'Resume Capture' : 'Pause Capture';
     if (!state.captureInFlight || previous?.capturePaused !== status.capturePaused) captureButton.disabled = false;
   }};
+}
+
+function createListenControl(state) {
+  const wrapper = document.createElement('div'); wrapper.className = 'listen-control-wrapper';
+  const input = document.createElement('input'); input.type = 'text'; input.className = 'listen-address'; input.placeholder = 'IPv4 address:port'; input.setAttribute('aria-label', 'Listen address');
+  const save = document.createElement('button'); save.type = 'button'; save.className = 'listen-address-save'; save.textContent = 'Save';
+  const error = document.createElement('p'); error.className = 'error listen-address-error'; error.setAttribute('role', 'status');
+  save.addEventListener('click', async () => {
+    const listenAddress = input.value.trim();
+    if (!listenAddress) { error.textContent = 'Enter an IPv4 listen address in address:port format.'; return; }
+    error.textContent = ''; state.listenInFlight = true; save.disabled = true;
+    try { await state.callbacks.onListenChange?.(listenAddress); }
+    catch (exception) { error.textContent = `Unable to change listen address: ${exception.message}`; }
+    finally { state.listenInFlight = false; save.disabled = false; }
+  });
+  wrapper.append(input, save, error);
+  return { wrapper, update() { if (document.activeElement !== input) input.value = state.status.gsmtapListen; save.disabled = state.listenInFlight; } };
 }
 
 function createModeControl(state, refreshForward) {

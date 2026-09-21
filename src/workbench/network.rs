@@ -155,6 +155,10 @@ pub fn build_router_with_runtime(
         )
         .route("/api/status", get(api::status))
         .route("/api/mode", axum::routing::put(api::change_mode))
+        .route(
+            "/api/listen",
+            axum::routing::put(api::change_listen_address),
+        )
         .route("/api/capture", axum::routing::put(api::set_capture))
         .route("/api/packets", get(api::packets).delete(api::clear_packets))
         .route(

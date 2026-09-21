@@ -62,6 +62,18 @@ pub struct ModeResponse {
 }
 
 #[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListenRequest {
+    pub listen_address: String,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListenResponse {
+    pub listen_address: String,
+}
+
+#[derive(serde::Deserialize)]
 pub struct PacketQuery {
     pub limit: Option<usize>,
 }
@@ -72,8 +84,9 @@ const MAX_PACKET_LIMIT: usize = 1_000;
 pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
     let mode = state.runtime.mode().await;
     let gsmtap_forward = state.runtime.forward().await;
+    let gsmtap_listen = state.runtime.listen_address().await;
     Json(StatusResponse {
-        gsmtap_listen: state.config.gsmtap_listen.to_string(),
+        gsmtap_listen: gsmtap_listen.to_string(),
         mode,
         gsmtap_forward,
         http_listen: state.config.http_listen.to_string(),
@@ -81,6 +94,33 @@ pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
         capture_paused: state.capture.is_paused(),
         stats: state.store.counters().snapshot(),
     })
+}
+
+pub async fn change_listen_address(
+    State(state): State<AppState>,
+    Json(request): Json<ListenRequest>,
+) -> Result<Json<ListenResponse>, (StatusCode, String)> {
+    let listen_address = request.listen_address.parse().map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            "listen address must be an IPv4 address followed by a port".to_string(),
+        )
+    })?;
+    let listen_address = state
+        .runtime
+        .change_listen_address(listen_address)
+        .await
+        .map_err(|error| {
+            let status = if error.kind() == std::io::ErrorKind::InvalidInput {
+                StatusCode::BAD_REQUEST
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            (status, error.to_string())
+        })?;
+    Ok(Json(ListenResponse {
+        listen_address: listen_address.to_string(),
+    }))
 }
 
 pub async fn change_mode(

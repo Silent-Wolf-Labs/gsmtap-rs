@@ -17,6 +17,7 @@ export function createModePanel({
   renderTable = renderPacketTable,
   renderStatus = renderStatusCard,
   onCaptureToggle,
+  onListenChange,
   onModeChange,
   onModeError,
 } = {}) {
@@ -29,7 +30,7 @@ export function createModePanel({
 
   function applyStatus(status) {
     setMode(status.mode);
-    renderStatus(statusNode, status, { onCaptureToggle, onModeChange, onModeError });
+    renderStatus(statusNode, status, { onCaptureToggle, onListenChange, onModeChange, onModeError });
   }
 
   function render(packets, selectedPacketId, tableOptions = {}) {

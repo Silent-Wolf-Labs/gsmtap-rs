@@ -16,6 +16,12 @@ export async function setMode(mode, forwardAddress = undefined) {
   return response.json();
 }
 
+export async function setListenAddress(listenAddress) {
+  const response = await request('/api/listen', 'PUT', { listenAddress });
+  if (!response.ok) throw new Error((await response.text()) || `listen address change failed (${response.status})`);
+  return response.json();
+}
+
 export async function getPackets(limit = 500) {
   return (await request(`/api/packets?limit=${limit}`)).json();
 }

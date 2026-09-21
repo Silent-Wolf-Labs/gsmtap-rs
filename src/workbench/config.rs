@@ -15,7 +15,7 @@ pub enum Mode {
 pub struct ConfigArgs {
     #[arg(long, env = "GSMTAP_MODE", default_value = "listen")]
     pub mode: Mode,
-    #[arg(long, env = "GSMTAP_LISTEN", default_value = "0.0.0.0:4729")]
+    #[arg(long, env = "GSMTAP_LISTEN", default_value = "10.200.0.10:4729")]
     pub gsmtap_listen: SocketAddr,
     #[arg(long, alias = "gsmtap-target", env = "GSMTAP_FORWARD")]
     pub gsmtap_forward: Option<String>,
