@@ -68,7 +68,7 @@ jobs:
       - name: Scan SBOM with Trivy
         id: sbom-scan
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: sbom
           scan-ref: gsmtap-rs.cdx.json
@@ -193,7 +193,7 @@ jobs:
       - name: Scan exact release image with Trivy
         id: image-scan
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
           image-ref: ${{ env.IMAGE_NAME }}:${{ steps.image.outputs.version }}
