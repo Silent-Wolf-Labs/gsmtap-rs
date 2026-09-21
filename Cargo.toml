@@ -8,6 +8,23 @@ license = "Apache-2.0"
 repository = "https://github.com/bucketking657/gsmtap-rs"
 keywords = ["gsm", "gsmtap", "osmocom", "telecom"]
 categories = ["network-programming", "parser-implementations"]
+exclude = [
+    "reference/**",
+    "scripts/**",
+    ".github/**",
+    ".dockerignore",
+    ".gitignore",
+    "Dockerfile",
+    "deny.toml",
+    "rust-toolchain.toml",
+    "jest.config.mjs",
+    "package.json",
+    "package-lock.json",
+    "static/components/package.json",
+    "tests/integration/**",
+    "tests/traffic/**",
+    "tests/ui/**",
+]
 
 [lib]
 path = "src/lib.rs"
