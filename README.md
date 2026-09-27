@@ -153,9 +153,9 @@ action; modify mode requires using the UI's Preview changes and Confirm and
 send controls. GitHub Actions runs
 formatting, linting, tests, a release build, security checks, and Docker
 integration checks on pushes and pull requests. Releases are created from
-matching semantic-version tags such as `v0.1.0`: the crate is published to
+matching semantic-version tags such as `v0.1.1`: the crate is published to
 crates.io, and the supported workbench image is published to
-`ghcr.io/bucketking657/gsmtap-rs:0.1.0`. Stable releases also update the
+`ghcr.io/silent-wolf-labs/gsmtap-rs:0.1.1`. Stable releases also update the
 `latest` tag; prereleases do not. GitHub Releases include the CycloneDX SBOM
 and SHA256 checksums. CI also builds both container targets and runs isolated
 listen, relay, and modify traffic checks.
