@@ -30,6 +30,10 @@ Open `http://localhost:8080`. Use the status card to change the GSMTAP listen
 address, choose the operating mode, and set a forward target when Relay or
 Modify mode is active.
 
+[![Watch the GSMTAP workbench demo](https://img.youtube.com/vi/k0_CIiQXFq0/hqdefault.jpg)](https://youtu.be/k0_CIiQXFq0)
+
+Watch the [GSMTAP workbench demo](https://youtu.be/k0_CIiQXFq0) on YouTube.
+
 ### Local interactive demo
 
 To send continuous sample traffic to an isolated local address, create the
