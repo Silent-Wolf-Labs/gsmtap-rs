@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GSMTAP Workbench</title>
+  <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body>
+  <main>
+    <header>
+      <h1>GSMTAP Workbench</h1>
+      <div id="status" role="status" aria-live="polite"></div>
+    </header>
+    <section id="send-section" class="card" aria-labelledby="modify-selected-packet-heading" tabindex="-1" hidden>
+      <h2 id="modify-selected-packet-heading">Modify selected packet</h2>
+      <p id="selected-packet">Select a decoded RX packet to edit it.</p>
+      <form id="send-form">
+        <div id="fields" class="modify-fields"></div>
+      </form>
+      <section id="preview-card" class="card modify-preview-card" aria-labelledby="review-changes-heading" hidden>
+        <h3 id="review-changes-heading">Review changes</h3>
+        <div id="preview" aria-live="polite"></div>
+        <button id="confirm-send" type="button" disabled>Confirm and send</button>
+        <p id="result" role="status" aria-live="polite"></p>
+      </section>
+    </section>
+    <section id="packet-history" aria-labelledby="packet-history-heading">
+      <div class="packet-history-heading">
+        <h2 id="packet-history-heading">Packet history</h2>
+        <div class="packet-history-actions">
+          <button id="forward-selected" type="button" hidden>Forward selected (0)</button>
+          <button id="clear-filters" type="button" hidden>Clear filters</button>
+          <button id="clear-history" type="button" hidden>Clear history</button>
+        </div>
+      </div>
+      <div id="packets"></div>
+    </section>
+    <dialog id="clear-history-dialog" class="card clear-history-dialog" aria-labelledby="clear-history-dialog-heading">
+      <form method="dialog" class="clear-history-dialog-form">
+        <h2 id="clear-history-dialog-heading">Clear packet history?</h2>
+        <p>This will remove all packets currently shown in packet history.</p>
+        <label class="clear-history-dialog-checkbox">
+          <input id="clear-history-skip" type="checkbox">
+          Don't ask again
+        </label>
+        <div class="clear-history-dialog-actions">
+          <button id="cancel-clear-history" type="submit" value="cancel">Cancel</button>
+          <button id="confirm-clear-history" type="submit" value="confirm">Clear history</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

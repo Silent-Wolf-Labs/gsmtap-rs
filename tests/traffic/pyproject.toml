@@ -1,0 +1,9 @@
+[project]
+name = "gsmtap-traffic-test"
+version = "0.1.1"
+description = "Opaque GSMTAP reference-vector traffic checks for the workbench"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv]
+package = false

@@ -1,0 +1,46 @@
+[package]
+name = "gsmtap-rs"
+version = "0.1.1"
+edition = "2021"
+rust-version = "1.85"
+description = "Rust GSMTAP implementation and libosmocore conversion-validation harness"
+license = "Apache-2.0"
+repository = "https://github.com/Silent-Wolf-Labs/gsmtap-rs"
+keywords = ["gsm", "gsmtap", "osmocom", "telecom"]
+categories = ["network-programming", "parser-implementations"]
+readme = false
+exclude = [
+    "docs/**",
+    "README.md",
+    "reference/**",
+    "scripts/**",
+    ".github/**",
+    ".cache/**",
+    ".dockerignore",
+    ".gitignore",
+    "Dockerfile",
+    "deny.toml",
+    "rust-toolchain.toml",
+    "jest.config.mjs",
+    "package.json",
+    "package-lock.json",
+    "static/components/package.json",
+    "*.sarif",
+    "tests/**",
+]
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+axum = { version = "0.6", features = ["json", "macros"] }
+clap = { version = "4.5", features = ["derive", "env"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1.28", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+
+[dev-dependencies]
+hyper = "0.14"
+proptest = "1"
+tower = { version = "0.4", features = ["util"] }

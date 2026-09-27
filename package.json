@@ -1,0 +1,12 @@
+{
+  "name": "gsmtap-rs-ui-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ui": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+  },
+  "devDependencies": {
+    "jest": "^30.5.1",
+    "jest-environment-jsdom": "^30.5.1"
+  }
+}

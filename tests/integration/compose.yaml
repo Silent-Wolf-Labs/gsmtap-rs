@@ -1,0 +1,26 @@
+services:
+  workbench:
+    build:
+      context: ../..
+      target: workbench
+    image: ${WORKBENCH_IMAGE:-gsmtap-workbench:compose}
+    environment:
+      GSMTAP_MODE: ${GSMTAP_MODE}
+      GSMTAP_LISTEN: 0.0.0.0:4729
+      GSMTAP_FORWARD: traffic:9000
+      HTTP_LISTEN: 0.0.0.0:8080
+
+  traffic:
+    build:
+      context: ../..
+      target: traffic-test
+    image: ${TRAFFIC_IMAGE:-gsmtap-traffic-test:compose}
+    command:
+      - "--mode"
+      - "${GSMTAP_MODE}"
+      - "--workbench-host"
+      - "workbench"
+      - "--sink-port"
+      - "9000"
+    depends_on:
+      - workbench

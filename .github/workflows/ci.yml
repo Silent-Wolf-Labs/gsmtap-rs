@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Check frontend JavaScript syntax
+        run: find static -type f -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Run frontend tests
+        # Includes DOM behavior and stylesheet contract tests under tests/ui.
+        run: npm run test:ui
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked
+      - run: cargo test --locked
+      - run: cargo build --release --locked
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+      - uses: taiki-e/install-action@cargo-audit
+      - run: cargo audit
+
+  security-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+      - uses: taiki-e/install-action@cargo-deny
+      - run: cargo deny check
+
+  security-auditable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.85.0
+      - uses: taiki-e/install-action@cargo-auditable
+      - run: cargo auditable build --release --locked
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --target workbench --tag gsmtap-workbench:ci .
+      - run: docker build --target traffic-test --tag gsmtap-traffic-test:ci .
+
+  integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [listen, relay, modify]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ${{ matrix.mode }}-mode Compose verification
+        run: |
+          set -eu
+          compose_file=tests/integration/compose.yaml
+          export GSMTAP_MODE="${{ matrix.mode }}"
+          trap 'docker compose -f "$compose_file" down --remove-orphans --volumes' EXIT
+          docker compose -f "$compose_file" build
+          docker compose -f "$compose_file" up \
+            --abort-on-container-exit \
+            --exit-code-from traffic
