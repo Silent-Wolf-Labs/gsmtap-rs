@@ -1,11 +1,11 @@
 [package]
 name = "gsmtap-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.85"
 description = "Rust GSMTAP implementation and libosmocore conversion-validation harness"
 license = "Apache-2.0"
-repository = "https://github.com/bucketking657/gsmtap-rs"
+repository = "https://github.com/Silent-Wolf-Labs/gsmtap-rs"
 keywords = ["gsm", "gsmtap", "osmocom", "telecom"]
 categories = ["network-programming", "parser-implementations"]
 readme = false
