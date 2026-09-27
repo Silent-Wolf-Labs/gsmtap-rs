@@ -6,6 +6,9 @@ COPY static ./static
 RUN cargo build --release --locked --bin gsmtap-workbench
 
 FROM debian:bookworm-slim AS workbench
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /build/target/release/gsmtap-workbench /usr/local/bin/gsmtap-workbench
 EXPOSE 8080/tcp 4729/udp
 ENTRYPOINT ["/usr/local/bin/gsmtap-workbench"]
