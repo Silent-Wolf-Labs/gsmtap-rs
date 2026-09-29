@@ -65,3 +65,21 @@ replacing it, run:
 
 The cases use only in-bounds C arrays. Review the complete fixture diff after
 regeneration; ordinary Rust tests use the committed JSON without running C.
+## Hexparse buffer vectors
+
+`hexparse_vector.c` calls `osmo_hexparse()` directly and records each C-string
+input including its NUL terminator, the initialized destination, capacity,
+return code, and the complete final destination as JSON. It targets upstream
+libosmocore revision `950430e829a3dc1d162aa241bc0505745c5a7311`. The
+local `utils.c`, `utils.h`, and `utils_test.c` files were compared byte-for-byte
+with that GitHub revision. The runner checks the hashes of `utils.c` and
+`utils.h` and rebuilds the local core library before executing the harness.
+
+From the `libosmocore-rs` repository root, regenerate the Rust fixture with:
+
+```bash
+../gsmtap-rs/reference/run_hexparse_vector.sh > libosmocore-rs/tests/vectors/hexparse_buffer_vectors.json
+```
+
+Review the generated diff before committing. The normal Rust tests consume the
+committed fixture and do not need the C library.
