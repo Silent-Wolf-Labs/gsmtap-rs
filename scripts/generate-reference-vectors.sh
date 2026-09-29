@@ -20,3 +20,8 @@ bcd_output_dir="$output_dir/bcd"
 mkdir -p "$bcd_output_dir"
 "$repository_root/reference/run_bcd_conversion_vector.sh" \
 	> "$bcd_output_dir/bcd_conversion_vectors.json"
+
+hexparse_output_dir="$output_dir/hexparse"
+mkdir -p "$hexparse_output_dir"
+"$repository_root/reference/run_hexparse_vector.sh" \
+	> "$hexparse_output_dir/hexparse_buffer_vectors.json"
