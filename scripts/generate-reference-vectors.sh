@@ -15,3 +15,8 @@ for case_name in $("$repository_root/reference/run_gsmtap_makemsg_ex_vector.sh" 
 	"$repository_root/reference/run_gsmtap_makemsg_ex_vector.sh" --case "$case_name" \
 		> "$output_dir/$case_name.json"
 done
+
+bcd_output_dir="$output_dir/bcd"
+mkdir -p "$bcd_output_dir"
+"$repository_root/reference/run_bcd_conversion_vector.sh" \
+	> "$bcd_output_dir/bcd_conversion_vectors.json"
