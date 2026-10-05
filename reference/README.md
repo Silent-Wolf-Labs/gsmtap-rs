@@ -15,11 +15,31 @@ containing the complete resulting message as lowercase hexadecimal. It targets
 The `case` field is a stable fixture-contract identifier. Renaming, removing,
 or materially changing a case requires explicit fixture-contract review.
 
-Run it against a configured `libosmocore` installation:
+All direct-call runners build and link against the canonical C checkout at
+`../libosmocore-rs/libosmocore`, relative to this repository. This checkout is
+intentionally ignored by Git in `libosmocore-rs`. Do not substitute another
+checkout or a system-installed C library. Missing reference files or a failed
+build stop generation; there is no fallback. The obsolete
+`/mnt/storage/git/libosmocore` location is no longer used.
+
+From this repository root, regenerate the fixtures with:
+
+```bash
+./scripts/generate-reference-vectors.sh
+```
+
+The runner paths resolve from their script locations and also work when invoked
+from another working directory. Generation does not require `pkg-config` or an
+installed libosmocore: the runners use this checkout's headers and freshly built
+core library, with a runtime library search path pointing to that build.
+
+For other tools that need an installed library, source
+`scripts/libosmocore-env.sh` in Bash. It selects this checkout's `_install/`
+directory, checks `pkg-config` provenance, and rejects `LIBOSMOCORE_ROOT` values
+pointing elsewhere. A missing local installation is an error. For example:
 
 ```bash
 source ./scripts/libosmocore-env.sh
-./scripts/generate-reference-vectors.sh
 ```
 
 The generator intentionally captures only C-produced output in
