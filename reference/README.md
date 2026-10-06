@@ -127,9 +127,9 @@ To verify the committed fixture against a fresh C run without replacing it:
 
 `bit_packing_vector.c` directly calls `osmo_ubit2pbit()` and
 `osmo_pbit2ubit()`. This scope covers basic MSB-first packing and unpacking.
-Extended variants, soft-bit conversions, and CRC helpers are separate future
-conversions, each requiring its own harness support. No bit-conversion API is
-added to the GSMTAP library, workbench, or replay tools.
+Extended variants have their own harness below. Soft-bit conversions and CRC
+helpers remain separate future conversions requiring their own harness support.
+No bit-conversion API is added to the GSMTAP library, workbench, or replay tools.
 
 The reference is upstream libosmocore revision
 `950430e829a3dc1d162aa241bc0505745c5a7311`. On 2026-10-05, the following
@@ -235,3 +235,131 @@ implemented by this harness-only change. Safe Rust zero-work behavior for
 zero bits, empty or undersized slices, invalid input, and arithmetic limits
 must be documented and tested separately from compatible C observations.
 Testing support completion alone does not complete the Rust conversion.
+
+## Extended bit-packing vectors
+
+`bit_packing_ext_vector.c` calls `osmo_ubit2pbit_ext()` and
+`osmo_pbit2ubit_ext()` directly. Expected returns and complete final buffers
+come exclusively from those C calls. The fixture is
+`tests/vectors/bits/bit_packing_ext_vectors.json`; it stays outside the
+nonrecursive packet and replay loaders. No conversion API is added to the
+GSMTAP library or tools.
+
+The upstream revision and two source hashes are the same as for basic packing
+above. On 2026-10-06, both files were again downloaded individually from that
+pinned upstream revision into temporary storage and compared byte-for-byte
+with the canonical local reference. The extended runner checks both hashes,
+rebuilds `src/core`, links its shared library, and selects that same library at
+runtime. It replaces inherited `LD_LIBRARY_PATH` and clears `LD_PRELOAD` and
+`LD_AUDIT` for execution. Hash mismatches, missing local references, unsupported
+integer ABIs, and build/link/execution failures stop generation. Temporary
+executables are removed on exit. No alternate checkout or system installation
+is used.
+
+The supported and recorded C ABI has 8-bit bytes, **32-bit unsigned int**, and
+32-bit signed int (`INT_MAX == 2147483647`). Each record has exactly these
+fields, in this emission order:
+
+```text
+case, api, libosmocore_commit, c_unsigned_bits, out_ofs, in_ofs,
+num_bits, lsb_mode, src_hex, dst_len, dst_before_hex, return_code,
+dst_after_hex
+```
+
+Names, API and revision are strings. Width, offsets, counts and destination
+lengths are nonnegative integers. `lsb_mode` and `return_code` are signed C int
+values represented as JSON integers, never floats. Hex strings contain complete
+lowercase bytes. Sources and before/after destinations are recorded in full;
+C allocations use exactly those recorded lengths. Positive calls have sufficient
+backing and nonoverflowing offset arithmetic and representable return counts.
+Zero-count calls still use real one-byte backing, even for offsets beyond it.
+Unsafe undersized C calls are excluded.
+
+The input manifest and order are frozen in
+`tests/bit_packing_ext_reference_vectors.rs`: **63,384 observations**.
+The families are emitted in this order:
+
+| Family | Cases | Coverage and nested order |
+| --- | ---: | --- |
+| `exhaustive` | 36,864 | Byte `00..ff`, offset `0..7`, count `1..8-offset`, unpack then pack, mode `0` then `1` |
+| `boundary` | 19,104 | Output offset, equal/next input offset, count, pattern, API, mode |
+| `offsets` | 5,760 | All independent output/input offset pairs, count, API, mode |
+| `truthy` | 1,296 | Value `02`, `80`, `ff`; output offset; mode `0`, `1`, `2`, `-1`; count `1`, `9`, `17`; initialization |
+| `neighbors` | 192 | API, mode `0`, `1`, `2`, `-1`, output offset, zero/all-one source neighbors |
+| `zero` | 168 | API, mode `0`, `1`, `2`, `-1`, output offset `0`, `1`, `7`, `8`, `9`, `16`, `65`; input offset `0`, `9`, `65` |
+
+The common offset list is `0,1,2,3,4,5,6,7,8,9,15,16`; counts are
+`1,7,8,9,15,16,17,31,32,33`. Boundary patterns are zero, one, alternating
+(first bit set), then each single-set-bit position. The next-offset pairing
+wraps from `16` to `0`. API order is unpack (`p0`) then pack (`p1`), except the
+packing-only truthy family. Case identifiers include each family's independent
+loop parameters; their exact spellings are frozen by the validator.
+
+Exhaustive unpacking uses the byte as source, the chosen offset as input, and
+`(byte + count) % 8` as output offset. Exhaustive packing uses the eight source
+bits encoded according to the selected mode, a three-byte sentinel prefix,
+input offset `3 + offset`, and output offset `offset`. The whole byte is
+represented even for partial requests. Exact versus oversized destinations
+(additional three bytes) alternate by the sum of loop parameters modulo two;
+initialization cycles by the same sum modulo three through `00`, `ff`, and
+`a5 ^ byte_index`. The boundary and independent-offset families use the same
+capacity/initialization scheduling, based on loop indices. They retain three
+source suffix bytes and unused source prefixes.
+
+Truthy cases alternate the selected nonbinary value with zero, with input
+offset three and sentinel source neighbors. They use oversized destinations
+and all three initializations explicitly. Neighbor cases use input offset nine,
+count seventeen, alternating requested input, oversized mixed destinations,
+and contrasting zero/all-one bytes and partial-byte bits outside the source
+range. Their requested input is identical despite different neighbors. Zero
+cases use source `ff` and cycle destination initialization by loop indices.
+These rules construct inputs only; they never supply expected converted output.
+
+Packing treats every nonzero source byte as one and sets or clears only selected
+destination bits. Zero mode orders bits MSB first; **any nonzero integer mode**
+orders them LSB first. Bit order uses the output bit position for packing and
+the input bit position for unpacking. Packed offsets count bits; unpacked
+offsets count byte-sized bits. Unpacking writes only zero or one and preserves
+all destination bytes outside its selected range.
+
+For positive counts, packing returns `ceil((out_ofs + num_bits) / 8)`;
+unpacking returns `out_ofs + num_bits`. These are ending output positions,
+not counts newly written. Both extended APIs perform no writes or source reads
+for zero counts. Unpacking then returns `out_ofs`. Packing with positive output
+offset returns `ceil(out_ofs / 8)`; at output offset zero its unsigned subtraction
+underflows, producing **536870912** on the recorded ABI. This return can exceed
+backing capacity and must not be normalized to zero. This behavior differs from
+the basic unpacking API's zero-count read/write.
+
+Regenerate or verify from the `gsmtap-rs` root:
+
+```bash
+./scripts/generate-reference-vectors.sh
+./reference/run_bit_packing_ext_vector.sh > /tmp/bit_packing_ext.fresh.json
+cmp /tmp/bit_packing_ext.fresh.json tests/vectors/bits/bit_packing_ext_vectors.json
+cargo fmt --check
+cargo test
+git diff --check
+```
+
+Review every fixture diff from full regeneration. The basic bit-packing fixture
+and all other existing observations must remain unchanged. The existing GSMTAP
+generator emits compact JSON while the committed packet fixtures are formatted;
+review those formatting-only diffs and preserve their committed formatting.
+Ordinary Rust tests
+consume committed JSON and need no C build. The extended validator checks the
+exact schema, frozen names/order/count/inputs, source provenance and ABI, scalar
+ranges, safe backing, complete destinations, ending-position returns, untouched
+partial-byte bits/prefixes/suffixes, and binary unpacked output. It compares C
+observations for source-neighbor, truthy-value, and nonzero-mode independence.
+Its corruption checks reject malformed records, changed zero-count returns,
+normalized underflow results, and changed untouched storage bits in both modes.
+It does not reimplement the extended conversion to generate expected outputs.
+
+The separate `libosmocore-rs` task owns the Rust APIs, safe-slice and arithmetic
+error tests, and comparison of full Rust returns/destinations to this fixture.
+Its owner should copy this completed JSON unchanged into the nested crate's
+`tests/vectors/bit_packing_ext_vectors.json` and compare it byte-for-byte.
+This task changes only `gsmtap-rs` source, fixtures, documentation and Git state;
+it does not copy files into or implement APIs in the sibling repository.
+Testing support completion is one part of the overall conversion.
