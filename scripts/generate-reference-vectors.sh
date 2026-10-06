@@ -28,3 +28,6 @@ bits_output_dir="$output_dir/bits"
 mkdir -p "$bits_output_dir"
 "$repository_root/reference/run_bit_packing_vector.sh" \
 	> "$bits_output_dir/bit_packing_vectors.json"
+
+"$repository_root/reference/run_bit_packing_ext_vector.sh" \
+	> "$bits_output_dir/bit_packing_ext_vectors.json"
