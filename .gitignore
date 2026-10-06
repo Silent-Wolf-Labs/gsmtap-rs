@@ -18,6 +18,7 @@ venv/
 # Local configuration and generated release files
 .env
 .env.*
+AGENTS.md
 !.env.example
 *.cdx.json
 SHA256SUMS.txt
