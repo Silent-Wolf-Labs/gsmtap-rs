@@ -23,3 +23,8 @@ hexparse_output_dir="$output_dir/hexparse"
 mkdir -p "$hexparse_output_dir"
 "$repository_root/reference/run_hexparse_vector.sh" \
 	> "$hexparse_output_dir/hexparse_buffer_vectors.json"
+
+bits_output_dir="$output_dir/bits"
+mkdir -p "$bits_output_dir"
+"$repository_root/reference/run_bit_packing_vector.sh" \
+	> "$bits_output_dir/bit_packing_vectors.json"
