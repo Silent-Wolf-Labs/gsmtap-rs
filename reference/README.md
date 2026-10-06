@@ -122,3 +122,116 @@ To verify the committed fixture against a fresh C run without replacing it:
 ```bash
 ./reference/run_hexparse_vector.sh | cmp - tests/vectors/hexparse/hexparse_buffer_vectors.json
 ```
+
+## Basic bit-packing vectors
+
+`bit_packing_vector.c` directly calls `osmo_ubit2pbit()` and
+`osmo_pbit2ubit()`. This scope covers basic MSB-first packing and unpacking.
+Extended variants, soft-bit conversions, and CRC helpers are separate future
+conversions, each requiring its own harness support. No bit-conversion API is
+added to the GSMTAP library, workbench, or replay tools.
+
+The reference is upstream libosmocore revision
+`950430e829a3dc1d162aa241bc0505745c5a7311`. On 2026-10-05, the following
+local files were compared byte-for-byte with files downloaded from the
+[upstream pinned revision](https://github.com/osmocom/libosmocore/tree/950430e829a3dc1d162aa241bc0505745c5a7311):
+
+| File | Verified SHA-256 |
+| --- | --- |
+| `src/core/bits.c` | `bb33ceafed9bc49da6c002804108cdcd23914f6f04921b0c95645cd1ddc9fa1d` |
+| `include/osmocom/core/bits.h` | `922f568b46a84f36a2c6208308a71ceb505088b217e7105f254725f029c297f7` |
+
+`run_bit_packing_vector.sh` checks these hashes, rebuilds the canonical
+checkout's `src/core`, and uses its headers and `.libs/libosmocore` for linking
+and execution. It overrides inherited `LD_LIBRARY_PATH` and `LD_PRELOAD` for
+harness execution. Missing files, mismatched hashes, build or execution failures
+stop generation; temporary executables are removed on exit. Verification used
+individual upstream files in temporary storage, without creating another C
+checkout. The reference directory has no `.git`; its parent Rust repository's
+Git revision is not C provenance.
+
+The dedicated fixture is `tests/vectors/bits/bit_packing_vectors.json`, a JSON
+array of **9,016** observations in fixed order:
+
+- 8,192 exhaustive cases: bytes `00` through `ff`, lengths 1 through 8,
+  unpacking and packing of the corresponding eight binary input bytes, each
+  with exact and oversized destinations. This includes partial-byte packing.
+- 780 boundary cases: lengths 7, 8, 9, 15, 16, 17, 31, 32, and 33, using
+  all-zero, all-one, alternating (first bit set), and every single-set-bit
+  position. Both APIs use exact and oversized destinations.
+- 36 extra-source cases: at each boundary length, both APIs receive identical
+  requested input with contrasting three-byte source suffixes. Packing suffixes
+  remain binary; unpacking suffixes are `00` or `ff`. Destinations are oversized.
+- 8 zero-bit cases: both APIs, source first bit zero or one, and one-byte or
+  four-byte backing destinations.
+
+Exhaustive cases come first, ordered by byte, bit count, API (unpack then pack),
+then destination (exact then oversized). For each boundary length, patterns
+come in zero, one, alternating, then single-bit position order; each pattern
+uses the same API and destination order. Extra-source cases follow that length's
+patterns, ordered by API and suffix (zero then one). Zero-bit cases come last,
+ordered by API, source bit, then backing destination size. Case names, inputs,
+order, and count are frozen in the fixture validator; changes require
+fixture-contract review.
+
+Every record has exactly `case`, `api`, `libosmocore_commit`, `num_bits`,
+`src_hex`, `dst_len`, `dst_before_hex`, `return_code`, and `dst_after_hex`.
+Hexadecimal is lowercase. Sources are recorded in full; source and destination
+backing arrays are allocated at exactly the recorded lengths. Destinations are
+initialized with `0xa5 ^ index`.
+Oversized destinations add three bytes. Return values and final buffers come
+only from the direct C calls, never from input construction or Rust.
+
+For positive bit counts, packing returns the packed-byte count, clears unused
+low bits in a partial final byte, and preserves the destination suffix.
+Unpacking writes binary bytes, returns the bit count, and preserves its suffix.
+Direct observations also retain the zero-bit edge behavior: packing returns
+`0` with no writes; unpacking reads `src[0]`, writes its top bit to `dst[0]`,
+and returns `1`. Every zero-bit C call has nonempty source and destination
+backing arrays. These results must not be normalized to a future Rust contract.
+Undersized C buffers and NULL pointers are unsafe and are never harness cases;
+nonbinary unpacked input is outside this fixture's domain.
+
+From this repository root, regenerate all reference fixtures:
+
+```bash
+./scripts/generate-reference-vectors.sh
+```
+
+To regenerate only this fixture, or compare it with fresh C output:
+
+```bash
+./reference/run_bit_packing_vector.sh > tests/vectors/bits/bit_packing_vectors.json
+./reference/run_bit_packing_vector.sh > /tmp/bit_packing_vectors.fresh.json
+cmp /tmp/bit_packing_vectors.fresh.json tests/vectors/bits/bit_packing_vectors.json
+cargo fmt --check
+cargo test
+git diff --check
+```
+
+Review all regeneration diffs, including GSMTAP, BCD, and hexparse fixtures.
+The bits subdirectory is excluded by the existing nonrecursive packet/replay
+loaders. `tests/bit_packing_reference_vectors.rs` consumes the committed JSON
+without building C. It validates the exact schema, provenance, frozen input
+manifest and order, safe backing sizes, return values, complete destinations,
+partial-byte clearing, untouched suffixes, and capacity/source-suffix
+independence. It also checks rejection of corrupt observations and normalized
+zero-bit results. It does not implement Rust conversion APIs.
+
+The coordinated Rust port belongs in the sibling repository's nested crate.
+Its conformance test should compare API return counts and complete destinations
+against the same C fixture. From that repository root, after agreeing on the
+Rust API and deliberate safety differences:
+
+```bash
+../gsmtap-rs/reference/run_bit_packing_vector.sh > libosmocore-rs/tests/vectors/bit_packing_vectors.json
+cmp ../gsmtap-rs/tests/vectors/bits/bit_packing_vectors.json libosmocore-rs/tests/vectors/bit_packing_vectors.json
+cargo fmt --manifest-path libosmocore-rs/Cargo.toml --check
+cargo test --manifest-path libosmocore-rs/Cargo.toml
+```
+
+That fixture and Rust port are coordinated follow-up work, not deliverables
+implemented by this harness-only change. Safe Rust zero-work behavior for
+zero bits, empty or undersized slices, invalid input, and arithmetic limits
+must be documented and tested separately from compatible C observations.
+Testing support completion alone does not complete the Rust conversion.
