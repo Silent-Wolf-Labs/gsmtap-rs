@@ -80,9 +80,11 @@ implemented by the Rust library.
 The **Workbench view** selector opens Hexparse, BCD, Bits, and Base64
 conversion forms. Hexparse, BCD, and Bits support conversion, buffer comparisons, and copy
 controls; Base64 supports encoding, decoding, and decoded-size probes. See [Conversion UI review](docs/conversion-ui.md).
-This development stage uses the sibling Rust crate at
-`../libosmocore-rs/libosmocore-rs`; standalone and Docker build packaging
-will be addressed in the next packaging stage.
+The conversion dependency is an exact snapshot in `vendor/libosmocore-rs`
+from revision `25c4bae36a35ca2562e56db384370363ec2a6603` of the sibling Rust
+repository. CI and Docker builds use this snapshot without private repository
+credentials. See [snapshot provenance](vendor/libosmocore-rs/README.md).
+Crates.io publication still requires a published conversion dependency.
 
 ### Operating modes
 
