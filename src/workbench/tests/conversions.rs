@@ -191,3 +191,10 @@ async fn hexparse_rejects_invalid_structure_and_bounds_before_conversion() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
 }
+
+#[path = "base64_conversions.rs"]
+mod base64;
+#[path = "bcd_conversions.rs"]
+mod bcd;
+#[path = "bits_conversions.rs"]
+mod bits;
