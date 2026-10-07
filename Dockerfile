@@ -1,6 +1,7 @@
 FROM rust:1.85-bookworm AS builder
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
+COPY vendor ./vendor
 COPY src ./src
 COPY static ./static
 RUN cargo build --release --locked --bin gsmtap-workbench

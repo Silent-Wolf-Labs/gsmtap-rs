@@ -33,7 +33,7 @@ exclude = [
 path = "src/lib.rs"
 
 [dependencies]
-libosmocore-rs = { path = "../libosmocore-rs/libosmocore-rs" }
+libosmocore-rs = { version = "0.1.0", path = "vendor/libosmocore-rs" }
 axum = { version = "0.6", features = ["json", "macros"] }
 clap = { version = "4.5", features = ["derive", "env"] }
 serde = { version = "1", features = ["derive"] }
