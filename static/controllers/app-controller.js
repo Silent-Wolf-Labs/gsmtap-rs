@@ -14,6 +14,9 @@ import { createModifyPanel } from '../components/panels/modify-panel.js';
 import { createModePanel } from '../components/panels/mode-panel.js';
 import { createPacketHistoryView } from '../components/packet/packet-history-view.js';
 import { createPacketHistoryController } from './packet-history-controller.js';
+import { createConversionController } from './conversion-controller.js';
+import { createNavigationController } from './navigation-controller.js';
+import { createConversionPanels } from '../components/conversion/conversion-panel.js';
 
 async function defaultRefreshWorkbench() {
   const [status, packets] = await Promise.all([getStatus(), getPackets()]);
@@ -49,6 +52,13 @@ export function createAppController(documentRef = document, dependencies = {}) {
   let refreshQueued = false;
   let statusRevision = 0;
   let modeChangeInFlight = false;
+  const navigation = createNavigationController(documentRef);
+  let conversionViews;
+  const conversions = createConversionController({
+    service: dependencies.conversionService,
+    onChange: (tool, state) => conversionViews?.get(tool)?.update(state),
+  });
+  conversionViews = createConversionPanels({ documentRef, controller: conversions });
 
   function showResult(text) {
     resultNode.textContent = text;
@@ -174,12 +184,15 @@ export function createAppController(documentRef = document, dependencies = {}) {
 
   function start() {
     if (interval) return;
+    navigation.start();
     refresh();
     interval = setIntervalRequest(refresh, 1000);
     unsubscribe = subscribeToUpdatesRequest(refresh);
   }
 
   function stop() {
+    navigation.stop();
+    conversions.stop();
     if (interval) clearIntervalRequest(interval);
     if (unsubscribe) unsubscribe();
     interval = undefined;
