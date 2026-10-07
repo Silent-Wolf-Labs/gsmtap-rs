@@ -12,30 +12,64 @@
       <h1>GSMTAP Workbench</h1>
       <div id="status" role="status" aria-live="polite"></div>
     </header>
-    <section id="send-section" class="card" aria-labelledby="modify-selected-packet-heading" tabindex="-1" hidden>
-      <h2 id="modify-selected-packet-heading">Modify selected packet</h2>
-      <p id="selected-packet">Select a decoded RX packet to edit it.</p>
-      <form id="send-form">
-        <div id="fields" class="modify-fields"></div>
-      </form>
-      <section id="preview-card" class="card modify-preview-card" aria-labelledby="review-changes-heading" hidden>
-        <h3 id="review-changes-heading">Review changes</h3>
-        <div id="preview" aria-live="polite"></div>
-        <button id="confirm-send" type="button" disabled>Confirm and send</button>
-        <p id="result" role="status" aria-live="polite"></p>
+    <nav aria-label="Workbench views">
+      <label for="workbench-view">Workbench view
+        <select id="workbench-view">
+          <option value="packets">Packets</option>
+          <option value="hexparse">Hexparse</option>
+          <option value="bcd">BCD</option>
+          <option value="bits">Bits</option>
+          <option value="base64">Base64</option>
+        </select>
+      </label>
+    </nav>
+    <div data-workbench-view="packets">
+      <section id="send-section" class="card" aria-labelledby="modify-selected-packet-heading" tabindex="-1" hidden>
+        <h2 id="modify-selected-packet-heading">Modify selected packet</h2>
+        <p id="selected-packet">Select a decoded RX packet to edit it.</p>
+        <form id="send-form">
+          <div id="fields" class="modify-fields"></div>
+        </form>
+        <section id="preview-card" class="card modify-preview-card" aria-labelledby="review-changes-heading" hidden>
+          <h3 id="review-changes-heading">Review changes</h3>
+          <div id="preview" aria-live="polite"></div>
+          <button id="confirm-send" type="button" disabled>Confirm and send</button>
+          <p id="result" role="status" aria-live="polite"></p>
+        </section>
       </section>
-    </section>
-    <section id="packet-history" aria-labelledby="packet-history-heading">
-      <div class="packet-history-heading">
-        <h2 id="packet-history-heading">Packet history</h2>
-        <div class="packet-history-actions">
-          <button id="forward-selected" type="button" hidden>Forward selected (0)</button>
-          <button id="clear-filters" type="button" hidden>Clear filters</button>
-          <button id="clear-history" type="button" hidden>Clear history</button>
+      <section id="packet-history" aria-labelledby="packet-history-heading">
+        <div class="packet-history-heading">
+          <h2 id="packet-history-heading">Packet history</h2>
+          <div class="packet-history-actions">
+            <button id="forward-selected" type="button" hidden>Forward selected (0)</button>
+            <button id="clear-filters" type="button" hidden>Clear filters</button>
+            <button id="clear-history" type="button" hidden>Clear history</button>
+          </div>
         </div>
-      </div>
-      <div id="packets"></div>
-    </section>
+        <div id="packets"></div>
+      </section>
+    </div>
+    <div id="conversion-panels">
+      <section data-workbench-view="hexparse" aria-labelledby="hexparse-heading" hidden>
+        <h2 id="hexparse-heading">Hexparse</h2>
+        <p>Parse hexadecimal text into bytes. Hex source format lets you supply exact input bytes.</p>
+      </section>
+      <section data-workbench-view="bcd" aria-labelledby="bcd-heading" hidden>
+        <h2 id="bcd-heading">BCD</h2>
+        <p>Convert digit strings and BCD bytes, or individual characters and nibbles. Nibble offsets start with the low nibble.</p>
+        <p>Use hex source format for BCD bytes. Character-to-nibble maps unsupported bytes to 0. Decoding reports the requested digit count even when the text is truncated.</p>
+      </section>
+      <section data-workbench-view="bits" aria-labelledby="bits-heading" hidden>
+        <h2 id="bits-heading">Bits</h2>
+        <p>Pack byte-sized bits or unpack packed bytes. For byte-sized bits, use source bytes such as 00 01 01 00.</p>
+        <p>For packing, you can also choose Unpacked bits and enter 0110. Basic packing shifts raw byte values; extended packing treats nonzero bytes as 1.</p>
+        <p>Pack offsets: input in bytes, output in bits. Unpack offsets: input in bits, output in bytes.</p>
+      </section>
+      <section data-workbench-view="base64" aria-labelledby="base64-heading" hidden>
+        <h2 id="base64-heading">Base64</h2>
+        <p>Encode bytes, decode Base64, or probe decoded size.</p>
+      </section>
+    </div>
     <dialog id="clear-history-dialog" class="card clear-history-dialog" aria-labelledby="clear-history-dialog-heading">
       <form method="dialog" class="clear-history-dialog-form">
         <h2 id="clear-history-dialog-heading">Clear packet history?</h2>

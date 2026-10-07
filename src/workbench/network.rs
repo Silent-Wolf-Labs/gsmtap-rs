@@ -51,6 +51,13 @@ pub fn build_router_with_runtime(
     Router::new()
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
+        .route("/controllers/:asset", get(api::conversion_javascript))
+        .route("/services/:asset", get(api::conversion_javascript))
+        .route("/models/conversion/:asset", get(api::conversion_javascript))
+        .route(
+            "/components/conversion/:asset",
+            get(api::conversion_javascript),
+        )
         .route(
             "/controllers/app-controller.js",
             get(api::app_controller_javascript),

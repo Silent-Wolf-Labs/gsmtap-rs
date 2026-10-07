@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Path, Query, State},
+    extract::{OriginalUri, Path, Query, State},
     http::StatusCode,
     response::sse::{Event, KeepAlive, Sse},
     response::Html,
@@ -190,6 +190,75 @@ pub async fn stylesheet() -> (
         [(axum::http::header::CONTENT_TYPE, "text/css")],
         include_str!("../../static/styles/style.css"),
     )
+}
+
+pub async fn conversion_javascript(
+    OriginalUri(uri): OriginalUri,
+) -> Result<
+    (
+        [(axum::http::header::HeaderName, &'static str); 1],
+        &'static str,
+    ),
+    StatusCode,
+> {
+    let source = match uri.path() {
+        "/components/conversion/base64-result.js" => {
+            include_str!("../../static/components/conversion/base64-result.js")
+        }
+        "/components/conversion/bits-result.js" => {
+            include_str!("../../static/components/conversion/bits-result.js")
+        }
+        "/components/conversion/bcd-result.js" => {
+            include_str!("../../static/components/conversion/bcd-result.js")
+        }
+        "/controllers/conversion-controller.js" => {
+            include_str!("../../static/controllers/conversion-controller.js")
+        }
+        "/controllers/navigation-controller.js" => {
+            include_str!("../../static/controllers/navigation-controller.js")
+        }
+        "/services/conversion-service.js" => {
+            include_str!("../../static/services/conversion-service.js")
+        }
+        "/components/conversion/conversion-panel.js" => {
+            include_str!("../../static/components/conversion/conversion-panel.js")
+        }
+        "/components/conversion/conversion-field.js" => {
+            include_str!("../../static/components/conversion/conversion-field.js")
+        }
+        "/components/conversion/buffer-table.js" => {
+            include_str!("../../static/components/conversion/buffer-table.js")
+        }
+        "/components/conversion/copy-output.js" => {
+            include_str!("../../static/components/conversion/copy-output.js")
+        }
+        "/components/conversion/hexparse-result.js" => {
+            include_str!("../../static/components/conversion/hexparse-result.js")
+        }
+        "/models/conversion/input-model.js" => {
+            include_str!("../../static/models/conversion/input-model.js")
+        }
+        "/models/conversion/hexparse-input-model.js" => {
+            include_str!("../../static/models/conversion/hexparse-input-model.js")
+        }
+        "/models/conversion/bcd-input-model.js" => {
+            include_str!("../../static/models/conversion/bcd-input-model.js")
+        }
+        "/models/conversion/bits-input-model.js" => {
+            include_str!("../../static/models/conversion/bits-input-model.js")
+        }
+        "/models/conversion/base64-input-model.js" => {
+            include_str!("../../static/models/conversion/base64-input-model.js")
+        }
+        "/models/conversion/output-model.js" => {
+            include_str!("../../static/models/conversion/output-model.js")
+        }
+        _ => return Err(StatusCode::NOT_FOUND),
+    };
+    Ok((
+        [(axum::http::header::CONTENT_TYPE, "application/javascript")],
+        source,
+    ))
 }
 
 pub async fn base_stylesheet() -> (
