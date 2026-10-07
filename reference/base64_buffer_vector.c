@@ -101,6 +101,12 @@ int main(int argc, char **argv)
 	size_t olen = 0xdecafbad;
 	int rc;
 
+	if (argc == 2 && strcmp(argv[1], "--list") == 0) {
+		for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+			puts(cases[i].name);
+		return 0;
+	}
+
 	if (argc != 3 || strcmp(argv[1], "--case") != 0)
 		return 2;
 	vector = find_case(argv[2]);
