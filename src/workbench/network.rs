@@ -8,6 +8,7 @@ use super::{
     api::{self, AppState},
     capture::CaptureControl,
     config::{Config, Mode},
+    conversions,
     dto::{from_decoded, from_error},
     history::PacketStore,
     runtime::RuntimeHandle,
@@ -49,8 +50,39 @@ pub fn build_router_with_runtime(
         runtime,
     };
     Router::new()
+        .route(
+            "/api/conversions/base64",
+            axum::routing::post(conversions::base64::base64).layer(
+                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
+            ),
+        )
+        .route(
+            "/api/conversions/bits",
+            axum::routing::post(conversions::bits::bits).layer(
+                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
+            ),
+        )
+        .route(
+            "/api/conversions/bcd",
+            axum::routing::post(conversions::bcd::bcd).layer(axum::extract::DefaultBodyLimit::max(
+                conversions::MAX_REQUEST_BYTES,
+            )),
+        )
+        .route(
+            "/api/conversions/hexparse",
+            axum::routing::post(conversions::hexparse::hexparse).layer(
+                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
+            ),
+        )
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
+        .route("/controllers/:asset", get(api::conversion_javascript))
+        .route("/services/:asset", get(api::conversion_javascript))
+        .route("/models/conversion/:asset", get(api::conversion_javascript))
+        .route(
+            "/components/conversion/:asset",
+            get(api::conversion_javascript),
+        )
         .route(
             "/controllers/app-controller.js",
             get(api::app_controller_javascript),

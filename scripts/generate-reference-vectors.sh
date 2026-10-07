@@ -31,3 +31,7 @@ mkdir -p "$bits_output_dir"
 
 "$repository_root/reference/run_bit_packing_ext_vector.sh" \
 	> "$bits_output_dir/bit_packing_ext_vectors.json"
+
+base64_output_dir="$output_dir/base64"
+mkdir -p "$base64_output_dir"
+"$repository_root/reference/run_base64_buffer_vector.sh" > "$base64_output_dir/base64_buffer_vectors.json"

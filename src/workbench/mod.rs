@@ -3,6 +3,7 @@
 pub(crate) mod api;
 pub(crate) mod capture;
 pub(crate) mod config;
+pub(crate) mod conversions;
 pub(crate) mod dto;
 pub(crate) mod history;
 pub(crate) mod network;

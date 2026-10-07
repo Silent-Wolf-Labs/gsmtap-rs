@@ -34,3 +34,17 @@ pre { white-space:pre-wrap; overflow:auto; }
 .success { color:var(--success); }
 .error { color:var(--error); }
 .empty-state { color:var(--text-muted); font-style:italic; }
+
+[hidden] { display:none !important; }
+.conversion-form fieldset { border:1px solid var(--border); margin:1rem 0; }
+.conversion-form label { display:flex; max-width:36rem; }
+.conversion-form textarea { min-width:0; resize:vertical; }
+.conversion-form input[type="checkbox"] { align-self:flex-start; }
+.conversion-form input:focus-visible, .conversion-form textarea:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+.conversion-result { padding:.75rem; background:var(--bg-input); }
+.conversion-buffer { overflow:auto; }
+.conversion-buffer table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+.conversion-buffer th, .conversion-buffer td { padding:.4rem; text-align:left; border-bottom:1px solid var(--border); }
+.conversion-buffer caption { text-align:left; font-weight:600; margin:.5rem 0; }
+.conversion-byte-changed { background:var(--bg-preview-changed); }
+.conversion-buffer-navigation { display:flex; flex-wrap:wrap; align-items:center; }

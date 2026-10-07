@@ -363,3 +363,33 @@ Its owner should copy this completed JSON unchanged into the nested crate's
 This task changes only `gsmtap-rs` source, fixtures, documentation and Git state;
 it does not copy files into or implement APIs in the sibling repository.
 Testing support completion is one part of the overall conversion.
+
+## Base64 workbench reference
+
+The Base64 endpoint uses the existing sibling Rust APIs. Its 24 direct C
+observations are shared byte-for-byte with the sibling crate's
+`tests/vectors/base64_buffer_vectors.json`; this repository keeps them under
+`tests/vectors/base64/`, outside packet loaders. The original harness initializes
+all destination backing bytes to `0xa5` and the length to `0xdecafbad`. It emits
+complete final logical destinations, including untouched suffixes. Endpoint
+tests assert the full initialized and final buffers and the preserved length
+sentinel in Listen, Relay, and Modify modes.
+
+`run_base64_buffer_vector.sh` now supports full-array regeneration (no arguments),
+`--list`, and the existing `--case NAME` interface. It pins SHA-256 hashes for
+`src/core/base64.c`, `include/osmocom/core/base64.h`, and
+`tests/base64/base64_test.c`, verified byte-for-byte against upstream revision
+`950430e829a3dc1d162aa241bc0505745c5a7311`. It builds the canonical local C
+reference, links its explicit shared library, and selects that directory at
+runtime with preload cleared, failing if the reference is unavailable.
+
+```bash
+./reference/run_base64_buffer_vector.sh > /tmp/base64.fresh.json
+cmp /tmp/base64.fresh.json tests/vectors/base64/base64_buffer_vectors.json
+cmp tests/vectors/base64/base64_buffer_vectors.json ../libosmocore-rs/libosmocore-rs/tests/vectors/base64_buffer_vectors.json
+./scripts/generate-reference-vectors.sh
+```
+
+Review all regeneration diffs and preserve formatting of existing GSMTAP
+fixtures after confirming their parsed values remain identical. Ordinary
+endpoint tests read the committed observations without building C.
