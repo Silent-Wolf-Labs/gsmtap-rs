@@ -1,0 +1,10 @@
+[package]
+name = "libosmocore-rs"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+description = "Incremental Rust replacements for selected libosmocore APIs"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"

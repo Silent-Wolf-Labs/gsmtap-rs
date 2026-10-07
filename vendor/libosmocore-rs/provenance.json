@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/bucketking657/libosmocore-rs",
+  "revision": "25c4bae36a35ca2562e56db384370363ec2a6603",
+  "crate_path": "libosmocore-rs",
+  "sha256": {
+    "Cargo.toml": "632c65d4628f8100f8c647862243e4fe0d411e9cacfffa837f4a65f7784c377f",
+    "src/base64.rs": "4632adc731c81655330788c7558d5703a07aa6fe4d19c57b932046d9cb44e3c0",
+    "src/bcd.rs": "656d5ba0af2fbd82899de49423ddc746b9ca6f415fe57693363691cf1434ac7f",
+    "src/bits.rs": "d8d7e2e1d8a0ffdefc510ea516d19a3777610fa0619f2f12fcde71b6caf4a69f",
+    "src/gsmtap.rs": "af814c5571ce5b642bfd52414bc3cb9133264f2df50c698b4e3a2475b6ef4688",
+    "src/hexparse.rs": "f45d5cfe44f4c4e1a3555d78fb34fff7490846f21f46dcb2a31ea1a6304b56ef",
+    "src/lib.rs": "980453b492a3ebdcc2f3986f895c1187925a76f57d4a06311816701f39a79052"
+  }
+}
