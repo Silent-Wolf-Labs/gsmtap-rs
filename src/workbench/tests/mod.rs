@@ -37,3 +37,4 @@ mod history;
 mod modes;
 
 mod bcd_conversions;
+mod bits_conversions;
