@@ -31,6 +31,7 @@ fn store() -> Arc<PacketStore> {
 mod api;
 mod capture;
 mod config;
+mod conversions;
 mod forwarding;
 mod history;
 mod modes;
