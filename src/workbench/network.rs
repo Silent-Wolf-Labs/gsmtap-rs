@@ -52,19 +52,27 @@ pub fn build_router_with_runtime(
     Router::new()
         .route(
             "/api/conversions/base64",
-            axum::routing::post(conversions::base64::base64).layer(axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES)),
+            axum::routing::post(conversions::base64::base64).layer(
+                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
+            ),
         )
         .route(
             "/api/conversions/bits",
-            axum::routing::post(conversions::bits::bits).layer(axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES)),
+            axum::routing::post(conversions::bits::bits).layer(
+                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
+            ),
         )
         .route(
             "/api/conversions/bcd",
-            axum::routing::post(conversions::bcd::bcd).layer(axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES)),
+            axum::routing::post(conversions::bcd::bcd).layer(axum::extract::DefaultBodyLimit::max(
+                conversions::MAX_REQUEST_BYTES,
+            )),
         )
         .route(
             "/api/conversions/hexparse",
-            axum::routing::post(conversions::hexparse::hexparse).layer(axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES)),
+            axum::routing::post(conversions::hexparse::hexparse).layer(
+                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
+            ),
         )
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
