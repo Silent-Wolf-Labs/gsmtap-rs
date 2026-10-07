@@ -35,7 +35,3 @@ mod conversions;
 mod forwarding;
 mod history;
 mod modes;
-
-mod bcd_conversions;
-mod bits_conversions;
-mod base64_conversions;
