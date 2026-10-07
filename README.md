@@ -77,6 +77,13 @@ docker run --rm -p 8080:8080 -p 4729:4729/udp \
 The browser only calls the application API. GSMTAP parsing and encoding remain
 implemented by the Rust library.
 
+The **Workbench view** selector opens Hexparse, BCD, Bits, and Base64
+conversion forms. Hexparse, BCD, and Bits support conversion, buffer comparisons, and copy
+controls; Base64 supports encoding, decoding, and decoded-size probes. See [Conversion UI review](docs/conversion-ui.md).
+This development stage uses the sibling Rust crate at
+`../libosmocore-rs/libosmocore-rs`; standalone and Docker build packaging
+will be addressed in the next packaging stage.
+
 ### Operating modes
 
 The workbench has three operating modes. The web UI is available in every
