@@ -104,8 +104,7 @@ impl Destination {
     }
 }
 
-
-pub mod hexparse;
+pub mod base64;
 pub mod bcd;
 pub mod bits;
-pub mod base64;
+pub mod hexparse;
