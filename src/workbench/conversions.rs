@@ -108,3 +108,4 @@ impl Destination {
 pub mod hexparse;
 pub mod bcd;
 pub mod bits;
+pub mod base64;

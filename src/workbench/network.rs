@@ -51,6 +51,10 @@ pub fn build_router_with_runtime(
     };
     Router::new()
         .route(
+            "/api/conversions/base64",
+            axum::routing::post(conversions::base64::base64).layer(axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES)),
+        )
+        .route(
             "/api/conversions/bits",
             axum::routing::post(conversions::bits::bits).layer(axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES)),
         )
