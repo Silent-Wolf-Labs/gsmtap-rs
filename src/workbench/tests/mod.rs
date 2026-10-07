@@ -35,3 +35,5 @@ mod conversions;
 mod forwarding;
 mod history;
 mod modes;
+
+mod bcd_conversions;
