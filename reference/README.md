@@ -393,3 +393,159 @@ cmp tests/vectors/base64/base64_buffer_vectors.json ../libosmocore-rs/libosmocor
 Review all regeneration diffs and preserve formatting of existing GSMTAP
 fixtures after confirming their parsed values remain identical. Ordinary
 endpoint tests read the committed observations without building C.
+
+## Bit-vector primitives (first stage)
+
+`bitvec_vector.c` makes 5,944 direct calls covering positional binary/L/H reads,
+all four bit values for positional and sequential writes, sequential L/H reads,
+bulk writes (including partial failures), zeroing, used-byte/tailroom helpers,
+and bit-value characters. Every call records returns, cursor state, and all
+four backing bytes, including the suffix beyond the declared vector length.
+Inputs span lengths zero to three, three byte patterns, every in-range position,
+byte boundaries, and invalid positions/cursors including `UINT_MAX`.
+
+`run_bitvec_vector.sh` checks the source, header, and upstream test SHA-256 hashes,
+verified byte-for-byte against revision `950430e829a3dc1d162aa241bc0505745c5a7311`.
+It builds and links only the required sibling `libosmocore` reference, clears
+runtime library overrides, and enforces a 32-bit C unsigned-int ABI. It never
+uses a substitute C installation.
+
+The dedicated `tests/vectors/bitvec/bitvec_vectors.json` fixture stays outside
+packet/replay loaders. `tests/bitvec_reference_vectors.rs` validates its schema,
+provenance, frozen inputs/order/count, output types, and untouched backing suffix.
+Its `tests/support/bitvec_fixture.rs` validator must match the conversion
+repository's `libosmocore-rs/tests/core/bitvec_fixture.rs` byte-for-byte.
+Rust-versus-C comparisons belong in the sibling crate. Rust preserves the reference's
+32-bit unsigned tailroom wraparound directly; a separate checked helper validates
+capacity. Invalid enum values are excluded by its type.
+
+From this repository root, verify fresh observations without changing fixtures:
+
+```bash
+./reference/run_bitvec_vector.sh > /tmp/bitvec.fresh.json
+cmp /tmp/bitvec.fresh.json tests/vectors/bitvec/bitvec_vectors.json
+cmp /tmp/bitvec.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_vectors.json
+cmp tests/support/bitvec_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_fixture.rs
+```
+
+For intentional regeneration, review the C-generated diff before copying to both
+fixtures. The general generation script includes this runner. This stage adds
+harness and validation support; the integer/buffer and indexed-operation stages
+are documented below. The workbench's vendored crate is updated only from a
+reviewed committed revision, per the agent guide.
+
+## Bit-vector integer and buffer operations (second stage)
+
+`bitvec_buffers_vector.c` and `run_bitvec_vector.sh --buffers` directly observe
+`bitvec_set_u64`, `bitvec_set_uint`, `bitvec_get_uint`, `bitvec_get_int16_msb`,
+`bitvec_fill`, `bitvec_spare_padding`, `bitvec_get_bytes`, and `bitvec_set_bytes`.
+The fixture contains 38,837 calls across lengths zero, one, two, four, and eight,
+three initial patterns, boundary/invalid cursors, integer widths from zero to
+64 plus oversized widths, and all eight byte alignments. Each record captures
+return codes, the cursor, all eight vector backing bytes and six transfer bytes.
+Capacity failures, partial progress, preserved neighbors, signed 32-bit results,
+count narrowing, and wrapping fill/padding calculations are included.
+
+The runner verifies the same pinned source/header/test hashes as the primitive
+fixture, and additionally enforces the reference's signed 32-bit return ABI.
+The input manifest excludes undefined C shifts and scalar reads outside the
+declared vector length. Wide reads with zero high bits (or an earlier capacity
+error) retain their defined C behavior. Rust handles unsafe slice/shift cases
+in separate unit tests; it does not generate expected C outcomes.
+
+`tests/bitvec_buffers_reference_vectors.rs` validates schema, provenance, frozen
+inputs/order/count, full buffers and guards in the dedicated
+`tests/vectors/bitvec/bitvec_buffers_vectors.json` fixture. Its shared validator
+and parser, `tests/support/bitvec_buffers_fixture.rs` and `bitvec_fixture.rs`,
+must match the corresponding files in the conversion crate's `tests/core/`.
+The general fixture generation script includes both bit-vector runners.
+
+From this repository root:
+
+```bash
+./reference/run_bitvec_vector.sh --buffers > /tmp/bitvec_buffers.fresh.json
+cmp /tmp/bitvec_buffers.fresh.json tests/vectors/bitvec/bitvec_buffers_vectors.json
+cmp /tmp/bitvec_buffers.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_buffers_vectors.json
+cmp tests/support/bitvec_buffers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_buffers_fixture.rs
+```
+
+Review regenerated observations before updating both fixture copies. Normal
+Rust tests use committed fixtures and require no C installation.
+
+## Bit-vector indexed operations and helpers (third stage)
+
+`bitvec_operations_vector.c`, selected by `run_bitvec_vector.sh --operations`,
+records 38,643 direct calls to indexed field reads/writes, Nth-set-bit and binary
+searches, both run-length helpers, left shifts and CSN.1 array encoding/estimates.
+The same pinned local source/header/test hashes and build are used; the harness
+additionally verifies the signed-int conversion and recorded EINTR/EOVERFLOW ABI.
+
+Cases record all eight backing bytes, scalar 64-bit results, errno, return codes,
+and independent external index/cursor states. Coverage includes zero-width field
+reads, capacity errors, partial field writes, byte-count narrowing with wrapped
+index updates, search sentinels, all valid run cursors, partial limits, invalid
+cursors with defined returns, and oversized limits with safe early mismatches.
+Shifts preserve the local C routine's retained tail and skipped penultimate byte;
+array cases cover dry-run wraparound, ignored setter errors, and partial writes.
+
+The dedicated `tests/vectors/bitvec/bitvec_operations_vectors.json` file stays
+outside packet/replay loading. `tests/bitvec_operations_reference_vectors.rs`
+checks strict schema/provenance and the frozen input manifest through
+`tests/support/bitvec_operations_fixture.rs`. The shared validator and its
+`bitvec_fixture.rs` parser must match the conversion crate's `tests/core/` copies.
+C input filters avoid undefined storage accesses and shifts; unsafe-call handling
+belongs in Rust safety tests. C field-read errno is represented by explicit Rust
+errors; Rust does not reproduce the global errno side effect.
+
+From this repository root:
+
+```bash
+./reference/run_bitvec_vector.sh --operations > /tmp/bitvec_operations.fresh.json
+cmp /tmp/bitvec_operations.fresh.json tests/vectors/bitvec/bitvec_operations_vectors.json
+cmp /tmp/bitvec_operations.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_operations_vectors.json
+cmp tests/support/bitvec_operations_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_operations_fixture.rs
+```
+
+The general generation script includes all four stages. Review regenerated
+observations before updating both copies. The final buffer/text adapter stage is documented below. Rust storage is
+caller-owned instead of allocated through C talloc contexts.
+
+## Bit-vector buffer and text adapters (final stage)
+
+`bitvec_adapters_vector.c`, selected by `run_bitvec_vector.sh --adapters`, records
+6,757 calls to full-buffer pack/unpack, hex loading and string formatting. The
+runner pins both bitvec and hex-parser source/header/upstream-test SHA-256 hashes,
+verified byte-for-byte against revision `950430e829a3dc1d162aa241bc0505745c5a7311`.
+All headers, linked libosmocore code and runtime selection use the required local
+reference checkout. Source behavior is unchanged.
+
+Cases cover backing lengths zero to eight, exact/oversized transfer buffers,
+arbitrary copy cursors, malformed/odd/embedded-NUL/whitespace/high-byte hex
+inputs, every possible single input byte, and every valid formatting cursor
+through eight bytes over eight patterns. Each call records complete backing,
+source and eighty-byte transfer buffers, return codes and cursor state. Output
+guards, unused suffixes, partial hex mutations, leading separators, and NUL
+terminators are checked. The formatting harness allocates the actual
+`cur_bit + ceil(cur_bit / 8) + 1` bytes, including spaces omitted in C's comment.
+
+The fixture is isolated in `tests/vectors/bitvec/bitvec_adapters_vectors.json`.
+`tests/bitvec_adapters_reference_vectors.rs` validates its strict schema and
+frozen input manifest through `tests/support/bitvec_adapters_fixture.rs`; that
+validator and its shared `bitvec_fixture.rs` parser must match the conversion
+crate's `tests/core/` copies. Unsafe short buffers/invalid cursor errors belong
+in Rust safety tests, not C observations.
+
+From this repository root:
+
+```bash
+./reference/run_bitvec_vector.sh --adapters > /tmp/bitvec_adapters.fresh.json
+cmp /tmp/bitvec_adapters.fresh.json tests/vectors/bitvec/bitvec_adapters_vectors.json
+cmp /tmp/bitvec_adapters.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_adapters_vectors.json
+cmp tests/support/bitvec_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_adapters_fixture.rs
+```
+
+The general generation script includes all four stages. Review regenerated
+observations before copying to both fixtures. All nonallocation bitvec APIs are
+covered; C talloc context allocation/free is replaced by caller-owned Rust
+storage. The vendored workbench crate remains pinned to its committed provenance
+until a reviewed revision is available for refresh.
