@@ -66,7 +66,7 @@ loaders. The `gsmtap-rs` test checks fixture structure and provenance; the
 From the `libosmocore-rs` repository root, regenerate the fixture with:
 
 ```bash
-../gsmtap-rs/reference/run_bcd_conversion_vector.sh > libosmocore-rs/tests/vectors/bcd_conversion_vectors.json
+../gsmtap-rs/reference/run_bcd_conversion_vector.sh > libosmocore-rs/tests/compatibility/vectors/bcd_conversion_vectors.json
 ```
 
 The two committed BCD fixtures should match byte for byte. To regenerate only
@@ -105,7 +105,7 @@ byte for byte.
 From the `libosmocore-rs` repository root, regenerate the Rust fixture with:
 
 ```bash
-../gsmtap-rs/reference/run_hexparse_vector.sh > libosmocore-rs/tests/vectors/hexparse_buffer_vectors.json
+../gsmtap-rs/reference/run_hexparse_vector.sh > libosmocore-rs/tests/compatibility/vectors/hexparse_buffer_vectors.json
 ```
 
 Review the generated diff before committing. The normal Rust tests consume the
@@ -224,8 +224,8 @@ against the same C fixture. From that repository root, after agreeing on the
 Rust API and deliberate safety differences:
 
 ```bash
-../gsmtap-rs/reference/run_bit_packing_vector.sh > libosmocore-rs/tests/vectors/bit_packing_vectors.json
-cmp ../gsmtap-rs/tests/vectors/bits/bit_packing_vectors.json libosmocore-rs/tests/vectors/bit_packing_vectors.json
+../gsmtap-rs/reference/run_bit_packing_vector.sh > libosmocore-rs/tests/compatibility/vectors/bit_packing_vectors.json
+cmp ../gsmtap-rs/tests/vectors/bits/bit_packing_vectors.json libosmocore-rs/tests/compatibility/vectors/bit_packing_vectors.json
 cargo fmt --manifest-path libosmocore-rs/Cargo.toml --check
 cargo test --manifest-path libosmocore-rs/Cargo.toml
 ```
@@ -386,7 +386,7 @@ runtime with preload cleared, failing if the reference is unavailable.
 ```bash
 ./reference/run_base64_buffer_vector.sh > /tmp/base64.fresh.json
 cmp /tmp/base64.fresh.json tests/vectors/base64/base64_buffer_vectors.json
-cmp tests/vectors/base64/base64_buffer_vectors.json ../libosmocore-rs/libosmocore-rs/tests/vectors/base64_buffer_vectors.json
+cmp tests/vectors/base64/base64_buffer_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/base64_buffer_vectors.json
 ./scripts/generate-reference-vectors.sh
 ```
 
