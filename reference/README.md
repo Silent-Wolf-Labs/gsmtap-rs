@@ -42,6 +42,12 @@ pointing elsewhere. A missing local installation is an error. For example:
 source ./scripts/libosmocore-env.sh
 ```
 
+The GSMTAP harness preserves the committed indented JSON layout so full
+regeneration is byte-identical as well as behaviorally identical. The existing
+`gsmtap_um_uplink_pcs_boundary.json` closing-brace whitespace was normalized
+to that layout during prim validation; its values and encoded bytes did not
+change.
+
 The generator intentionally captures only C-produced output in
 `tests/vectors/`. Rust code must only consume those fixtures.
 
@@ -881,3 +887,51 @@ cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/test
 `./scripts/generate-reference-vectors.sh` includes all four msgb runners.
 When intentionally revising C cases, review every changed observation and
 update the frozen input manifest/count/fingerprint from direct C output.
+
+## Primitive observations
+
+`prim_vectors.json` contains **6,865 direct C records**: 2,112 initialization
+and reinitialization records, 4,752 event-map records, and one callback record.
+The initialization matrix combines six SAPs (including all three namespace
+bases), eight primitive IDs, eleven operation values, both message attachment
+states, and two initialization phases. Phase two complements every numeric
+field and toggles attachment. This covers zero/max values, packed-ID overflow,
+low-byte operation collisions, all four known names, and unknown-name fallback.
+Event cases cover empty sentinel maps, exact and single-field mismatches,
+duplicate first matches, sentinel-before-match, zero events, and `UINT32_MAX-1`.
+Full raw operations must match even when packed low bytes coincide.
+
+Every init/event record snapshots all 16 backing bytes, data/tail/length,
+all four layer offsets, and all five control words. Attachment is checked by
+identity. The callback record observes header/payload/context mutation and a
+negative return through the C callback typedef. Unsafe pointers, unterminated C
+maps, and raw embedded-header layout are not C fixture inputs; Rust separately
+tests bounded maps and stable unknown-name text.
+
+The shared validator checks exact schema, numeric canonicalization/ranges,
+ordered input coverage, map entries, ABI, source hashes, and a frozen FNV-1a
+fingerprint of the complete C output. This fingerprint protects fixture integrity,
+not cryptographic authenticity. Corruption tests reject missing/duplicate/unknown
+fields, altered provenance/ABI/inputs/maps/output/association/names, missing or
+extra records, and malformed framing. Ordinary Cargo tests require no C build.
+
+`reference/run_prim_vector.sh` verifies SHA-256 hashes for `prim.c`, `prim.h`,
+`utils.c`, `utils.h`, `msgb.c`, and `msgb.h`, verified byte-for-byte against
+revision `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-09. It builds,
+links, and selects runtime libraries only from the required local C checkout.
+It requires the observed ABI: 32-bit unsigned int/operation enum and 64-bit
+unsigned long/pointers. It fails on source or ABI mismatch.
+
+Regenerate from the testing repository:
+
+```bash
+./reference/run_prim_vector.sh > /tmp/prim.fresh.json
+cmp /tmp/prim.fresh.json tests/vectors/prim/prim_vectors.json
+cmp tests/vectors/prim/prim_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/prim_vectors.json
+cmp tests/support/prim_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/prim_fixture.rs
+```
+
+`./scripts/generate-reference-vectors.sh` includes the prim runner. Fixtures and
+validators are shared byte-for-byte. Review all regeneration diffs; update the
+frozen coverage/fingerprint only from reviewed direct C observations. These
+independent fixtures require no vendored crate snapshot refresh.

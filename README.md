@@ -556,3 +556,14 @@ cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/test
 `./scripts/generate-reference-vectors.sh` includes all four msgb runners.
 When intentionally revising C cases, review every changed observation and
 update the frozen input manifest/count/fingerprint from direct C output.
+
+## Primitive compatibility evidence
+
+The reference harness also covers generic `libosmocore` primitives: header
+initialization/reinitialization, raw SAP/primitive/operation values, operation
+names, packed IDs, message association/preservation, ordered event maps, and
+callback mutation. The 6,865 direct C observations and shared strict fixture
+validator live under `tests/vectors/prim/` and `tests/support/prim_fixture.rs`.
+See [reference instructions](reference/README.md#primitive-observations) for
+provenance and deterministic regeneration. This adds independent fixture
+support; the vendored crate snapshot is refreshed only from a reviewed commit.
