@@ -189,22 +189,32 @@ static struct msgb *make_message(const struct vector_case *vector)
 
 static void print_vector(const struct vector_case *vector, const struct msgb *message)
 {
-	printf("{\"case\":\"%s\",", vector->name);
-	printf("\"api\":\"%s\",", api_name(vector->api));
-	printf("\"libosmocore_commit\":\"950430e829a3dc1d162aa241bc0505745c5a7311\",");
-	puts("\"input\":{");
+	/* Preserve the committed fixture layout for byte-identical regeneration. */
+	puts("{");
+	printf("  \"case\":\"%s\",\n", vector->name);
+	printf("  \"api\":\"%s\",\n", api_name(vector->api));
+	puts("  \"libosmocore_commit\":\"950430e829a3dc1d162aa241bc0505745c5a7311\",");
+	puts("  \"input\":{");
 	if (vector->api == CONSTRUCTOR_MAKEMSG_EX)
-		printf("\"type\":%u,", vector->type);
-	printf("\"arfcn\":%u,\"timeslot\":%u,", vector->arfcn, vector->timeslot);
-	printf("\"channel_type\":%u,\"sub_slot\":%u,", vector->channel_type, vector->sub_slot);
-	printf("\"frame_number\":%u,\"signal_dbm\":%d,", vector->frame_number, vector->signal_dbm);
-	printf("\"snr_db\":%d,\"payload_hex\":\"", vector->snr_db);
+		printf("    \"type\":%u,\n", vector->type);
+	printf("    \"arfcn\":%u,\n", vector->arfcn);
+	printf("    \"timeslot\":%u,\n", vector->timeslot);
+	printf("    \"channel_type\":%u,\n", vector->channel_type);
+	printf("    \"sub_slot\":%u,\n", vector->sub_slot);
+	printf("    \"frame_number\":%u,\n", vector->frame_number);
+	printf("    \"signal_dbm\":%d,\n", vector->signal_dbm);
+	printf("    \"snr_db\":%d,\n", vector->snr_db);
+	printf("    \"payload_hex\":\"");
 	print_hex(vector->payload, vector->payload_len);
-	puts("\"},");
-	printf("\"return_code\":0,\"message_created\":true,");
-	printf("\"length\":%u,\"encoded_hex\":\"", message->len);
+	puts("\"");
+	puts("  },");
+	puts("  \"return_code\":0,");
+	puts("  \"message_created\":true,");
+	printf("  \"length\":%u,\n", message->len);
+	printf("  \"encoded_hex\":\"");
 	print_hex(message->data, message->len);
-	puts("\"}");
+	puts("\"");
+	puts("}");
 }
 
 static void list_cases(void)
