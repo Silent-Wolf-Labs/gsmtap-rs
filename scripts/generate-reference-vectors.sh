@@ -49,3 +49,7 @@ mkdir -p "$msgb_output_dir"
 "$repository_root/reference/run_msgb_vector.sh" --layers > "$msgb_output_dir/msgb_layers_vectors.json"
 "$repository_root/reference/run_msgb_vector.sh" --resize > "$msgb_output_dir/msgb_resize_vectors.json"
 "$repository_root/reference/run_msgb_vector.sh" --adapters > "$msgb_output_dir/msgb_adapters_vectors.json"
+
+prim_output_dir="$output_dir/prim"
+mkdir -p "$prim_output_dir"
+"$repository_root/reference/run_prim_vector.sh" > "$prim_output_dir/prim_vectors.json"
