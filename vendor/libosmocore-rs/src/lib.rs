@@ -2,10 +2,11 @@
 //!
 //! Conversion surfaces include GSMTAP packet construction, Base64 buffers,
 //! hexadecimal parsing, BCD encoding and decoding, and basic/extended packed
-//! bit conversion.
+//! bit conversion, cursor-based bit-vector primitives, owned message-buffer
+//! primitives, inter-layer primitive metadata/event mapping, and core CRCs.
 
-pub mod base64;
-pub mod bcd;
-pub mod bits;
+pub mod core;
 pub mod gsmtap;
-pub mod hexparse;
+
+// Preserve the original public module paths for existing consumers.
+pub use crate::core::{base64, bcd, bits, hexparse};
