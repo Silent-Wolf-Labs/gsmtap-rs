@@ -2,7 +2,7 @@
 
 This directory contains the unchanged manifest and Rust sources from
 `bucketking657/libosmocore-rs`, nested crate `libosmocore-rs`, at revision
-`25c4bae36a35ca2562e56db384370363ec2a6603`. The source manifest declares MIT licensing.
+`e42f4d2d14fb120b99bd1e8bfbd86e73a8c4df32`. The source manifest declares MIT licensing.
 `provenance.json` records the origin, revision, and SHA-256 of every copied file.
 
 The source repository is private. Keeping this reviewed snapshot in the build

@@ -1,14 +1,19 @@
 {
   "repository": "https://github.com/bucketking657/libosmocore-rs",
-  "revision": "25c4bae36a35ca2562e56db384370363ec2a6603",
+  "revision": "e42f4d2d14fb120b99bd1e8bfbd86e73a8c4df32",
   "crate_path": "libosmocore-rs",
   "sha256": {
     "Cargo.toml": "632c65d4628f8100f8c647862243e4fe0d411e9cacfffa837f4a65f7784c377f",
-    "src/base64.rs": "4632adc731c81655330788c7558d5703a07aa6fe4d19c57b932046d9cb44e3c0",
-    "src/bcd.rs": "656d5ba0af2fbd82899de49423ddc746b9ca6f415fe57693363691cf1434ac7f",
-    "src/bits.rs": "d8d7e2e1d8a0ffdefc510ea516d19a3777610fa0619f2f12fcde71b6caf4a69f",
-    "src/gsmtap.rs": "af814c5571ce5b642bfd52414bc3cb9133264f2df50c698b4e3a2475b6ef4688",
-    "src/hexparse.rs": "f45d5cfe44f4c4e1a3555d78fb34fff7490846f21f46dcb2a31ea1a6304b56ef",
-    "src/lib.rs": "980453b492a3ebdcc2f3986f895c1187925a76f57d4a06311816701f39a79052"
+    "src/core/base64.rs": "4632adc731c81655330788c7558d5703a07aa6fe4d19c57b932046d9cb44e3c0",
+    "src/core/bcd.rs": "656d5ba0af2fbd82899de49423ddc746b9ca6f415fe57693363691cf1434ac7f",
+    "src/core/bits.rs": "d8d7e2e1d8a0ffdefc510ea516d19a3777610fa0619f2f12fcde71b6caf4a69f",
+    "src/core/bitvec.rs": "68f028edc9694609dec7609a8d6bf5f3dada2fb30489b203ebf60f71dd61a552",
+    "src/core/crc.rs": "96408a94997664c440a24eb209ac45f0430eff1da10ee6a20122f9d584ec5541",
+    "src/core/hexparse.rs": "f45d5cfe44f4c4e1a3555d78fb34fff7490846f21f46dcb2a31ea1a6304b56ef",
+    "src/core/mod.rs": "5dc22d833942b45e91960fa18674040b9b2cde269e1d1becb9038d115a9f9e2a",
+    "src/core/msgb.rs": "f6938c6b2a90656c7c2e46123581e5a2cb0eff42de3bff9e880373954a21630c",
+    "src/core/prim.rs": "1dd11af2936491df16ee28fe1f9eed4a96bd8d4d70b5c8baf8da5db9ae9055ce",
+    "src/gsmtap/mod.rs": "af814c5571ce5b642bfd52414bc3cb9133264f2df50c698b4e3a2475b6ef4688",
+    "src/lib.rs": "e5fb286ac4ca667cdc8c850941d18d2f31eea5105368f3bc245ecdb3d6dd02a0"
   }
 }
