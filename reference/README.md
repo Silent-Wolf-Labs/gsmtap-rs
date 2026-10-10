@@ -1007,3 +1007,87 @@ The full generator includes both CRC stages. Fixtures and validators are shared
 byte-for-byte; ordinary Cargo tests require no C build. Review every generation
 diff, including existing fixtures. Update fingerprints only from reviewed direct
 C evidence. No vendored crate refresh is needed for independent fixture support.
+
+## Convolutional evidence and backend gate
+
+`conv_vector.c` calls all 17 selected core convolutional exports directly.
+`run_conv_vector.sh all` emits 36,254 flat NDJSON records: four metadata,
+1,066 descriptor and 35,184 operation records across 1,707 case identifiers.
+The linked public dispatcher stream and forced isolated scalar/SSE/AVX streams
+are labeled separately. Snapshots contain semantic state and valid history,
+not C memory layout, addresses or uninitialized allocation bytes. Full inputs
+and initialized/final destinations retain suffixes. Expected bits, metrics and
+returns come from C only; the harness does not implement a decoder.
+
+Unlike the older runners above, this runner never rebuilds the source tree.
+It uses the existing pinned local library for public dispatch and temporary
+exact-source builds for isolated backends. The linked dispatcher observations
+are pinned-local-binary evidence, not proof that the existing binary was built
+from the pinned sources. Exact-source scalar/SSE/AVX observations remain
+separately identified. The required untracked local
+snapshot has no `.git`; upstream Git revision is `unknown`. Embedded version
+`1.14.1.1-95043` is descriptive, not proof of a revision.
+`conv_provenance.json` pins 34 participating source/header/template/build/version
+files plus the existing library. `conv_generator_provenance.json` pins the
+harness, runner, reference manifest and schema/coverage. Missing or mismatched
+files, unpinned transitive project includes and external library aliases fail
+closed. No system library or other checkout is substituted.
+
+The matrix covers small exhaustive input, larger seeded/structured patterns,
+rates `1,2,3,4,5,8,9`, constraints `2,3,5,7,9,10`, termination `0,1,2,42`,
+recursion, puncturing, soft erasures/noise/ties/`-128`, normalization boundaries,
+state reuse/reset/rewind and GMR/WiMax upstream fixture-only vectors.
+State loading packs and narrows bits instead of walking transitions. The length
+helper subtracts all puncture entries, even beyond the stream, so it can differ
+from actual write counts and can return defined negative lengths. The approved
+Rust compatibility helper preserves these in a checked signed
+`Result<i32, ConvError>`. Safe actual output capacity is a separate checked
+`usize` result derived from the operation, current stream position and puncture
+cursor, never from casting that signed helper. Generic metrics are squared/scaled
+errors; correlation
+success is status zero. Never combine those semantic expectations.
+
+Available scalar/SSE/AVX decoded outputs and status returns agree for the frozen
+comparable cases. The linked library's actual runtime pointer identifies AVX
+through pinned ELF symbols. `all` withholds combined output on material backend
+divergence; individual modes retain separate observations. NEON's strict tie
+comparison differs in inspected source and was not executed, so NEON is outside
+the claimed backend-parity boundary. Review has approved the observed
+scalar/SSE/AVX tie behavior (scalar `>=`, including the equality choice) as the
+portable Rust correlation contract, independent of CPU. No universal backend
+equivalence is claimed. This pass adds no Rust convolutional code; after evidence
+review and authorized commits, only checked descriptors and reusable encoding
+may proceed, not either decoder.
+
+`tests/support/conv_fixture.rs` is shared byte-for-byte with the conversion
+repository; `tests/conv_reference_vectors.rs` checks schema/provenance,
+operations/state/buffers, frozen coverage/digest, corruptions and available
+backend comparisons. It does not implement or validate Rust convolutional
+engines. Ordinary Cargo tests require no C installation.
+
+From this repository:
+
+```bash
+./reference/run_conv_vector.sh --verify
+./reference/run_conv_vector.sh --audit
+./reference/run_conv_vector.sh all > /tmp/conv.fresh.ndjson
+cmp /tmp/conv.fresh.ndjson tests/vectors/conv/conv_vectors.ndjson
+cmp /tmp/conv.fresh.ndjson ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_vectors.ndjson
+cmp tests/support/conv_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/conv_fixture.rs
+cmp reference/conv_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_provenance.json
+cmp reference/conv_generator_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_generator_provenance.json
+```
+
+Individual evidence modes are `linked-dispatch`, `scalar`, `sse` and `avx`.
+The `--audit` mode instruments isolated scalar/SSE/AVX golden paths with
+ASan/UBSan and requires separate invalid-shift/signed-sizing-overflow diagnostics
+without golden output. The linked library is not sanitizer-instrumented.
+Unsafe short tail-biting/empty non-flush traceback and unreachable-history
+cases are excluded, not accepted as golden behavior. See the sibling
+[`docs/conv-compatibility.md`](../../libosmocore-rs/docs/conv-compatibility.md)
+for detailed findings and safety boundaries.
+
+The full generator includes `all`, atomically replacing the convolutional
+fixture only after success. Regenerate twice, review all existing fixture diffs,
+and compare both shared copies and manifests. No vendored Rust snapshot refresh,
+workbench endpoint, packet/replay integration or commit is part of this stage.
