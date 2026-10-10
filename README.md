@@ -567,3 +567,14 @@ validator live under `tests/vectors/prim/` and `tests/support/prim_fixture.rs`.
 See [reference instructions](reference/README.md#primitive-observations) for
 provenance and deterministic regeneration. This adds independent fixture
 support; the vendored crate snapshot is refreshed only from a reviewed commit.
+
+## Core CRC compatibility evidence
+
+The direct C harness covers byte CRC-16/CCITT and generic parameterized CRC
+8/16/32/64, with 26,320 observation records under `tests/vectors/crc/` and
+strict shared validation in `tests/support/crc_fixture.rs`. Golden fixtures
+exclude undefined C shifts; a separate UBSan audit establishes that boundary.
+See [reference instructions](reference/README.md#core-crc-observations) for
+provenance and deterministic regeneration. Protocol-specific parity/channel
+and convolutional APIs remain outside this scope. Fixture support requires no
+vendored crate snapshot refresh.
