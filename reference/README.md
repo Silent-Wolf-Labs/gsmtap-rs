@@ -1057,27 +1057,73 @@ scalar/SSE/AVX tie behavior (scalar `>=`, including the equality choice) as the
 portable Rust correlation contract, independent of CPU. No universal backend
 equivalence is claimed. The conversion repository now implements checked
 descriptors, signed compatibility lengths, independent operation capacities and
-reusable/one-shot encoding, with conformance in `tests/core/conv_encoder.rs`.
-Neither decoder is implemented. The existing frozen matrix already covers all
-seven length/encoder exports; no C harness or fixture changes are needed for
-this stage. Additional Rust-only safety tests never generate expected C values.
+reusable/one-shot encoding, with conformance in `tests/core/conv_encoder.rs`,
+plus the generic stateful squared-error decoder. Correlation,
+`osmo_conv_decode_acc` and public one-shot `osmo_conv_decode` remain pending;
+the dispatcher is not implemented through generic fallback. The existing
+frozen matrix covers this stage without C harness, evidence or shared-reader
+changes. Additional Rust-only safety tests never generate expected C values.
+
+`ConvDecoder::new(&code, len: i32, start_state: i32)` returns
+`Result<ConvDecoder<'_>, ConvError>`. Positive lengths override the descriptor;
+nonpositive lengths use it. Stateful methods are `reset(start_state)`, `rewind()`,
+`scan(input: &[i8], symbols: usize)`, `flush(input: &[i8])`,
+`best_end_state() -> Result<usize, ConvError>` and
+`get_output(output: &mut [u8], has_flush: bool, end_state: i32) -> Result<u32, ConvError>`.
+Reset/rewind return checked unit results; scan/flush return consumed soft-byte
+counts. `has_flush` omits the last `K-1` trellis symbols during traceback.
+The seven C-named wrappers are `osmo_conv_decode_init`, `osmo_conv_decode_reset`,
+`osmo_conv_decode_rewind`, `osmo_conv_decode_scan`, `osmo_conv_decode_flush`,
+`osmo_conv_decode_get_best_end_state` and `osmo_conv_decode_get_output`;
+ownership and `Drop` replace `osmo_conv_decode_deinit`.
+
+Init/reset accepts negative starts to enable all states, `0..state_count` to
+enable one state, and equality to disable every survivor with `MAX_AE`. C reset
+uses an equality loop, so `start_state == n_states` is safe frozen no-survivor
+evidence, not an out-of-bounds access. Rust rejects larger nonnegative starts
+with `InvalidState`. Negative ends request automatic selection; nonnegative
+ends must be strictly below `state_count`, so equality is `InvalidState`.
+Generic decoding accepts `N=1..=31`, preserving zero byte masks above eight.
+Descriptor state counts use `K=1..=31` with byte predecessors, not wide-state
+traceback. `u32` metrics retain signed C `INT_MAX` arithmetic bounds and the
+strict `MAX_AE=0x00ffffff` survivor cutoff. Resolved `len + K - 1` and total
+history cell count must fit `INT_MAX`, in addition to host-size checks.
+`ConvError` variants `InvalidState`, `InvalidDecoderState`, `InvalidOperation`,
+`MissingHistory`, `UnreachableTraceback`, `NoSurvivor`, `ArithmeticOverflow`
+and short-slice/descriptor
+errors preserve reusable state and output; `AllocationFailed` reports fallible
+`try_reserve_exact` failures. Successful writes preserve destination suffixes.
+
+Read-only accessors are `frame_length`, `state_count`, `output_index`,
+`puncture_index`, `accumulated_errors` (`&[u32]`), `next_accumulated_errors`
+(`Option<&[u32]>`, initialized diagnostic scratch only) and `predecessor_history`
+(`&[Option<u8>]`, active rows with missing predecessors marked `None`).
+Reset/rewind invalidate active history; retained scratch is not another set of
+active paths. `scan_input_capacity(symbols)` and `flush_input_capacity()` give
+checked soft-byte requirements at the current stream/puncture position.
+The frozen stateful subset contains 332 cases and 7,257 lifecycle observations:
+6,593 callable API observations plus 664 C deinitializations modeled as drops.
 
 `tests/support/conv_fixture.rs` is shared byte-for-byte with the conversion
 repository; `tests/conv_reference_vectors.rs` checks schema/provenance,
 operations/state/buffers, frozen coverage/digest, corruptions and available
 backend comparisons. It does not implement or validate Rust convolutional
-engines. Rust-versus-C encoder comparisons remain in the conversion repository,
-not this utility's packet/replay loaders. Ordinary Cargo tests require no C
+engines. Rust-versus-C encoder/decoder comparisons remain in the conversion
+repository, not this utility's packet/replay loaders. Ordinary Cargo tests require no C
 installation. No unreviewed vendored Rust snapshot refresh is included.
 
 From this repository:
 
 ```bash
 ./reference/run_conv_vector.sh --verify
-./reference/run_conv_vector.sh --audit
-./reference/run_conv_vector.sh all > /tmp/conv.fresh.ndjson
-cmp /tmp/conv.fresh.ndjson tests/vectors/conv/conv_vectors.ndjson
-cmp /tmp/conv.fresh.ndjson ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_vectors.ndjson
+mkdir -p target/conv-stateful-validation
+TMPDIR="$PWD/target/conv-stateful-validation" ./reference/run_conv_vector.sh --audit
+for pass in 1 2; do
+  TMPDIR="$PWD/target/conv-stateful-validation" ./reference/run_conv_vector.sh all > "target/conv-stateful-validation/conv.$pass.ndjson" || exit
+  cmp "target/conv-stateful-validation/conv.$pass.ndjson" tests/vectors/conv/conv_vectors.ndjson || exit
+  cmp "target/conv-stateful-validation/conv.$pass.ndjson" ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_vectors.ndjson || exit
+done
+cmp target/conv-stateful-validation/conv.1.ndjson target/conv-stateful-validation/conv.2.ndjson
 cmp tests/support/conv_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/conv_fixture.rs
 cmp reference/conv_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_provenance.json
 cmp reference/conv_generator_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_generator_provenance.json
@@ -1093,6 +1139,10 @@ cases are excluded, not accepted as golden behavior. See the sibling
 for detailed findings and safety boundaries.
 
 The full generator includes `all`, atomically replacing the convolutional
-fixture only after success. Regenerate twice, review all existing fixture diffs,
-and compare both shared copies and manifests. No vendored Rust snapshot refresh,
+fixture only after success, but overwrites fixtures and other runners rebuild
+the C tree. Do not use it for this read-only evidence verification. The commands
+above regenerate the full convolutional matrix twice without overwriting fixtures
+and keep temporary exact-source builds inside this repository via `TMPDIR`.
+Review intentional evidence changes before updating shared copies, manifests
+or frozen reader fingerprints. No vendored Rust snapshot refresh,
 workbench endpoint, packet/replay integration or commit is part of this stage.

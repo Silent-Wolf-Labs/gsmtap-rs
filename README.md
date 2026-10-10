@@ -578,3 +578,47 @@ See [reference instructions](reference/README.md#core-crc-observations) for
 provenance and deterministic regeneration. Protocol-specific parity/channel
 and convolutional APIs remain outside this scope. Fixture support requires no
 vendored crate snapshot refresh.
+
+## Generic convolutional decoder evidence
+
+The conversion repository now implements checked convolutional descriptors,
+signed length helpers, independent capacities, reusable/one-shot encoding and
+the generic stateful squared-error decoder. Correlation, `osmo_conv_decode_acc`
+and public one-shot `osmo_conv_decode` remain pending; dispatcher behavior is
+not replaced by a generic fallback. This utility validates the frozen C evidence,
+not the Rust decoder, and does not expose a convolutional workbench endpoint or
+refresh its vendored Rust snapshot in this stage.
+
+`ConvDecoder::new(&code, len: i32, start_state: i32)` returns a checked decoder.
+Its stateful API is `reset(start_state)`, `rewind()`,
+`scan(input: &[i8], symbols: usize)`, `flush(input: &[i8])`,
+`best_end_state() -> Result<usize, ConvError>` and
+`get_output(output: &mut [u8], has_flush: bool, end_state: i32) -> Result<u32, ConvError>`.
+All seven callable C-named stateful wrappers are available; `Drop` replaces
+deinit. Scan/flush return consumed soft-byte counts; traceback returns a
+squared-error metric, not BER or correlation status.
+
+Negative starts enable all states, starts below `state_count` select one, and
+equality deliberately disables all survivors (C reset safely uses an equality
+loop). Larger nonnegative starts return `InvalidState`; nonnegative end selectors
+must be strictly below `state_count`. Generic decoding accepts `N=1..=31`, with
+zero byte masks above eight; descriptor state counts use `K=1..=31`, but
+predecessors remain bytes. Metrics use `u32` with signed C `INT_MAX` arithmetic
+bounds and strict `MAX_AE=0x00ffffff` survivor cutoff. Both `len + K - 1` and
+total history cells must fit `INT_MAX`; failed fallible reservations report
+`AllocationFailed`. State, operation, slice, missing/unreachable history,
+no-survivor, allocation and overflow errors leave state/output unchanged.
+Semantic accessors expose counters, active errors, optional initialized scratch
+errors and `Option<u8>` active predecessor history; scan/flush input-capacity
+helpers use the current puncture cursor.
+
+The unchanged 36,254-record matrix includes 332 generic stateful cases with
+7,257 lifecycle observations (6,593 callable API observations plus 664 drops).
+The shared reader remains byte-identical to the conversion repository. See
+[reference instructions](reference/README.md#convolutional-evidence-and-backend-gate)
+for non-destructive provenance, ASan/UBSan and twice-regenerated full-matrix
+comparisons, and the sibling
+[compatibility boundary](../libosmocore-rs/docs/conv-compatibility.md) for exact
+APIs and C edge cases. The local C snapshot has unknown upstream Git revision;
+linked-dispatch evidence pins its existing binary, while isolated scalar/SSE/AVX
+evidence uses separately pinned exact sources. NEON was not executed.
