@@ -1055,15 +1055,20 @@ comparison differs in inspected source and was not executed, so NEON is outside
 the claimed backend-parity boundary. Review has approved the observed
 scalar/SSE/AVX tie behavior (scalar `>=`, including the equality choice) as the
 portable Rust correlation contract, independent of CPU. No universal backend
-equivalence is claimed. This pass adds no Rust convolutional code; after evidence
-review and authorized commits, only checked descriptors and reusable encoding
-may proceed, not either decoder.
+equivalence is claimed. The conversion repository now implements checked
+descriptors, signed compatibility lengths, independent operation capacities and
+reusable/one-shot encoding, with conformance in `tests/core/conv_encoder.rs`.
+Neither decoder is implemented. The existing frozen matrix already covers all
+seven length/encoder exports; no C harness or fixture changes are needed for
+this stage. Additional Rust-only safety tests never generate expected C values.
 
 `tests/support/conv_fixture.rs` is shared byte-for-byte with the conversion
 repository; `tests/conv_reference_vectors.rs` checks schema/provenance,
 operations/state/buffers, frozen coverage/digest, corruptions and available
 backend comparisons. It does not implement or validate Rust convolutional
-engines. Ordinary Cargo tests require no C installation.
+engines. Rust-versus-C encoder comparisons remain in the conversion repository,
+not this utility's packet/replay loaders. Ordinary Cargo tests require no C
+installation. No unreviewed vendored Rust snapshot refresh is included.
 
 From this repository:
 
