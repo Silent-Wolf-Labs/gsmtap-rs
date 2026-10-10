@@ -935,3 +935,75 @@ cmp tests/support/prim_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/pr
 validators are shared byte-for-byte. Review all regeneration diffs; update the
 frozen coverage/fingerprint only from reviewed direct C observations. These
 independent fixtures require no vendored crate snapshot refresh.
+
+## Core CRC observations
+
+The CRC conversion covers byte-oriented CRC-16/CCITT and generic parameterized
+8/16/32/64-bit CRCs. GSM parity/channel definitions and convolutional coding
+are outside its scope.
+
+`crc_byte_vectors.json` contains **3,472 records**: all 512 table entries,
+2,560 single-byte calls covering every byte and five initial states, and 400
+buffer scenarios. Each buffer scenario directly calls whole-buffer, first-chunk,
+and continuation APIs, records all 260 input bytes before/after, and includes
+an untouched suffix. The zero-length buffer calls use a null C input pointer.
+
+`crc_generic_vectors.json` contains **22,848 records**. The frozen matrix covers
+every configured width in each storage type, four neutral descriptors, four
+input patterns (including nonbinary bytes), lengths `INT_MIN`, -1, 0, 1, 7,
+and 32, and exact/oversized CRC destinations. Each record directly observes
+compute, set, matching check, a single-bit mismatch at every position, and a
+nonbinary CRC byte at every position. Complete input and destination bytes are
+recorded before/after, with canaries preserving destination suffixes.
+
+The local C template's positive-input full-width 32/64-bit mask invokes undefined
+shifts. Those calls are excluded from golden fixtures. Their zero/negative-length
+calls are defined and included. Full-width CRC-8/16 is defined on the pinned ABI
+through integer promotion and is included for all lengths. The `--audit` mode
+compiles the exact local CRC sources with UBSan, verifies the whole golden domain
+is clean, and requires diagnostics for full-width 32/64 positive-input shifts,
+zero width, and `INT_MIN` width subtraction overflow. Diagnostics are not golden
+CRC results and the C source is never patched.
+
+Rust accepts widths 1..=storage width, defines full-width 32/64 masks safely,
+and rejects all other widths before arithmetic/access. Nonpositive input lengths
+return init XOR remainder; check/set still need the configured CRC slice. Input
+bytes use only their low bit; supplied CRC bytes are compared exactly against
+0/1. High descriptor field bits and high final-XOR bits are preserved. Bounds
+errors leave destinations unchanged. Full-width positive-input Rust behavior
+is tested with hand-traced single-bit cases and independent u128 polynomial
+division, outside C fixtures.
+
+The strict shared validator checks exact unsigned `u64` values (including
+`u64::MAX`) and signed `i32` lengths, schema/canonical numbers, provenance,
+ordered coverage, unchanged inputs, full output state/suffixes, and a frozen
+FNV-1a fingerprint of all direct C output. The fingerprint checks integrity,
+not cryptographic authenticity. Corruption tests cover fields, framing,
+revision/hashes/ABI, numeric overflow, coverage, observed results, mismatch
+records and output bytes; separate parser tests exercise validation independently
+of the fingerprint. Rust conformance compares every observation.
+
+`reference/run_crc_vector.sh` pins 16 local source/header/template/build-rule
+and generated-file hashes. Nongenerated files were verified byte-for-byte at
+revision `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-09. All eight
+generated CRC files match the verified templates' `XX` substitutions. Build,
+link and runtime selection use only the required local C checkout; mismatches
+fail. The observed ABI requires 32-bit `int` and 8-bit bytes.
+
+Regenerate and audit from the testing repository:
+
+```bash
+./reference/run_crc_vector.sh byte > /tmp/crc-byte.fresh.json
+./reference/run_crc_vector.sh generic > /tmp/crc-generic.fresh.json
+./reference/run_crc_vector.sh --audit
+cmp /tmp/crc-byte.fresh.json tests/vectors/crc/crc_byte_vectors.json
+cmp /tmp/crc-generic.fresh.json tests/vectors/crc/crc_generic_vectors.json
+cmp tests/vectors/crc/crc_byte_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/crc_byte_vectors.json
+cmp tests/vectors/crc/crc_generic_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/crc_generic_vectors.json
+cmp tests/support/crc_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/crc_fixture.rs
+```
+
+The full generator includes both CRC stages. Fixtures and validators are shared
+byte-for-byte; ordinary Cargo tests require no C build. Review every generation
+diff, including existing fixtures. Update fingerprints only from reviewed direct
+C evidence. No vendored crate refresh is needed for independent fixture support.
