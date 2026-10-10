@@ -58,3 +58,11 @@ crc_output_dir="$output_dir/crc"
 mkdir -p "$crc_output_dir"
 "$repository_root/reference/run_crc_vector.sh" byte > "$crc_output_dir/crc_byte_vectors.json"
 "$repository_root/reference/run_crc_vector.sh" generic > "$crc_output_dir/crc_generic_vectors.json"
+
+conv_output_dir="$output_dir/conv"
+mkdir -p "$conv_output_dir"
+conv_fresh=$(mktemp "$conv_output_dir/.conv_vectors.XXXXXX")
+trap 'rm -f "$conv_fresh"' EXIT
+trap 'exit 1' HUP INT TERM
+"$repository_root/reference/run_conv_vector.sh" all > "$conv_fresh"
+mv "$conv_fresh" "$conv_output_dir/conv_vectors.ndjson"
