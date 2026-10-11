@@ -66,3 +66,35 @@ trap 'rm -f "$conv_fresh"' EXIT
 trap 'exit 1' HUP INT TERM
 "$repository_root/reference/run_conv_vector.sh" all > "$conv_fresh"
 mv "$conv_fresh" "$conv_output_dir/conv_vectors.ndjson"
+
+# Time evidence builds exact sources only in temporary storage. Publish atomically.
+time_output_dir="$output_dir/time"
+mkdir -p "$time_output_dir"
+time_fresh=$(mktemp "$time_output_dir/.time_vectors.XXXXXX")
+trap 'rm -f "$time_fresh"' EXIT
+"$repository_root/reference/run_time_vector.sh" all > "$time_fresh"
+mv "$time_fresh" "$time_output_dir/time_vectors.ndjson"
+
+# TDef golden observations and separate sanitizer diagnostics. Generate both
+# before publishing either, preserving existing fixtures if a probe fails.
+tdef_output_dir="$output_dir/tdef"
+mkdir -p "$tdef_output_dir"
+tdef_fresh=$(mktemp "$tdef_output_dir/.tdef_vectors.XXXXXX")
+tdef_diag_fresh=$(mktemp "$tdef_output_dir/.tdef_diagnostics.XXXXXX")
+trap 'rm -f "$tdef_fresh" "$tdef_diag_fresh"' EXIT
+"$repository_root/reference/run_tdef_vector.sh" all > "$tdef_fresh"
+"$repository_root/reference/run_tdef_vector.sh" --diagnostics > "$tdef_diag_fresh"
+mv "$tdef_fresh" "$tdef_output_dir/tdef_vectors.ndjson"
+mv "$tdef_diag_fresh" "$tdef_output_dir/tdef_diagnostics.json"
+
+# Stage 4 time_cc: successful traces and isolated sanitizer/assertion diagnostics.
+# Stage both outputs before publishing; manifests are separately content-pinned.
+time_cc_output_dir="$output_dir/time_cc"
+mkdir -p "$time_cc_output_dir"
+time_cc_fresh=$(mktemp "$time_cc_output_dir/.time_cc_vectors.XXXXXX")
+time_cc_diag_fresh=$(mktemp "$time_cc_output_dir/.time_cc_diagnostics.XXXXXX")
+trap 'rm -f "$time_cc_fresh" "$time_cc_diag_fresh"' EXIT
+"$repository_root/reference/run_time_cc_vector.sh" all > "$time_cc_fresh"
+"$repository_root/reference/run_time_cc_vector.sh" --diagnostics > "$time_cc_diag_fresh"
+mv "$time_cc_fresh" "$time_cc_output_dir/time_cc_vectors.ndjson"
+mv "$time_cc_diag_fresh" "$time_cc_output_dir/time_cc_diagnostics.json"

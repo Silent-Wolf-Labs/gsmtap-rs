@@ -1146,3 +1146,220 @@ and keep temporary exact-source builds inside this repository via `TMPDIR`.
 Review intentional evidence changes before updating shared copies, manifests
 or frozen reader fingerprints. No vendored Rust snapshot refresh,
 workbench endpoint, packet/replay integration or commit is part of this stage.
+
+## Time and timer evidence (Stages 1–2)
+
+`run_time_vector.sh` builds the unmodified required local clock/timer/rbtree
+sources into temporary executables. It never rebuilds the source tree or links
+an installed libosmocore. `time_provenance.json` pins 13 local participating
+source/header/configuration/build/test files and 94 platform headers; the runner
+also checks transitive includes. `time_generator_provenance.json` pins the harness
+and runner. Upstream Git revision is unknown; observations are exact-source
+evidence on the selected 64-bit Linux, nonembedded ABI.
+
+`tests/vectors/time/time_vectors.ndjson` has 20,933 deterministic records:
+20,736 raw timeval/timespec operations, 44 clock records, 48 seconds helpers,
+72 timer trace records, 32 timer API records and one metadata record. Fractional fields span and exceed
+one/two-second boundaries in both directions. Operations include in-place aliases
+and direct override-add. No sleeps or expected results computed in Rust are used.
+The shared validator freezes schema, ordered coverage, provenance and full
+observations, and rejects corrupt fixtures. It contains no timing implementation.
+
+The timer cases include self/peer mutation, ordinary deferred immediate timers,
+a callback calling a nested update, a callback adding an immediate timer then
+nesting an update, and prepare/nearest during dispatch. A separate bounded
+nested-peer probe demonstrates repeated outer callbacks and exits 77 after
+12 callbacks; this pathological probe is never golden fixture data. The future
+Rust scheduler will intentionally reject nested updates while supporting
+prepare/nearest during callbacks. Stage 2 also records self/peer callback
+replacement, remaining equality and raw boundaries, relative scheduling,
+nearest rounding through INT_MAX, absolute lifecycle/cache behavior, missing
+callbacks, and LONG_MAX dispatch. LONG_MAX suppresses only the nearest cache,
+not activation or dispatch. Stage 1 converts clock/time primitives; Stage 2
+implements the owned scheduler in the sibling conversion crate.
+The planned TDef claim is core TDef parity excluding FSM integration.
+
+Verify/regenerate without overwriting committed evidence:
+
+```bash
+./reference/run_time_vector.sh --verify
+./reference/run_time_vector.sh --audit
+./reference/run_time_vector.sh all > /tmp/time.1.ndjson
+./reference/run_time_vector.sh all > /tmp/time.2.ndjson
+cmp /tmp/time.1.ndjson /tmp/time.2.ndjson
+cmp /tmp/time.1.ndjson tests/vectors/time/time_vectors.ndjson
+cmp tests/vectors/time/time_vectors.ndjson ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/time/time_vectors.ndjson
+cmp tests/support/time_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/time_fixture.rs
+cmp tests/vectors/time/time_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/time/time_provenance.json
+cmp tests/vectors/time/time_generator_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/time/time_generator_provenance.json
+cargo fmt --check
+cargo test
+```
+
+`--audit` runs golden calls and the bounded nested-peer probe with ASan+UBSan,
+then requires signed-overflow diagnostics for seconds add/sub, carry, borrow and
+fraction addition. These diagnostics never become expected outputs. LSan is
+disabled because the tracing environment prevents it. The runner fails closed
+on source/header/generator mismatch and withholds stdout until all probes pass.
+The full generator includes the time runner and publishes its output atomically;
+use the targeted commands above for this block to preserve unrelated fixtures.
+Review any changed C records before updating fingerprints and shared copies.
+No vendor snapshot update or packet/replay integration is included.
+
+The conversion project's Stage 1 replay compares 20,828 C observations; this
+utility validates evidence only. Stage 2 replays 57 nonrecursive timer trace
+records and 32 timer API observations in the conversion project; 15 recursive
+C records remain policy evidence, with separate Rust rejection tests.
+See [time compatibility](../../libosmocore-rs/docs/time-compatibility.md) for
+Rust API shapes, safety boundaries and reentrant-dispatch findings.
+
+## TDef core evidence (Stage 3)
+
+`run_tdef_vector.sh` builds unmodified `tdef.c`, `utils.c`, `panic.c`, and
+`backtrace.c` from the required local checkout. LTO and section garbage
+collection discard unused FSM/logging paths; no FSM stubs, installed
+libosmocore library, or source-tree build is used. The closed SHA-256 manifest
+pins 24 local source/header/configuration/test files and 106 platform headers,
+checks transitive includes, and separately pins harness and runner sources.
+There is no upstream Git metadata: evidence is exact-source, revision unknown.
+The selected ABI has 64-bit unsigned long/long and 32-bit int. Stage 3 parity
+uses Rust u64 against this recorded environment; 32-bit ULONG_MAX behavior is
+outside the current claim.
+
+The golden NDJSON has 2,175 records: one metadata record; 900 supported unit
+conversion get/set pairs; 30 safe invalid-unit pairs; 81 zero-valued unit pairs;
+seven lookup/mutation traces; one reset trace; 14 missing-table cases; four
+sentinel/null traversal cases; 360 range/set cases; 34 valid reset boundary
+cases; 408 complete format buffer observations; nine unit names; six unit-name
+table entries including its terminator; and 320 state-timeout observations.
+All expected outputs come from direct C calls. `tables()` directly calls
+`osmo_tdef_get_entry()` and records its returned index for signed/zero IDs,
+duplicate first matches, missing IDs and hidden entries after the sentinel.
+Null and hidden-traversal cases also call it directly. This testing utility
+continues to validate integrity/coverage only; the sibling Rust conversion
+crate now implements core TDef and replays all records against the frozen C
+observations, with explicit safety exceptions for assertion/UB cases.
+
+`tdef_diagnostics.json` is separate diagnostic evidence, never a golden numeric
+conversion result. It records 95 isolated probes: three invalid-default panic
+snapshots, three real assertion aborts, 88 sanitizer-diagnosed division-by-zero
+calls (44 invalid pairs through get and set), and one null-buffer write. Reset
+snapshots use C's supported panic handler and exit 77 without returning from the
+handler. Ordinary negative-fallback and invalid-state probes use the default
+panic path and require SIGABRT. The runner disables core dumps and bounds each
+probe to five seconds. ASan+UBSan must find no errors in the golden domain;
+LSan is disabled under the tracing environment. Unstable addresses, backtrace
+text, and executable paths are not published as diagnostic fixture data.
+
+Formatting with declared capacity zero uses a 64-byte initialized backing
+array, so the C buf[0] write is valid and observed. The separate null-pointer
+probe is unsafe and sanitizer-diagnosed. An empty Rust slice returns
+the required length without any write. The sibling replay checks this exception
+and compares positive capacities byte-for-byte, including the untouched suffix.
+Unknown same-unit/custom conversions, all zero conversions, and missing lookup
+fallbacks with unknown units are defined. Positive conversions whose two
+factors are both zero return typed Rust errors. Core Rust set uses typed results;
+its compatibility wrapper maps missing definitions to recorded C -EEXIST (-17)
+and rejected values to -ERANGE (-34). Assertion/UB equivalents keep typed errors,
+without invented C return codes. Reset failure preserves the reset prefix. FSM
+execution, helper/macros, VTY, and `_osmo_tdef_fsm_inst_state_chg()` remain deferred.
+
+Non-destructive validation/regeneration from this repository:
+
+```bash
+./reference/run_tdef_vector.sh --verify
+./reference/run_tdef_vector.sh --audit
+./reference/run_tdef_vector.sh all > /tmp/tdef.1.ndjson
+./reference/run_tdef_vector.sh all > /tmp/tdef.2.ndjson
+./reference/run_tdef_vector.sh --diagnostics > /tmp/tdef.diagnostics.1.json
+./reference/run_tdef_vector.sh --diagnostics > /tmp/tdef.diagnostics.2.json
+cmp /tmp/tdef.1.ndjson /tmp/tdef.2.ndjson
+cmp /tmp/tdef.1.ndjson tests/vectors/tdef/tdef_vectors.ndjson
+cmp /tmp/tdef.diagnostics.1.json /tmp/tdef.diagnostics.2.json
+cmp /tmp/tdef.diagnostics.1.json tests/vectors/tdef/tdef_diagnostics.json
+cmp tests/support/tdef_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/tdef_fixture.rs
+cargo fmt --check
+cargo test
+```
+
+Also compare all four files in `tests/vectors/tdef/` byte-for-byte with the
+conversion project's `tests/compatibility/vectors/tdef/`, and both provenance
+manifests with the copies in `reference/`. Review observations before changing
+reader fingerprints. The full generator includes TDef and stages both outputs
+before publishing; use targeted regeneration for a TDef-only update to preserve
+unrelated fixtures. No vendor snapshot or packet/replay loader changes belong
+in this stage. See the conversion repository's `docs/time-compatibility.md` for
+implemented scope, replay and safety policies. No vendor snapshot was refreshed.
+
+## time_cc evidence (Stage 4)
+
+`run_time_cc_vector.sh` compiles the required unmodified local `time_cc.c`,
+`timer.c`, both clock shims, rbtree, TDef, rate counter, utils, panic and backtrace
+sources with GNU C11, O2, LTO and section garbage collection. Discarded paths
+need no FSM, logging, select, rate-group or talloc replacement stubs/libraries.
+The real `rate_ctr_add()` is used against initialized local `struct rate_ctr`
+storage; previous/interval fields are checked untouched. Existing upstream
+unused-parameter/sign-comparison warnings are suppressed without editing sources.
+
+The exact-source manifest pins 30 local files and 128 platform headers, verifies
+transitive includes, and records unknown revision (the snapshot has no Git
+metadata). Generator provenance pins the harness/runner hashes and the manifest.
+Includes and links never use an installed libosmocore. The only fault injection
+is linker wrapping **libc** `clock_gettime()` to return EIO with public monotonic
+overrides disabled; no libosmocore API is substituted. Unexpected unoverridden
+native reads abort the harness. Ordinary reads use public clock overrides.
+
+The ABI is 64-bit unsigned long/long/time fields, 32-bit int, eight-bit bytes.
+Unsigned time and counter arithmetic wraps modulo 2^64. Timer-relative seconds
+narrow via GCC's low 32 bits to signed int on this recorded target; this is
+implementation-defined C behavior, not a portable C or 32-bit ABI claim.
+
+Golden NDJSON contains one metadata record and 5,947 trace records. A 448-case
+matrix combines eight granularity values, seven thresholds, four forgetting
+values and presence/absence of a sink. The remaining 21 traces isolate clock
+skew/delay, cleanup/reuse, zero start, EIO fallback, configuration, TDef changes,
+missing sink, wrapping, report caps and UINT64_MAX next-event branches. `seed`
+operations initialize public accounting fields to representable boundary states;
+they are edge probes, not normal-lifetime histories. Outputs are only direct C
+observations: internal sums/configuration/counter, active status, full deadline,
+registered timer count and dispatch work. The shared reader freezes schema,
+ordered inputs and all outputs separately from any Rust model.
+
+Separate diagnostics contain null init/set/cleanup, invalid TDef unit division
+by zero and missing-TDef assertion. Each child is bounded to five seconds;
+assertions require SIGABRT and UB cases require actual sanitizer diagnostics.
+Core dumps and LSan under ptrace are disabled. Successful traces must be
+ASan+UBSan clean, including the intentional unsigned wrapping/narrowing edges.
+Monotonic EIO is a defined zero-timestamp outcome and belongs in successful
+traces, not an invented C failure status. Rust converts TDef failures to typed
+errors and uses references to exclude null-object calls. Wall-clock failures
+in timer scheduling have no safe C numeric oracle (the return is ignored);
+Rust-only tests exercise typed errors there.
+
+Non-destructive validation from this repository:
+
+```bash
+./reference/run_time_cc_vector.sh --verify
+./reference/run_time_cc_vector.sh --audit
+./reference/run_time_cc_vector.sh all > /tmp/time_cc.1.ndjson
+./reference/run_time_cc_vector.sh all > /tmp/time_cc.2.ndjson
+./reference/run_time_cc_vector.sh --diagnostics > /tmp/time_cc.diagnostics.1.json
+./reference/run_time_cc_vector.sh --diagnostics > /tmp/time_cc.diagnostics.2.json
+cmp /tmp/time_cc.1.ndjson /tmp/time_cc.2.ndjson
+cmp /tmp/time_cc.1.ndjson tests/vectors/time_cc/time_cc_vectors.ndjson
+cmp /tmp/time_cc.diagnostics.1.json /tmp/time_cc.diagnostics.2.json
+cmp /tmp/time_cc.diagnostics.1.json tests/vectors/time_cc/time_cc_diagnostics.json
+cmp tests/support/time_cc_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/time_cc_fixture.rs
+cargo fmt --check
+cargo test --target-dir /tmp/stage4-gsmtap-target
+```
+
+Compare all four `tests/vectors/time_cc` files with the Rust crate's dedicated
+fixture directory and both manifests with `reference/`. Run the time and TDef
+reference verification/audits/regenerations as part of combined Stage 1–4
+validation. The full generator now stages time_cc's two outputs before
+publishing either. Use the targeted commands above for a time_cc-only refresh,
+preserving unrelated fixtures; never update frozen fingerprints just to pass.
+The sibling behavior replay includes all four stages and an additional shared
+scheduler/application-timer integration check. FSM/TDef integration and VTY
+remain deferred. Vendor snapshots and packet/replay loaders are unchanged.

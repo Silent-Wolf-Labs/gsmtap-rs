@@ -622,3 +622,55 @@ comparisons, and the sibling
 APIs and C edge cases. The local C snapshot has unknown upstream Git revision;
 linked-dispatch evidence pins its existing binary, while isolated scalar/SSE/AVX
 evidence uses separately pinned exact sources. NEON was not executed.
+
+## Time and timer evidence (Stages 1–2)
+
+The dedicated time fixture supplies 20,828 clock/time/helper observations for
+the sibling Rust conversion, 72 timer trace observations, and 32 timer API
+observations. Stage 2 implements the sibling owned scheduler and replays all
+nonrecursive timer observations; nested updates return a typed error.
+This utility validates fixture integrity and provenance; Rust-versus-C execution
+belongs in the sibling project. The new harness builds exact local sources in
+temporary storage and uses deterministic public clock overrides.
+
+Coverage includes abnormal raw fractions, callback mutation, nested timer
+updates and prepare/nearest during dispatch. The Rust scheduler's nested
+update rejection is an intentional compatibility exception informed by C probes.
+Stage 2 implements timers and Stage 3 implements core TDef in the sibling
+conversion crate, with parity against the recorded 64-bit ABI excluding FSM
+integration. Stage 4 now implements time_cc; combined Stage 1–4 validation
+covers the approved core scope.
+
+See [reference instructions](reference/README.md#time-and-timer-evidence-stages-12)
+and the sibling [time compatibility guide](../libosmocore-rs/docs/time-compatibility.md)
+for provenance, audit and regeneration commands. No vendored crate snapshot,
+workbench endpoint or GSMTAP packet/replay loader was changed for this stage.
+
+## TDef core conformance (Stage 3)
+
+The dedicated TDef harness supplies 2,175 direct C golden observations and 95
+separate failure probes, covering core lookup/mutation, unsigned conversion,
+reset, sentinel traversal, range buffers, names and state-timeout tables.
+This project validates evidence integrity and coverage; the sibling conversion
+crate implements core TDef and replays all records, including safe equivalents
+for failure probes. Parity excludes FSM integration and targets the recorded
+64-bit ABI; 32-bit ULONG_MAX behavior is outside the claim. See
+[reference instructions](reference/README.md#tdef-core-evidence-stage-3) and the
+sibling [time compatibility guide](../libosmocore-rs/docs/time-compatibility.md).
+
+## Stage 4 time_cc evidence and replay
+
+The dedicated time_cc harness supplies 5,948 records across 469 scenarios and
+five isolated failure probes. This utility validates frozen inputs, outputs and
+provenance; the sibling `core::time_cc` replays the observations using Stages
+1–3 clocks, timers and TDef lookup. Counter sinks are caller-supplied; rate counter
+groups and their periodic statistics are outside this conversion.
+
+Evidence covers independent monotonic accounting and wall wakeups, defaults,
+threshold/report caps, forgetting, delayed callbacks, configuration changes,
+absent sinks, cleanup/reuse, clock failure, zero-time startup, UINT64_MAX no-event
+behavior and selected ABI wrapping/narrowing. See
+[reference instructions](reference/README.md#time_cc-evidence-stage-4) and the
+sibling [compatibility guide](../libosmocore-rs/docs/time-compatibility.md).
+FSM/TDef integration and VTY remain deferred. No vendor snapshot or workbench
+endpoint was refreshed.
