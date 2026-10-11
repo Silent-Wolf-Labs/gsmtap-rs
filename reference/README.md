@@ -1058,9 +1058,14 @@ portable Rust correlation contract, independent of CPU. No universal backend
 equivalence is claimed. The conversion repository now implements checked
 descriptors, signed compatibility lengths, independent operation capacities and
 reusable/one-shot encoding, with conformance in `tests/core/conv_encoder.rs`,
-plus the generic stateful squared-error decoder. Correlation,
-`osmo_conv_decode_acc` and public one-shot `osmo_conv_decode` remain pending;
-the dispatcher is not implemented through generic fallback. The existing
+plus the generic stateful squared-error decoder, portable scalar correlation
+and public one-shot dispatch. `osmo_conv_decode_acc` and `osmo_conv_decode`
+take `(&ConvCode, &[i8], &mut [u8])` and return `Result<i32, ConvError>`:
+correlation returns `Ok(0)`, generic dispatch returns accumulated error bounded
+by `MAX_AE`. `K=5/7 && N<=4` routes to correlation, including `N=1` rejected
+there without fallback. Direct correlation requires `N=2..=4`, `K=5/7` and
+positive lengths. Rust implements the approved scalar tie choice without SIMD
+selection or NEON parity. The existing
 frozen matrix covers this stage without C harness, evidence or shared-reader
 changes. Additional Rust-only safety tests never generate expected C values.
 
@@ -1103,6 +1108,42 @@ active paths. `scan_input_capacity(symbols)` and `flush_input_capacity()` give
 checked soft-byte requirements at the current stream/puncture position.
 The frozen stateful subset contains 332 cases and 7,257 lifecycle observations:
 6,593 callable API observations plus 664 C deinitializations modeled as drops.
+
+`ConvCode::decode_input_capacity() -> Result<usize, ConvError>` counts actual
+encountered punctures and does not impose the encoder's short tail-biting loading
+requirement. Nonsystematic recursion maps to `UnsupportedRecursiveCode` (C
+`-EPROTO`); negative traceback statuses map to `NoSurvivor` (`-EPROTO`
+correlation, `-1` generic). All `i8` values, including `-128`, are accepted;
+selected metric narrowing or normalization differences outside `i16` produce
+`ArithmeticOverflow`, not implementation-defined C narrowing. Signed C/host
+sizing and history arithmetic are checked with fallible allocation. All
+one-shot errors preserve output; success preserves unused suffixes.
+
+Independent final-stage replays in the conversion repository's
+`tests/core/conv_correlation.rs` passed 6,796 direct correlation observations
+(1,699 each linked/scalar/SSE/AVX) and 6,608 public dispatch observations
+(1,652 each), totaling 13,404 full-buffer, status/metric and unchanged-input
+comparisons. These are separate from this utility's integrity checks below.
+Frozen fixtures, shared readers, manifests and harnesses remain unchanged.
+
+Final full suites passed: conversion repository 130 tests (64 unit, 65 core
+integration, one GSMTAP integration) and this utility 85. The final stage adds
+13 private unit safety/semantics tests and two independent frozen replays.
+Actual final-stage versions were `rustc 1.97.1`, `cargo 1.97.1` and
+`clippy 0.1.97`, not the misleading `1.85.0` directory labels; CI Rust 1.70
+was not installed or tested locally. IDE build, format and diff-whitespace
+checks passed; all-target Clippy had no new correlation diagnostics, while
+known global warnings remain unchanged. Shared readers and fixtures compared
+byte-for-byte, with no Git diff to frozen fixtures.
+
+Final-stage external validation passed `--verify` with digest
+`4dd99c1d7e2295064dd76e5e2f0666ac967ba857c804ce824fff97bd624fe40f`,
+isolated scalar/SSE/AVX `--audit`, and two full 36,254-record regenerations
+matching both committed fixtures and each other. Reader/manifest comparisons
+also passed. Artifacts reside in ignored `target/conv-final-doc-validation/`;
+no linked-library instrumentation, NEON execution or arbitrary-backend parity
+is claimed. Allocation failure and out-of-domain arithmetic remain Rust-only
+safety coverage, not golden C observations.
 
 `tests/support/conv_fixture.rs` is shared byte-for-byte with the conversion
 repository; `tests/conv_reference_vectors.rs` checks schema/provenance,
