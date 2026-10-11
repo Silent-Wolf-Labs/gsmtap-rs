@@ -583,9 +583,15 @@ vendored crate snapshot refresh.
 
 The conversion repository now implements checked convolutional descriptors,
 signed length helpers, independent capacities, reusable/one-shot encoding and
-the generic stateful squared-error decoder. Correlation, `osmo_conv_decode_acc`
-and public one-shot `osmo_conv_decode` remain pending; dispatcher behavior is
-not replaced by a generic fallback. This utility validates the frozen C evidence,
+the generic stateful squared-error decoder, portable scalar correlation via
+`osmo_conv_decode_acc` and public one-shot `osmo_conv_decode` dispatch. Both
+one-shot APIs take `(&ConvCode, &[i8], &mut [u8])` and return
+`Result<i32, ConvError>`: correlation returns `Ok(0)`, generic dispatch returns
+accumulated error bounded by `MAX_AE`. `K=5/7 && N<=4` selects correlation,
+including `N=1` rejection without fallback. Correlation requires `N=2..=4`
+and positive lengths and uses the approved CPU-independent scalar `>=` tie
+choice, without Rust SIMD selection or NEON parity. This utility validates
+the frozen C evidence,
 not the Rust decoder, and does not expose a convolutional workbench endpoint or
 refresh its vendored Rust snapshot in this stage.
 
@@ -612,9 +618,30 @@ Semantic accessors expose counters, active errors, optional initialized scratch
 errors and `Option<u8>` active predecessor history; scan/flush input-capacity
 helpers use the current puncture cursor.
 
+`ConvCode::decode_input_capacity()` returns checked actual soft-byte sizing,
+counting encountered punctures without the encoder's short tail-biting loading
+restriction. Nonsystematic recursion maps to `UnsupportedRecursiveCode` (C
+`-EPROTO`); negative traceback statuses map to `NoSurvivor`. All `i8` values,
+including `-128`, are supported; selected `i16` metric/normalization differences
+outside range return `ArithmeticOverflow`. One-shot dimension, slice, allocation,
+arithmetic and traceback errors preserve the entire output; success preserves suffixes.
+
 The unchanged 36,254-record matrix includes 332 generic stateful cases with
 7,257 lifecycle observations (6,593 callable API observations plus 664 drops).
 The shared reader remains byte-identical to the conversion repository. See
+the conversion repository's `tests/core/conv_correlation.rs` for independent
+final-stage replays: 6,796 direct correlation records (1,699 per backend) and
+6,608 public dispatch records (1,652 per backend), totaling 13,404 complete
+buffer, status/metric and unchanged-input comparisons across linked/scalar/SSE/AVX.
+Final-stage provenance verification, isolated scalar/SSE/AVX sanitizer audit
+and two 36,254-record regenerations passed, matching both fixtures and each other;
+shared reader/manifest comparisons passed too. Frozen evidence and harnesses
+remain unchanged. Final full suites passed: conversion repository 130 tests
+(64 unit, 65 core integration, one GSMTAP integration) and this utility 85.
+Actual final-stage tools were Rust/Cargo 1.97.1 and Clippy 0.1.97, regardless
+of misleading `1.85.0` directory labels. CI Rust 1.70 was not tested locally;
+all-target Clippy added no correlation diagnostics and known global warnings
+remain unchanged. See
 [reference instructions](reference/README.md#convolutional-evidence-and-backend-gate)
 for non-destructive provenance, ASan/UBSan and twice-regenerated full-matrix
 comparisons, and the sibling
