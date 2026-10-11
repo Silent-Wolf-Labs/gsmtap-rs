@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "reference_manifest_sha256": "54a1a6dd5d19fe4c1f41f70248fda49a32f79a5bcfee5ac2b022351a8deb01ed",
+  "sha256": {
+    "tdef_vector.c": "982e4c33d3a13153deb35b304b0932acc8bb6248be1735e11aa7d5217a699619",
+    "run_tdef_vector.sh": "89326619c64c7c94fdff44430883d86031005801a8faef63c5465beb7891d963"
+  }
+}
