@@ -420,7 +420,7 @@ The dedicated `tests/vectors/bitvec/bitvec_vectors.json` fixture stays outside
 packet/replay loaders. `tests/bitvec_reference_vectors.rs` validates its schema,
 provenance, frozen inputs/order/count, output types, and untouched backing suffix.
 Its `tests/support/bitvec_fixture.rs` validator must match the conversion
-repository's `libosmocore-rs/tests/core/bitvec_fixture.rs` byte-for-byte.
+repository's `libosmocore-rs/tests/support/bitvec_fixture.rs` byte-for-byte.
 Rust-versus-C comparisons belong in the sibling crate. Rust preserves the reference's
 32-bit unsigned tailroom wraparound directly; a separate checked helper validates
 capacity. Invalid enum values are excluded by its type.
@@ -431,7 +431,7 @@ From this repository root, verify fresh observations without changing fixtures:
 ./reference/run_bitvec_vector.sh > /tmp/bitvec.fresh.json
 cmp /tmp/bitvec.fresh.json tests/vectors/bitvec/bitvec_vectors.json
 cmp /tmp/bitvec.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_vectors.json
-cmp tests/support/bitvec_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_fixture.rs
+cmp tests/support/bitvec_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/bitvec_fixture.rs
 ```
 
 For intentional regeneration, review the C-generated diff before copying to both
@@ -463,7 +463,7 @@ in separate unit tests; it does not generate expected C outcomes.
 inputs/order/count, full buffers and guards in the dedicated
 `tests/vectors/bitvec/bitvec_buffers_vectors.json` fixture. Its shared validator
 and parser, `tests/support/bitvec_buffers_fixture.rs` and `bitvec_fixture.rs`,
-must match the corresponding files in the conversion crate's `tests/core/`.
+must match the corresponding files in the conversion crate's `tests/support/`.
 The general fixture generation script includes both bit-vector runners.
 
 From this repository root:
@@ -472,7 +472,7 @@ From this repository root:
 ./reference/run_bitvec_vector.sh --buffers > /tmp/bitvec_buffers.fresh.json
 cmp /tmp/bitvec_buffers.fresh.json tests/vectors/bitvec/bitvec_buffers_vectors.json
 cmp /tmp/bitvec_buffers.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_buffers_vectors.json
-cmp tests/support/bitvec_buffers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_buffers_fixture.rs
+cmp tests/support/bitvec_buffers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/bitvec_buffers_fixture.rs
 ```
 
 Review regenerated observations before updating both fixture copies. Normal
@@ -498,7 +498,7 @@ The dedicated `tests/vectors/bitvec/bitvec_operations_vectors.json` file stays
 outside packet/replay loading. `tests/bitvec_operations_reference_vectors.rs`
 checks strict schema/provenance and the frozen input manifest through
 `tests/support/bitvec_operations_fixture.rs`. The shared validator and its
-`bitvec_fixture.rs` parser must match the conversion crate's `tests/core/` copies.
+`bitvec_fixture.rs` parser must match the conversion crate's `tests/support/` copies.
 C input filters avoid undefined storage accesses and shifts; unsafe-call handling
 belongs in Rust safety tests. C field-read errno is represented by explicit Rust
 errors; Rust does not reproduce the global errno side effect.
@@ -509,7 +509,7 @@ From this repository root:
 ./reference/run_bitvec_vector.sh --operations > /tmp/bitvec_operations.fresh.json
 cmp /tmp/bitvec_operations.fresh.json tests/vectors/bitvec/bitvec_operations_vectors.json
 cmp /tmp/bitvec_operations.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_operations_vectors.json
-cmp tests/support/bitvec_operations_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_operations_fixture.rs
+cmp tests/support/bitvec_operations_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/bitvec_operations_fixture.rs
 ```
 
 The general generation script includes all four stages. Review regenerated
@@ -538,7 +538,7 @@ The fixture is isolated in `tests/vectors/bitvec/bitvec_adapters_vectors.json`.
 `tests/bitvec_adapters_reference_vectors.rs` validates its strict schema and
 frozen input manifest through `tests/support/bitvec_adapters_fixture.rs`; that
 validator and its shared `bitvec_fixture.rs` parser must match the conversion
-crate's `tests/core/` copies. Unsafe short buffers/invalid cursor errors belong
+crate's `tests/support/` copies. Unsafe short buffers/invalid cursor errors belong
 in Rust safety tests, not C observations.
 
 From this repository root:
@@ -547,7 +547,7 @@ From this repository root:
 ./reference/run_bitvec_vector.sh --adapters > /tmp/bitvec_adapters.fresh.json
 cmp /tmp/bitvec_adapters.fresh.json tests/vectors/bitvec/bitvec_adapters_vectors.json
 cmp /tmp/bitvec_adapters.fresh.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/bitvec_adapters_vectors.json
-cmp tests/support/bitvec_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/bitvec_adapters_fixture.rs
+cmp tests/support/bitvec_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/bitvec_adapters_fixture.rs
 ```
 
 The general generation script includes all four stages. Review regenerated
@@ -564,7 +564,7 @@ length/capacity, layer markers, control words, destination/channel presence,
 query results, and normalized panic/error outcomes. The fixture is identical to
 `../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_vectors.json`.
 The shared `tests/support/msgb_fixture.rs` validator is identical to the
-conversion crate's `tests/core/msgb_fixture.rs`. Tests freeze schema, inputs,
+conversion crate's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
 order, provenance, ABI, state consistency, sequence continuity, and corruption
 rejection. Normal Cargo tests consume committed JSON without building C.
 
@@ -611,7 +611,7 @@ Regenerate and validate from this repository root:
 ./reference/run_msgb_vector.sh > /tmp/msgb_vectors.fresh.json
 cmp /tmp/msgb_vectors.fresh.json tests/vectors/msgb/msgb_vectors.json
 cmp tests/vectors/msgb/msgb_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_vectors.json
-cmp tests/support/msgb_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_fixture.rs
+cmp tests/support/msgb_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -689,7 +689,7 @@ From this repository root, regenerate and verify:
 ./reference/run_msgb_vector.sh --layers > /tmp/msgb_layers.fresh.json
 cmp /tmp/msgb_layers.fresh.json tests/vectors/msgb/msgb_layers_vectors.json
 cmp tests/vectors/msgb/msgb_layers_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_layers_vectors.json
-cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_layers_fixture.rs
+cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_layers_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -772,7 +772,7 @@ From this repository root:
 ./reference/run_msgb_vector.sh --resize > /tmp/msgb_resize.fresh.json
 cmp /tmp/msgb_resize.fresh.json tests/vectors/msgb/msgb_resize_vectors.json
 cmp tests/vectors/msgb/msgb_resize_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_resize_vectors.json
-cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_resize_fixture.rs
+cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_resize_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -881,7 +881,7 @@ Regenerate stage 4 from the testing repository:
 ./reference/run_msgb_vector.sh --adapters > /tmp/msgb_adapters.fresh.json
 cmp /tmp/msgb_adapters.fresh.json tests/vectors/msgb/msgb_adapters_vectors.json
 cmp tests/vectors/msgb/msgb_adapters_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_adapters_vectors.json
-cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_adapters_fixture.rs
+cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_adapters_fixture.rs
 ```
 
 `./scripts/generate-reference-vectors.sh` includes all four msgb runners.
@@ -928,7 +928,7 @@ Regenerate from the testing repository:
 ./reference/run_prim_vector.sh > /tmp/prim.fresh.json
 cmp /tmp/prim.fresh.json tests/vectors/prim/prim_vectors.json
 cmp tests/vectors/prim/prim_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/prim_vectors.json
-cmp tests/support/prim_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/prim_fixture.rs
+cmp tests/support/prim_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/prim_fixture.rs
 ```
 
 `./scripts/generate-reference-vectors.sh` includes the prim runner. Fixtures and
@@ -1000,7 +1000,7 @@ cmp /tmp/crc-byte.fresh.json tests/vectors/crc/crc_byte_vectors.json
 cmp /tmp/crc-generic.fresh.json tests/vectors/crc/crc_generic_vectors.json
 cmp tests/vectors/crc/crc_byte_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/crc_byte_vectors.json
 cmp tests/vectors/crc/crc_generic_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/crc_generic_vectors.json
-cmp tests/support/crc_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/crc_fixture.rs
+cmp tests/support/crc_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/crc_fixture.rs
 ```
 
 The full generator includes both CRC stages. Fixtures and validators are shared
@@ -1057,7 +1057,7 @@ scalar/SSE/AVX tie behavior (scalar `>=`, including the equality choice) as the
 portable Rust correlation contract, independent of CPU. No universal backend
 equivalence is claimed. The conversion repository now implements checked
 descriptors, signed compatibility lengths, independent operation capacities and
-reusable/one-shot encoding, with conformance in `tests/core/conv_encoder.rs`,
+reusable/one-shot encoding, with conformance in `tests/conv/conv_encoder.rs`,
 plus the generic stateful squared-error decoder, portable scalar correlation
 and public one-shot dispatch. `osmo_conv_decode_acc` and `osmo_conv_decode`
 take `(&ConvCode, &[i8], &mut [u8])` and return `Result<i32, ConvError>`:
@@ -1120,7 +1120,7 @@ sizing and history arithmetic are checked with fallible allocation. All
 one-shot errors preserve output; success preserves unused suffixes.
 
 Independent final-stage replays in the conversion repository's
-`tests/core/conv_correlation.rs` passed 6,796 direct correlation observations
+`tests/conv/conv_correlation.rs` passed 6,796 direct correlation observations
 (1,699 each linked/scalar/SSE/AVX) and 6,608 public dispatch observations
 (1,652 each), totaling 13,404 full-buffer, status/metric and unchanged-input
 comparisons. These are separate from this utility's integrity checks below.
@@ -1165,7 +1165,7 @@ for pass in 1 2; do
   cmp "target/conv-stateful-validation/conv.$pass.ndjson" ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_vectors.ndjson || exit
 done
 cmp target/conv-stateful-validation/conv.1.ndjson target/conv-stateful-validation/conv.2.ndjson
-cmp tests/support/conv_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/conv_fixture.rs
+cmp tests/support/conv_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/conv_fixture.rs
 cmp reference/conv_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_provenance.json
 cmp reference/conv_generator_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_generator_provenance.json
 ```
@@ -1230,7 +1230,7 @@ Verify/regenerate without overwriting committed evidence:
 cmp /tmp/time.1.ndjson /tmp/time.2.ndjson
 cmp /tmp/time.1.ndjson tests/vectors/time/time_vectors.ndjson
 cmp tests/vectors/time/time_vectors.ndjson ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/time/time_vectors.ndjson
-cmp tests/support/time_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/time_fixture.rs
+cmp tests/support/time_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/time_fixture.rs
 cmp tests/vectors/time/time_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/time/time_provenance.json
 cmp tests/vectors/time/time_generator_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/time/time_generator_provenance.json
 cargo fmt --check
@@ -1318,7 +1318,7 @@ cmp /tmp/tdef.1.ndjson /tmp/tdef.2.ndjson
 cmp /tmp/tdef.1.ndjson tests/vectors/tdef/tdef_vectors.ndjson
 cmp /tmp/tdef.diagnostics.1.json /tmp/tdef.diagnostics.2.json
 cmp /tmp/tdef.diagnostics.1.json tests/vectors/tdef/tdef_diagnostics.json
-cmp tests/support/tdef_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/tdef_fixture.rs
+cmp tests/support/tdef_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/tdef_fixture.rs
 cargo fmt --check
 cargo test
 ```
@@ -1390,7 +1390,7 @@ cmp /tmp/time_cc.1.ndjson /tmp/time_cc.2.ndjson
 cmp /tmp/time_cc.1.ndjson tests/vectors/time_cc/time_cc_vectors.ndjson
 cmp /tmp/time_cc.diagnostics.1.json /tmp/time_cc.diagnostics.2.json
 cmp /tmp/time_cc.diagnostics.1.json tests/vectors/time_cc/time_cc_diagnostics.json
-cmp tests/support/time_cc_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/time_cc_fixture.rs
+cmp tests/support/time_cc_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/time_cc_fixture.rs
 cargo fmt --check
 cargo test --target-dir /tmp/stage4-gsmtap-target
 ```
@@ -1452,7 +1452,7 @@ cmp /tmp/rate_ctr.1.tsv /tmp/rate_ctr.2.tsv
 cmp /tmp/rate_ctr.1.tsv tests/vectors/rate_ctr/rate_ctr_vectors.tsv
 cmp /tmp/rate_ctr.diagnostics.1.json /tmp/rate_ctr.diagnostics.2.json
 cmp /tmp/rate_ctr.diagnostics.1.json tests/vectors/rate_ctr/rate_ctr_diagnostics.json
-cmp tests/support/rate_ctr_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/rate_ctr_fixture.rs
+cmp tests/support/rate_ctr_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/rate_ctr_fixture.rs
 cargo fmt --check
 cargo test
 ```
@@ -1548,7 +1548,7 @@ for family in fsm_core fsm_timer fsm_tree fsm_registry fsm_shared; do
     cmp "/tmp/${family}.diagnostics.1.json" "/tmp/${family}.diagnostics.2.json"
     cmp "/tmp/${family}.diagnostics.1.json" "tests/vectors/${family}/${family}_diagnostics.json"
 done
-cmp tests/support/fsm_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/fsm_fixture.rs
+cmp tests/support/fsm_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/fsm_fixture.rs
 cargo fmt --check
 cargo test
 ```
@@ -1620,7 +1620,7 @@ cmp /tmp/rate_ctr_group.diagnostics.1.json /tmp/rate_ctr_group.diagnostics.2.jso
 cmp /tmp/rate_ctr_group.diagnostics.1.json tests/vectors/rate_ctr_group/rate_ctr_group_diagnostics.json
 cmp /tmp/rate_ctr_group.native.1.tsv /tmp/rate_ctr_group.native.2.tsv
 cmp /tmp/rate_ctr_group.native.1.tsv tests/vectors/rate_ctr_group/rate_ctr_group_native.tsv
-cmp tests/support/rate_ctr_group_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/rate_ctr_group_fixture.rs
+cmp tests/support/rate_ctr_group_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/rate_ctr_group_fixture.rs
 ```
 
 Review every changed observation. Expected results come exclusively from C.

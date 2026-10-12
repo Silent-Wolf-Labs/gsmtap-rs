@@ -233,7 +233,7 @@ length/capacity, layer markers, control words, destination/channel presence,
 query results, and normalized panic/error outcomes. The fixture is identical to
 `../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_vectors.json`.
 The shared `tests/support/msgb_fixture.rs` validator is identical to the
-conversion crate's `tests/core/msgb_fixture.rs`. Tests freeze schema, inputs,
+conversion crate's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
 order, provenance, ABI, state consistency, sequence continuity, and corruption
 rejection. Normal Cargo tests consume committed JSON without building C.
 
@@ -280,7 +280,7 @@ Regenerate and validate from this repository root:
 ./reference/run_msgb_vector.sh > /tmp/msgb_vectors.fresh.json
 cmp /tmp/msgb_vectors.fresh.json tests/vectors/msgb/msgb_vectors.json
 cmp tests/vectors/msgb/msgb_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_vectors.json
-cmp tests/support/msgb_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_fixture.rs
+cmp tests/support/msgb_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -358,7 +358,7 @@ From this repository root, regenerate and verify:
 ./reference/run_msgb_vector.sh --layers > /tmp/msgb_layers.fresh.json
 cmp /tmp/msgb_layers.fresh.json tests/vectors/msgb/msgb_layers_vectors.json
 cmp tests/vectors/msgb/msgb_layers_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_layers_vectors.json
-cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_layers_fixture.rs
+cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_layers_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -441,7 +441,7 @@ From this repository root:
 ./reference/run_msgb_vector.sh --resize > /tmp/msgb_resize.fresh.json
 cmp /tmp/msgb_resize.fresh.json tests/vectors/msgb/msgb_resize_vectors.json
 cmp tests/vectors/msgb/msgb_resize_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_resize_vectors.json
-cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_resize_fixture.rs
+cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_resize_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -550,7 +550,7 @@ Regenerate stage 4 from the testing repository:
 ./reference/run_msgb_vector.sh --adapters > /tmp/msgb_adapters.fresh.json
 cmp /tmp/msgb_adapters.fresh.json tests/vectors/msgb/msgb_adapters_vectors.json
 cmp tests/vectors/msgb/msgb_adapters_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_adapters_vectors.json
-cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/msgb_adapters_fixture.rs
+cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_adapters_fixture.rs
 ```
 
 `./scripts/generate-reference-vectors.sh` includes all four msgb runners.
@@ -629,7 +629,7 @@ arithmetic and traceback errors preserve the entire output; success preserves su
 The unchanged 36,254-record matrix includes 332 generic stateful cases with
 7,257 lifecycle observations (6,593 callable API observations plus 664 drops).
 The shared reader remains byte-identical to the conversion repository. See
-the conversion repository's `tests/core/conv_correlation.rs` for independent
+the conversion repository's `tests/conv/conv_correlation.rs` for independent
 final-stage replays: 6,796 direct correlation records (1,699 per backend) and
 6,608 public dispatch records (1,652 per backend), totaling 13,404 complete
 buffer, status/metric and unchanged-input comparisons across linked/scalar/SSE/AVX.
