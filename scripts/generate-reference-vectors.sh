@@ -124,3 +124,19 @@ for fsm_family in fsm_core fsm_timer fsm_tree fsm_registry fsm_shared; do
     mv "$fsm_fresh" "$fsm_output_dir/${fsm_family}_vectors.tsv"
     mv "$fsm_diag_fresh" "$fsm_output_dir/${fsm_family}_diagnostics.json"
 done
+
+# Stage 7 selected rate-counter groups/rollups; native evidence stays separate.
+rate_ctr_group_output_dir="$output_dir/rate_ctr_group"
+mkdir -p "$rate_ctr_group_output_dir"
+rate_ctr_group_fresh=$(mktemp "$rate_ctr_group_output_dir/.vectors.XXXXXX")
+rate_ctr_group_diag_fresh=$(mktemp "$rate_ctr_group_output_dir/.diagnostics.XXXXXX")
+rate_ctr_group_native_fresh=$(mktemp "$rate_ctr_group_output_dir/.native.XXXXXX")
+trap 'rm -f "$rate_ctr_group_fresh" "$rate_ctr_group_diag_fresh" "$rate_ctr_group_native_fresh"' EXIT
+"$repository_root/reference/run_rate_ctr_group_vector.sh" all > "$rate_ctr_group_fresh"
+"$repository_root/reference/run_rate_ctr_group_vector.sh" --diagnostics > "$rate_ctr_group_diag_fresh"
+"$repository_root/reference/run_rate_ctr_group_vector.sh" --native > "$rate_ctr_group_native_fresh"
+cp "$repository_root/reference/rate_ctr_group_provenance.json" "$rate_ctr_group_output_dir/"
+cp "$repository_root/reference/rate_ctr_group_generator_provenance.json" "$rate_ctr_group_output_dir/"
+mv "$rate_ctr_group_fresh" "$rate_ctr_group_output_dir/rate_ctr_group_vectors.tsv"
+mv "$rate_ctr_group_diag_fresh" "$rate_ctr_group_output_dir/rate_ctr_group_diagnostics.json"
+mv "$rate_ctr_group_native_fresh" "$rate_ctr_group_output_dir/rate_ctr_group_native.tsv"

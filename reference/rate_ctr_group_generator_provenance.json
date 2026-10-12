@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "reference_manifest_sha256": "78d88e94f93f5340cd658716a12acfdf384b3fcdca514a48b426c27559c7226c",
+  "sha256": {
+    "rate_ctr_group_vector.c": "88bea344c3a02d160ec4aebd4a6b305d7afb144ff58945ce2a1c29507cdea40f",
+    "run_rate_ctr_group_vector.sh": "d513b0c506d1db9f7c83739d0070f63293c2c031ae6a28c1aff1d7916e7525eb",
+    "rate_ctr_group_preprocessor_defines.txt": "930e7e17b2f4dffbf5fc5ec92c3bb3638cfbbbe9be2d0857e01363d48973f4a2"
+  }
+}
