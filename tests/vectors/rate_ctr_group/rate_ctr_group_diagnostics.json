@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "reference": "78d88e94f93f5340cd658716a12acfdf384b3fcdca514a48b426c27559c7226c",
+  "generator": "e20d40f92dcccc8b92b9414dbea5f26304f2547e2331cba603cb94d9964f6f6b",
+  "probes": [
+    {
+      "probe": "free-current",
+      "category": "heap-use-after-free"
+    },
+    {
+      "probe": "unlink-current",
+      "category": "SEGV"
+    },
+    {
+      "probe": "counter-bounds",
+      "category": "heap-buffer-overflow"
+    },
+    {
+      "probe": "null-descriptor",
+      "category": "null pointer"
+    },
+    {
+      "probe": "short-read",
+      "category": "Assert failed"
+    },
+    {
+      "probe": "zero-expirations",
+      "category": "bounded-timeout",
+      "seconds": 1
+    },
+    {
+      "probe": "unlink-current-init",
+      "category": "bounded-timeout",
+      "seconds": 1
+    }
+  ]
+}

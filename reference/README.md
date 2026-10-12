@@ -1562,3 +1562,95 @@ and copies the verified manifests. Stage 6 passed all five audits and repeat
 comparisons, 98 tests here and 178 in the conversion crate. Actual Rust/Cargo 1.97.1
 was used; Rust 1.70 execution remains pending. Prior time/TDef/time_cc/rate-counter
 fixtures remain unchanged.
+
+## Stage 7 rate-counter groups and rollups
+
+`rate_ctr_group_vector.c` includes the required unmodified local `rate_ctr.c`
+for direct access to its static callback/tick input. It calls the actual group,
+registry, lookup, reset and iteration APIs and delivers expiration counts via
+pipe reads. Native initialization probes use real select/timerfd source with
+OS-boundary failure injection, run in separate processes; a bounded real
+one-second select dispatch smoke check also runs. These characterize C wiring,
+not a Rust native timerfd/select API-shape parity claim.
+
+The closed runner pins 47 local source/header files and 227 platform
+headers/library files, compiler identity, exact normal/audit/link flags and
+all preprocessing defines. `rate_ctr_group_preprocessor_defines.txt` is pinned
+in the generator manifest and recomputed during source verification. Build
+sources include stats-TCP/stat-item/socket/io_uring dependencies of select;
+no conversion of those families is implied. All observed source paths are
+sanitizer-instrumented during audit; pinned external system libraries are not.
+LSan is disabled under ptrace, following the established runner convention.
+
+The dedicated `tests/vectors/rate_ctr_group/` family has 1,915 complete-state
+records across 608 scenarios. It preserves group order, effective descriptor
+metadata, numeric indices/classes, optional report names, callback trace/return,
+tick phase and all current/previous/interval words before and after operations.
+It contains full group/counter identifier byte matrices; duplicate-index
+wrapping/mangling; lifecycle and lookup; counter reset during iteration; nested
+lookup/iteration; current/next group mutation, removal and allocation; interval
+boundaries, tick/counter wrap and delayed catch-up. Four records directly
+characterize valid/mangled descriptor aliasing and copied report names. The
+Rust crate replays 1,911 selected-behavior records and documents deep-copy
+ownership differences for the four aliasing records.
+
+Native initialization has a separate three-row TSV. Seven isolated diagnostics
+cover continuing after freeing/unlinking the current group, out-of-bounds
+counter access, null descriptor, short expiration read, zero expiration count,
+and reinitializing the current unlinked list node (bounded nontermination).
+Freeing the next group and freeing the current group with an immediate negative
+callback return are in the successful domain. Native failure/unsafe probes use
+independent processes; successful scenarios explicitly reset group/tick inputs.
+The standalone Stage 5a fixture remains unchanged.
+
+Regenerate only this family while implementing Stage 7:
+
+```bash
+./reference/run_rate_ctr_group_vector.sh --verify
+./reference/run_rate_ctr_group_vector.sh --audit
+./reference/run_rate_ctr_group_vector.sh all > /tmp/rate_ctr_group.1.tsv
+./reference/run_rate_ctr_group_vector.sh all > /tmp/rate_ctr_group.2.tsv
+./reference/run_rate_ctr_group_vector.sh --diagnostics > /tmp/rate_ctr_group.diagnostics.1.json
+./reference/run_rate_ctr_group_vector.sh --diagnostics > /tmp/rate_ctr_group.diagnostics.2.json
+./reference/run_rate_ctr_group_vector.sh --native > /tmp/rate_ctr_group.native.1.tsv
+./reference/run_rate_ctr_group_vector.sh --native > /tmp/rate_ctr_group.native.2.tsv
+cmp /tmp/rate_ctr_group.1.tsv /tmp/rate_ctr_group.2.tsv
+cmp /tmp/rate_ctr_group.1.tsv tests/vectors/rate_ctr_group/rate_ctr_group_vectors.tsv
+cmp /tmp/rate_ctr_group.diagnostics.1.json /tmp/rate_ctr_group.diagnostics.2.json
+cmp /tmp/rate_ctr_group.diagnostics.1.json tests/vectors/rate_ctr_group/rate_ctr_group_diagnostics.json
+cmp /tmp/rate_ctr_group.native.1.tsv /tmp/rate_ctr_group.native.2.tsv
+cmp /tmp/rate_ctr_group.native.1.tsv tests/vectors/rate_ctr_group/rate_ctr_group_native.tsv
+cmp tests/support/rate_ctr_group_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/rate_ctr_group_fixture.rs
+```
+
+Review every changed observation. Expected results come exclusively from C.
+The independent shared reader pins corpus/manifests/diagnostics/native records,
+canonical encoding, chronology, full retained state, and an input/coverage
+fingerprint. Copy all five fixture artifacts byte-for-byte to the Rust crate's
+`tests/compatibility/vectors/rate_ctr_group/` directory. Ordinary tests do not
+require a C installation, and fixtures never enter packet/replay loaders.
+
+For an intentional harness change, update the generator manifest hashes of the
+C harness, runner and macro dump. For a reference/build-input change, first
+review exact source/header/platform hashes, compiler identity and the explicit
+flags. Recompute the macro dump with the pinned flags (`cc -dM -E` on the
+harness), update its digest and the reference manifest, then update the
+reference-manifest digest in generator provenance. Never borrow a parent Git
+revision: the required snapshot remains `unknown`. Regenerate/review all
+Stage 7 artifacts, update frozen reader fingerprints/input counts as applicable,
+audit and repeat all generations before accepting new evidence.
+
+Stage 7 ends the planned initial upstream conversion. Productization/release
+work follows; no vendor snapshot refresh, commit, push or publication is part
+of this evidence update.
+
+Stage 7 acceptance on 2026-10-12 passed all 100 testing-utility tests, including
+localhost tests with sandbox escalation, and 182 conversion-crate tests plus one
+public-API documentation example. Both formatting/whitespace checks passed.
+The new C source/flags/defines verification and ASan+UBSan audit passed; two
+independent successful, diagnostic and native generations matched frozen
+fixtures, all shared artifact/reader bytes matched, and existing Stage 1–6
+source verification passed. The full generator was syntax-checked; only Stage 7
+commands generated observations. Actual Rust/Cargo was 1.97.1, not the declared
+MSRV or CI toolchain. No Stage 5a evidence, vendor snapshot, C reference source,
+commit, push or publication was changed by this stage.
