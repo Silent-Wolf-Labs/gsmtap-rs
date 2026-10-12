@@ -645,7 +645,7 @@ remain unchanged. See
 [reference instructions](reference/README.md#convolutional-evidence-and-backend-gate)
 for non-destructive provenance, ASan/UBSan and twice-regenerated full-matrix
 comparisons, and the sibling
-[compatibility boundary](../libosmocore-rs/docs/conv-compatibility.md) for exact
+[compatibility boundary](../libosmocore-rs/libosmocore-rs/src/conv/README.md) for exact
 APIs and C edge cases. The local C snapshot has unknown upstream Git revision;
 linked-dispatch evidence pins its existing binary, while isolated scalar/SSE/AVX
 evidence uses separately pinned exact sources. NEON was not executed.
@@ -669,7 +669,7 @@ integration. Stage 4 now implements time_cc; combined Stage 1–4 validation
 covers the approved core scope.
 
 See [reference instructions](reference/README.md#time-and-timer-evidence-stages-12)
-and the sibling [time compatibility guide](../libosmocore-rs/docs/time-compatibility.md)
+and the sibling [time compatibility guide](../libosmocore-rs/libosmocore-rs/src/time/README.md)
 for provenance, audit and regeneration commands. No vendored crate snapshot,
 workbench endpoint or GSMTAP packet/replay loader was changed for this stage.
 
@@ -683,7 +683,7 @@ crate implements core TDef and replays all records, including safe equivalents
 for failure probes. Parity excludes FSM integration and targets the recorded
 64-bit ABI; 32-bit ULONG_MAX behavior is outside the claim. See
 [reference instructions](reference/README.md#tdef-core-evidence-stage-3) and the
-sibling [time compatibility guide](../libosmocore-rs/docs/time-compatibility.md).
+sibling [time compatibility guide](../libosmocore-rs/libosmocore-rs/src/time/README.md).
 
 ## Stage 4 time_cc evidence and replay
 
@@ -698,6 +698,6 @@ threshold/report caps, forgetting, delayed callbacks, configuration changes,
 absent sinks, cleanup/reuse, clock failure, zero-time startup, UINT64_MAX no-event
 behavior and selected ABI wrapping/narrowing. See
 [reference instructions](reference/README.md#time_cc-evidence-stage-4) and the
-sibling [compatibility guide](../libosmocore-rs/docs/time-compatibility.md).
+sibling [compatibility guide](../libosmocore-rs/libosmocore-rs/src/time/README.md).
 FSM/TDef integration and VTY remain deferred. No vendor snapshot or workbench
 endpoint was refreshed.

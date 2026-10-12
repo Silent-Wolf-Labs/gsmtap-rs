@@ -1176,7 +1176,7 @@ ASan/UBSan and requires separate invalid-shift/signed-sizing-overflow diagnostic
 without golden output. The linked library is not sanitizer-instrumented.
 Unsafe short tail-biting/empty non-flush traceback and unreachable-history
 cases are excluded, not accepted as golden behavior. See the sibling
-[`docs/conv-compatibility.md`](../../libosmocore-rs/docs/conv-compatibility.md)
+[`libosmocore-rs/src/conv/README.md`](../../libosmocore-rs/libosmocore-rs/src/conv/README.md)
 for detailed findings and safety boundaries.
 
 The full generator includes `all`, atomically replacing the convolutional
@@ -1251,7 +1251,7 @@ The conversion project's Stage 1 replay compares 20,828 C observations; this
 utility validates evidence only. Stage 2 replays 57 nonrecursive timer trace
 records and 32 timer API observations in the conversion project; 15 recursive
 C records remain policy evidence, with separate Rust rejection tests.
-See [time compatibility](../../libosmocore-rs/docs/time-compatibility.md) for
+See [time compatibility](../../libosmocore-rs/libosmocore-rs/src/time/README.md) for
 Rust API shapes, safety boundaries and reentrant-dispatch findings.
 
 ## TDef core evidence (Stage 3)
@@ -1329,7 +1329,7 @@ manifests with the copies in `reference/`. Review observations before changing
 reader fingerprints. The full generator includes TDef and stages both outputs
 before publishing; use targeted regeneration for a TDef-only update to preserve
 unrelated fixtures. No vendor snapshot or packet/replay loader changes belong
-in this stage. See the conversion repository's `docs/time-compatibility.md` for
+in this stage. See the conversion repository's `libosmocore-rs/src/time/README.md` for
 implemented scope, replay and safety policies. No vendor snapshot was refreshed.
 
 ## time_cc evidence (Stage 4)
@@ -1513,7 +1513,7 @@ the evidence. Storage retention and lookup visibility are separate, with checked
 handles/tombstones during safe termination cascades. Logging/VTY/CTRL, native address
 names, arbitrary talloc ownership/destructors, select/timerfd and statistics remain
 outside this conversion. No vendor snapshot refresh is performed. Scope and safety
-boundaries are documented in the sibling's `docs/fsm-compatibility.md`.
+boundaries are documented in the sibling's `libosmocore-rs/src/fsm/README.md`.
 
 Each family's dedicated `tests/vectors/FAMILY/` directory contains TSV records,
 separate diagnostic JSON and source/generator manifests. The shared independent
