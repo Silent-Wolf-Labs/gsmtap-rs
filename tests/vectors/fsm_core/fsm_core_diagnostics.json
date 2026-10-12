@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "reference": "f572b2e98589d209217fdd17b117b79f1ad113b499a96898fd6c7c251d3d7fe0",
+  "generator": "7c21fa06c2a084af8a38eac787ff2ef43fc2815c26ed17fa23f6654c2c5a54e8",
+  "probes": [
+    {
+      "probe": "event31",
+      "category": "undefined-behavior"
+    },
+    {
+      "probe": "event32",
+      "category": "undefined-behavior"
+    },
+    {
+      "probe": "state31",
+      "category": "undefined-behavior"
+    },
+    {
+      "probe": "state32",
+      "category": "undefined-behavior"
+    },
+    {
+      "probe": "null-chg",
+      "category": "undefined-behavior"
+    },
+    {
+      "probe": "null-term",
+      "category": "undefined-behavior"
+    },
+    {
+      "probe": "bad-current",
+      "category": "assertion"
+    }
+  ]
+}
