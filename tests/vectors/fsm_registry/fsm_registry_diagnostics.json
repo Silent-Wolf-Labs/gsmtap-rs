@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "reference": "f572b2e98589d209217fdd17b117b79f1ad113b499a96898fd6c7c251d3d7fe0",
+  "generator": "06703afdfe07650cc4b40a99226d240137c37d8194d8503e56a6cff64c29d99f",
+  "probes": [
+    {
+      "probe": "null-stored-id",
+      "category": "null-pointer"
+    },
+    {
+      "probe": "null-query-id",
+      "category": "null-pointer"
+    }
+  ]
+}

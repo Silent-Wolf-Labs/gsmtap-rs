@@ -98,3 +98,29 @@ trap 'rm -f "$time_cc_fresh" "$time_cc_diag_fresh"' EXIT
 "$repository_root/reference/run_time_cc_vector.sh" --diagnostics > "$time_cc_diag_fresh"
 mv "$time_cc_fresh" "$time_cc_output_dir/time_cc_vectors.ndjson"
 mv "$time_cc_diag_fresh" "$time_cc_output_dir/time_cc_diagnostics.json"
+
+# Stage 5a standalone rate-counter calls and isolated null diagnostics.
+rate_ctr_output_dir="$output_dir/rate_ctr"
+mkdir -p "$rate_ctr_output_dir"
+rate_ctr_fresh=$(mktemp "$rate_ctr_output_dir/.rate_ctr_vectors.XXXXXX")
+rate_ctr_diag_fresh=$(mktemp "$rate_ctr_output_dir/.rate_ctr_diagnostics.XXXXXX")
+trap 'rm -f "$rate_ctr_fresh" "$rate_ctr_diag_fresh"' EXIT
+"$repository_root/reference/run_rate_ctr_vector.sh" all > "$rate_ctr_fresh"
+"$repository_root/reference/run_rate_ctr_vector.sh" --diagnostics > "$rate_ctr_diag_fresh"
+mv "$rate_ctr_fresh" "$rate_ctr_output_dir/rate_ctr_vectors.tsv"
+mv "$rate_ctr_diag_fresh" "$rate_ctr_output_dir/rate_ctr_diagnostics.json"
+
+# Stage 6: each FSM evidence family was separately gated before implementation.
+for fsm_family in fsm_core fsm_timer fsm_tree fsm_registry fsm_shared; do
+    fsm_output_dir="$output_dir/$fsm_family"
+    mkdir -p "$fsm_output_dir"
+    fsm_fresh=$(mktemp "$fsm_output_dir/.${fsm_family}_vectors.XXXXXX")
+    fsm_diag_fresh=$(mktemp "$fsm_output_dir/.${fsm_family}_diagnostics.XXXXXX")
+    trap 'rm -f "$fsm_fresh" "$fsm_diag_fresh"' EXIT
+    "$repository_root/reference/run_${fsm_family}_vector.sh" all > "$fsm_fresh"
+    "$repository_root/reference/run_${fsm_family}_vector.sh" --diagnostics > "$fsm_diag_fresh"
+    cp "$repository_root/reference/${fsm_family}_provenance.json" "$fsm_output_dir/"
+    cp "$repository_root/reference/${fsm_family}_generator_provenance.json" "$fsm_output_dir/"
+    mv "$fsm_fresh" "$fsm_output_dir/${fsm_family}_vectors.tsv"
+    mv "$fsm_diag_fresh" "$fsm_output_dir/${fsm_family}_diagnostics.json"
+done

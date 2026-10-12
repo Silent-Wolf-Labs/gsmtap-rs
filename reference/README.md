@@ -1404,3 +1404,161 @@ preserving unrelated fixtures; never update frozen fingerprints just to pass.
 The sibling behavior replay includes all four stages and an additional shared
 scheduler/application-timer integration check. FSM/TDef integration and VTY
 remain deferred. Vendor snapshots and packet/replay loaders are unchanged.
+
+## Standalone rate-counter evidence (Stage 5a)
+
+`run_rate_ctr_vector.sh` compiles only the unmodified required local
+`src/core/rate_ctr.c` with the direct-call `rate_ctr_vector.c` harness. LTO,
+function/data sections and linker garbage collection discard unused registry,
+logging and timerfd/select dependencies; observed APIs are never stubbed.
+The closed runner verifies source/platform hashes, all transitive includes,
+compiler version/target, and the generator manifest before compilation. It
+clears compiler/library search overrides. Revision is `unknown` for the required
+snapshot without Git metadata, never the parent repository revision.
+
+The successful TSV domain has one metadata line and 1,700 calls in 100
+scenarios. Columns are scenario, step, operation, signed increment, signed
+return (zero placeholder for void calls), then ten initialized and ten final
+state words. State order is current, previous, and last/rate pairs for second,
+minute, hour and day. Initial current/previous form a 10-by-10 boundary matrix;
+sequences directly call difference twice, seven signed additions, inline inc,
+difference twice, reset, difference, add(-1), difference and reset. Zero,
+positive/negative values, INT_MIN/INT_MAX, INT64_MAX/high-bit boundaries and
+UINT64_MAX cover wrapping, signed conversion, repeated reads, and every
+preserved interval field. Unsigned-to-int64 conversion is implementation-defined
+in C and frozen for the recorded GCC/64-bit Linux ABI, not claimed universally.
+Four bounded isolated null add/inc/difference/reset probes are separate
+sanitizer diagnostics; no unsafe probe contributes golden output.
+
+Dedicated files in `tests/vectors/rate_ctr/` and the shared independent reader
+`tests/support/rate_ctr_fixture.rs` must match the sibling conversion crate.
+This repository validates integrity, provenance and corruptions; Rust API and
+complete state replay belongs in `libosmocore-rs`. The conversion also replays
+all frozen time_cc scenarios with `TimeCc<RateCtr>` and checks that previous and
+every interval field survive reporting. Full registry, interval scheduling,
+initialization, statistics, FSM and VTY remain deferred. No vendor snapshot
+refresh is performed for these uncommitted changes.
+
+Regenerate only this family (the full generator rewrites unrelated families):
+
+```bash
+./reference/run_rate_ctr_vector.sh --verify
+./reference/run_rate_ctr_vector.sh --audit
+./reference/run_rate_ctr_vector.sh all > /tmp/rate_ctr.1.tsv
+./reference/run_rate_ctr_vector.sh all > /tmp/rate_ctr.2.tsv
+./reference/run_rate_ctr_vector.sh --diagnostics > /tmp/rate_ctr.diagnostics.1.json
+./reference/run_rate_ctr_vector.sh --diagnostics > /tmp/rate_ctr.diagnostics.2.json
+cmp /tmp/rate_ctr.1.tsv /tmp/rate_ctr.2.tsv
+cmp /tmp/rate_ctr.1.tsv tests/vectors/rate_ctr/rate_ctr_vectors.tsv
+cmp /tmp/rate_ctr.diagnostics.1.json /tmp/rate_ctr.diagnostics.2.json
+cmp /tmp/rate_ctr.diagnostics.1.json tests/vectors/rate_ctr/rate_ctr_diagnostics.json
+cmp tests/support/rate_ctr_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/rate_ctr_fixture.rs
+cargo fmt --check
+cargo test
+```
+
+The source and generator manifests are copied unchanged from `reference/`.
+If an intentional evidence change is accepted, refresh their hashes and the
+shared reader pins in both repositories; inspect the complete fixture diff.
+Expected output must come from C. The full generator stages successful and
+diagnostic output before publishing either. ASan+UBSan audit and both pairs of
+fresh generations passed for Stage 5a; LSan is disabled under ptrace. Actual
+Rust/Cargo 1.97.1 was used, and Rust 1.70 execution remains pending.
+
+Stage 5a final checks passed 93 tests here and 164 in the Rust conversion
+crate, with formatting/whitespace checks in both repositories. Shared evidence,
+readers and manifests matched byte-for-byte. Existing time, TDef and time_cc
+source verification passed; those frozen fixture families were unchanged.
+
+## FSM execution, lifecycle and TDef integration (Stage 6)
+
+Five dedicated direct-source runners freeze the approved evidence gates:
+
+| Runner family | Successful records | Scenarios | Isolated probes |
+| --- | ---: | ---: | ---: |
+| `fsm_core` | 1,506 | 64 | 7 |
+| `fsm_timer` | 9,369 | 1,080 | 5 |
+| `fsm_tree` | 2,010 | 134 | 5 |
+| `fsm_registry` | 1,524 | 127 | 2 |
+| `fsm_shared` | 443 | 21 | 0 |
+
+Each `run_FAMILY_vector.sh` compiles the required unmodified local FSM, TDef,
+timer, utility, logging and support sources. It pins 39 project files and 149
+platform dependencies, including real libtalloc, checks every transitive include,
+compiler version/target and the source/generator manifests, clears search
+injection variables, and uses the checked libtalloc directory at runtime.
+No observed API is stubbed and no system libosmocore is substituted. Required C
+revision is `unknown` because the source snapshot lacks Git metadata. Logging
+setup has process lifetime, without targets. Successful domains pass ASan+UBSan;
+LSan is disabled under ptrace. Unsafe cases are bounded isolated subprocesses.
+
+6a covers only standalone execution and termination without parent/children.
+6b freezes callback-time state/timer mutations and failed transitions with active
+timers for all five forms, timeout return values and the TDef bridge. 6c captures
+lookup visibility, hierarchy membership, cleanup and parent-notification ordering,
+including safe/legacy termination and nested cleanup. Four demonstrated hierarchy
+UAF cases are separate diagnostics. 6d records ID/name lookup, ASCII identifier
+validation/sanitization, rejected-update preservation, duplicate order, slot reuse,
+nullable state names, unregistration and allocation afterward. Shared-scheduler
+records cover simultaneous FSM/application timers, peer mutation, callback-created
+timers and TDef configuration changes. Source/generator digest changes from pinning
+the runtime library directory changed only metadata in core/timer/tree observations;
+the later registry refinement changed one scenario's state-name observations from
+"one" to null. Both were reviewed before freezing and replay.
+
+The Rust implementation intentionally owns its registry instead of reproducing C
+process-global ownership. C-named wrappers take that runtime. C actually allows
+allocation after unregistering despite its comment; the Rust implementation follows
+the evidence. Storage retention and lookup visibility are separate, with checked
+handles/tombstones during safe termination cascades. Logging/VTY/CTRL, native address
+names, arbitrary talloc ownership/destructors, select/timerfd and statistics remain
+outside this conversion. No vendor snapshot refresh is performed. Scope and safety
+boundaries are documented in the sibling's `docs/fsm-compatibility.md`.
+
+Each family's dedicated `tests/vectors/FAMILY/` directory contains TSV records,
+separate diagnostic JSON and source/generator manifests. The shared independent
+`tests/support/fsm_fixture.rs` validates chronology, canonical numbers/hex strings,
+record shape, frozen observations/manifests and corruption rejection. It contains
+no Rust FSM conversion model. Rust behavior replay belongs in the sibling project.
+Core/timer records contain scenario, step, operation, argument, status and instance
+state/T/pending/deadline/terminating/ID lookup/name lookup/count; timer records add
+four operation inputs and the wall-clock value. Tree/shared records contain scenario,
+step, operation, target, argument and status, then four complete instance snapshots
+(state, T, terminating, visibility, parent index, children mask, pending, deadline
+seconds/useconds) and instance list order. Registry records contain query/name helper
+inputs/outputs, registration/list order and three state/T/visibility/ID/name snapshots.
+`-1` marks absent instance/index; `-2` marks an unavailable pointer identity or an
+ID lookup intentionally skipped because C would dereference a null ID. `s:` encodes
+lowercase hexadecimal string bytes and `s:-` is null. Each file starts with the
+ABI and provenance metadata line.
+
+Targeted verification/regeneration, without rewriting unrelated fixture families:
+
+```bash
+for family in fsm_core fsm_timer fsm_tree fsm_registry fsm_shared; do
+    runner="./reference/run_${family}_vector.sh"
+    "$runner" --verify
+    "$runner" --audit
+    "$runner" all > "/tmp/${family}.1.tsv"
+    "$runner" all > "/tmp/${family}.2.tsv"
+    "$runner" --diagnostics > "/tmp/${family}.diagnostics.1.json"
+    "$runner" --diagnostics > "/tmp/${family}.diagnostics.2.json"
+    cmp "/tmp/${family}.1.tsv" "/tmp/${family}.2.tsv"
+    cmp "/tmp/${family}.1.tsv" "tests/vectors/${family}/${family}_vectors.tsv"
+    cmp "/tmp/${family}.diagnostics.1.json" "/tmp/${family}.diagnostics.2.json"
+    cmp "/tmp/${family}.diagnostics.1.json" "tests/vectors/${family}/${family}_diagnostics.json"
+done
+cmp tests/support/fsm_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/core/fsm_fixture.rs
+cargo fmt --check
+cargo test
+```
+
+Source and generator manifests in every fixture directory must match `reference/`
+and the sibling's dedicated fixture directory byte-for-byte. Accepted evidence
+changes require updating both shared-reader test specs, inspecting record differences,
+repeating generation and auditing. Expected results come exclusively from C.
+The full generator stages successful/diagnostic outputs before publishing either
+and copies the verified manifests. Stage 6 passed all five audits and repeat
+comparisons, 98 tests here and 178 in the conversion crate. Actual Rust/Cargo 1.97.1
+was used; Rust 1.70 execution remains pending. Prior time/TDef/time_cc/rate-counter
+fixtures remain unchanged.
