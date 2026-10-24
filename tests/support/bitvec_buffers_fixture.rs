@@ -1,9 +1,7 @@
 //! Frozen input construction and schema for the second bit-vector stage.
 //! Only C-generated fixtures supply outcomes.
-#[allow(dead_code)]
-#[path = "bitvec_fixture.rs"]
-mod primitive;
-pub use primitive::{number, Record};
+use crate::bitvec_fixture as primitive;
+pub use primitive::{Record, number};
 
 pub const COUNT: usize = 38_837;
 const WIDTHS: &[u32] = &[0, 1, 7, 8, 9, 15, 16, 31, 32, 33, 63, 64, 65, 255];
@@ -36,9 +34,10 @@ const STRINGS: &[&str] = &[
 
 pub fn bytes(hex: &str) -> Vec<u8> {
     assert_eq!(hex.len() % 2, 0);
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..hex.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
@@ -69,7 +68,7 @@ fn safe_uint_read(len: usize, pattern: usize, mut cursor: usize, n: u32) -> bool
         if cursor / 8 >= len {
             return true;
         }
-        if data[cursor / 8] & (1 << (7 - cursor % 8)) != 0 && n - i - 1 >= 32 {
+        if data[cursor / 8] & (1 << (7 - cursor % 8)) != 0 && n - i > 32 {
             return false;
         }
         cursor += 1;
@@ -104,7 +103,7 @@ fn expected_inputs() -> Vec<Input> {
                     if safe_uint_read(len, pattern, cursor, n) {
                         push("bitvec_get_uint", n, 0, 0, 0);
                     }
-                    if n > 15 || cursor < n as usize || n == 0 || len >= (n as usize + 7) / 8 {
+                    if n > 15 || cursor < n as usize || n == 0 || len >= (n as usize).div_ceil(8) {
                         push("bitvec_get_int16_msb", n, 0, 0, 0);
                     }
                     for value in 0..4 {

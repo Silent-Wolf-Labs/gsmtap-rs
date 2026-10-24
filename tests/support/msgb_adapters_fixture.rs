@@ -1,9 +1,7 @@
 //! Shared stage-4 schema, input coverage, state checks, and frozen C evidence.
-#[allow(dead_code)]
-#[path = "msgb_fixture.rs"]
-mod primitive;
-pub use primitive::{bytes, number, words, Record};
-use primitive::{parse, schema, state, HASHES, STATES};
+use crate::msgb_fixture as primitive;
+use primitive::{HASHES, STATES, parse, schema, state};
+pub use primitive::{Record, bytes, number, words};
 pub const COUNT: usize = 4_055;
 const EXTRA_HASHES: &[(&str, &str)] = &[
     (

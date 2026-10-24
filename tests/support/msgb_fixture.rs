@@ -47,9 +47,10 @@ pub fn number(r: &Record, key: &str) -> i64 {
 }
 pub fn bytes(hex: &str) -> Vec<u8> {
     assert_eq!(hex.len() % 2, 0);
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..hex.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
@@ -307,9 +308,11 @@ pub fn state(r: &Record, prefix: &str, cap: i64) {
         n("invariant"),
         i64::from(present.windows(2).all(|w| w[0] <= w[1]))
     );
-    assert!(words(&r[&format!("{prefix}_cb")], 5)
-        .iter()
-        .all(|v| *v >= 0));
+    assert!(
+        words(&r[&format!("{prefix}_cb")], 5)
+            .iter()
+            .all(|v| *v >= 0)
+    );
     assert!((0..=1).contains(&n("dst")) && (0..=1).contains(&n("lchan")));
 }
 

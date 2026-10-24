@@ -266,9 +266,11 @@ pub fn validate_structure(text: &str) -> Vec<Record> {
             inputs(row, &[("capacity", capacity)]);
             assert_eq!(row["initial"], "a5".repeat(64));
             assert_eq!(row["final"].len(), 128);
-            assert!(row["final"]
-                .bytes()
-                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+            assert!(
+                row["final"]
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            );
         }
     }
     for unit in [0, 1, 2, 3, 4, -1, 5, i32::MIN as i64, i32::MAX as i64] {

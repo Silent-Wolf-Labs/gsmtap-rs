@@ -1,5 +1,5 @@
 use super::header::BASE_HEADER_LENGTH;
-use super::{GsmtapHeader, ParseError, GSMTAP_VERSION};
+use super::{GSMTAP_VERSION, GsmtapHeader, ParseError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GsmtapPacket<'a> {

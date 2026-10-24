@@ -20,7 +20,7 @@ struct BcdOptions {
 }
 
 pub async fn bcd(Json(request): Json<BcdRequest>) -> Result<Json<ConversionResult>, ApiError> {
-    use osmocore_rs::bcd::{nibble_to_char, BcdError};
+    use osmocore_rs::bcd::{BcdError, nibble_to_char};
     use osmocore_rs::compat::bcd::{osmo_bcd2str, osmo_char2bcd, osmo_str2bcd};
     let operation = match request.operation.as_str() {
         "char2bcd" => "char2bcd",

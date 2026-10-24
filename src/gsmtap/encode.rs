@@ -13,7 +13,7 @@ impl<'a> GsmtapEncodeInput<'a> {
         extension: &'a [u8],
         payload: &'a [u8],
     ) -> Result<Self, EncodeError> {
-        if extension.len() % 4 != 0 {
+        if !extension.len().is_multiple_of(4) {
             return Err(EncodeError::InvalidExtensionLength {
                 length: extension.len(),
             });

@@ -230,11 +230,13 @@ async fn failed_mode_preflight_retains_listener_mode_and_packet_history() {
         .await
         .unwrap();
     wait_for_records(&store, 2).await;
-    assert!(store
-        .list()
-        .await
-        .iter()
-        .all(|record| record.mode == Mode::Listen));
+    assert!(
+        store
+            .list()
+            .await
+            .iter()
+            .all(|record| record.mode == Mode::Listen)
+    );
 }
 
 #[tokio::test]

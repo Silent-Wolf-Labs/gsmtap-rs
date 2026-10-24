@@ -31,22 +31,26 @@ fn hostname_forward_targets_are_accepted() {
 
 #[test]
 fn ipv6_addresses_are_rejected_by_all_constructor_paths() {
-    assert!(Config::from_values(
-        Mode::Listen,
-        "[::1]:4729".parse().unwrap(),
-        None,
-        "127.0.0.1:8080".parse().unwrap(),
-        8,
-        16,
-    )
-    .is_err());
-    assert!(Config::from_values(
-        Mode::Relay,
-        "127.0.0.1:4729".parse().unwrap(),
-        Some("[::1]:9000".into()),
-        "127.0.0.1:8080".parse().unwrap(),
-        8,
-        16,
-    )
-    .is_err());
+    assert!(
+        Config::from_values(
+            Mode::Listen,
+            "[::1]:4729".parse().unwrap(),
+            None,
+            "127.0.0.1:8080".parse().unwrap(),
+            8,
+            16,
+        )
+        .is_err()
+    );
+    assert!(
+        Config::from_values(
+            Mode::Relay,
+            "127.0.0.1:4729".parse().unwrap(),
+            Some("[::1]:9000".into()),
+            "127.0.0.1:8080".parse().unwrap(),
+            8,
+            16,
+        )
+        .is_err()
+    );
 }

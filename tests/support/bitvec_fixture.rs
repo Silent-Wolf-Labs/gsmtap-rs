@@ -37,9 +37,10 @@ pub fn bytes(hex: &str) -> Vec<u8> {
         8,
         "fixture records the entire four-byte backing array"
     );
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..8)
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())

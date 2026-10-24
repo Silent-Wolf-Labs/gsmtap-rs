@@ -14,9 +14,10 @@ pub fn signed(record: &Record, key: &str) -> i32 {
 
 pub fn bytes(text: &str) -> Vec<u8> {
     assert_eq!(text.len() % 2, 0, "odd hex length");
-    assert!(text
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        text.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..text.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&text[i..i + 2], 16).unwrap())
@@ -181,9 +182,11 @@ pub fn validate_shape(record: &Record) {
     for key in ["id", "case", "code"] {
         if let Some(value) = record.get(key) {
             assert!(!value.is_empty());
-            assert!(value
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b)));
+            assert!(
+                value
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b))
+            );
         }
     }
 }
@@ -824,7 +827,7 @@ pub fn compare_observation(
 #[cfg(test)]
 pub mod checks {
     use super::*;
-    use std::panic::{catch_unwind, UnwindSafe};
+    use std::panic::{UnwindSafe, catch_unwind};
 
     /// Independently check descriptor/input generation, never decoder outputs.
     pub fn synthetic_replacements(fixture: &Fixture) {

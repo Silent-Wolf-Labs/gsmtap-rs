@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 
 use tokio::{
     net::UdpSocket,
-    sync::{broadcast, Mutex},
+    sync::{Mutex, broadcast},
     task::JoinHandle,
 };
 
@@ -264,12 +264,12 @@ impl RuntimeHandle {
             )
         };
 
-        if let Some(pipeline) = previous_pipeline {
-            if let Err(error) = pipeline.stop().await {
-                self.restore_listener(previous_address, mode, forward, previous_receiver)
-                    .await;
-                return Err(error);
-            }
+        if let Some(pipeline) = previous_pipeline
+            && let Err(error) = pipeline.stop().await
+        {
+            self.restore_listener(previous_address, mode, forward, previous_receiver)
+                .await;
+            return Err(error);
         }
         drop(previous_receiver);
 
@@ -325,11 +325,11 @@ impl RuntimeHandle {
 
         let previous_pipeline = self.0.state.lock().await.pipeline.take();
 
-        if let Some(pipeline) = previous_pipeline {
-            if let Err(error) = pipeline.stop().await {
-                self.restore_pipeline(previous_mode, previous_forward).await;
-                return Err(error);
-            }
+        if let Some(pipeline) = previous_pipeline
+            && let Err(error) = pipeline.stop().await
+        {
+            self.restore_pipeline(previous_mode, previous_forward).await;
+            return Err(error);
         }
 
         let receiver = self.0.state.lock().await.receiver.clone();

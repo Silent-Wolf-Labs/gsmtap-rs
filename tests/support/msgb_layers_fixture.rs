@@ -1,9 +1,7 @@
 //! Shared frozen stage-2 inputs and strict evidence validation. No C outcomes generated.
-#[allow(dead_code)]
-#[path = "msgb_fixture.rs"]
-mod primitive;
-pub use primitive::{bytes, number, words, Record};
-use primitive::{parse, schema, state, HASHES, STATES};
+use crate::msgb_fixture as primitive;
+use primitive::{HASHES, STATES, parse, schema, state};
+pub use primitive::{Record, bytes, number, words};
 
 pub const COUNT: usize = 7_572;
 const EXTRA_HASHES: &[(&str, &str)] = &[
