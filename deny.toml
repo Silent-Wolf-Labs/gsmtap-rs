@@ -1,3 +1,7 @@
+[graph]
+# Check the optional osmocore feature's dependency graph too.
+all-features = true
+
 [advisories]
 version = 2
 
@@ -13,6 +17,8 @@ allow = [
     "Zlib",
 ]
 confidence-threshold = 0.8
+# Only the optional osmocore feature links GPL code.
+exceptions = [{ allow = ["GPL-3.0-or-later"], crate = "osmocore-rs" }]
 
 [bans]
 multiple-versions = "warn"
