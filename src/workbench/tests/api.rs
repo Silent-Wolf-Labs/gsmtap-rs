@@ -9,6 +9,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use http_body_util::BodyExt;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tower::ServiceExt;
@@ -290,7 +291,7 @@ async fn status_reports_the_active_mode_and_endpoints() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
     let status: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(status["mode"], "modify");
     assert_eq!(status["gsmtapForward"], forward);
@@ -425,7 +426,7 @@ async fn stylesheet_entry_point_and_imported_assets_are_served() {
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK, "{path}");
         assert_eq!(response.headers()["content-type"], "text/css", "{path}");
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body = response.into_body().collect().await.unwrap().to_bytes();
         let body = String::from_utf8(body.to_vec()).unwrap();
         assert!(body.contains(expected_content), "{path}");
     }
@@ -527,7 +528,7 @@ async fn packet_api_returns_bounded_recent_pages_in_chronological_order() {
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         serde_json::from_slice::<Vec<serde_json::Value>>(
-            &hyper::body::to_bytes(response.into_body()).await.unwrap(),
+            &response.into_body().collect().await.unwrap().to_bytes(),
         )
         .unwrap()
         .into_iter()
@@ -707,7 +708,7 @@ async fn forward_packets_handles_unknown_ids_and_transmits_valid_packets() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(
         json["results"],

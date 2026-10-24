@@ -56,11 +56,14 @@ pub fn build_router_with_runtime(
     router
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
-        .route("/controllers/:asset", get(api::conversion_javascript))
-        .route("/services/:asset", get(api::conversion_javascript))
-        .route("/models/conversion/:asset", get(api::conversion_javascript))
+        .route("/controllers/{asset}", get(api::conversion_javascript))
+        .route("/services/{asset}", get(api::conversion_javascript))
         .route(
-            "/components/conversion/:asset",
+            "/models/conversion/{asset}",
+            get(api::conversion_javascript),
+        )
+        .route(
+            "/components/conversion/{asset}",
             get(api::conversion_javascript),
         )
         .route(
@@ -179,13 +182,13 @@ pub fn build_router_with_runtime(
         )
         .route("/api/events", get(api::events))
         .route("/api/encode-send", axum::routing::post(api::encode_send))
-        .route("/api/packets/:id/replay", axum::routing::post(api::replay))
+        .route("/api/packets/{id}/replay", axum::routing::post(api::replay))
         .route(
-            "/api/packets/:id/modify-send",
+            "/api/packets/{id}/modify-send",
             axum::routing::post(api::modify_send),
         )
         .route(
-            "/api/packets/:id/modify-preview",
+            "/api/packets/{id}/modify-preview",
             axum::routing::post(api::modify_preview),
         )
         .with_state(state)
@@ -208,9 +211,8 @@ pub async fn run(
     let http_listen = config.http_listen;
 
     let http = async move {
-        axum::Server::bind(&http_listen)
-            .serve(router.into_make_service())
-            .await
+        let listener = tokio::net::TcpListener::bind(http_listen).await?;
+        axum::serve(listener, router).await
     };
     http.await?;
     Ok(())

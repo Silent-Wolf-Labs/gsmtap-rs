@@ -8,6 +8,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use http_body_util::BodyExt;
 use std::sync::Arc;
 use tokio::{
     sync::Notify,
@@ -189,7 +190,7 @@ async fn capture_endpoint_is_idempotent_and_status_reflects_it() {
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
-        let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+        let body = response.into_body().collect().await.unwrap().to_bytes();
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["capturePaused"], paused);
     }
