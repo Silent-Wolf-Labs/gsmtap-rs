@@ -3,6 +3,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use std::sync::Arc;
 use tower::ServiceExt;
@@ -46,7 +47,7 @@ async fn post_to(router: &Router, path: &str, request: Value) -> (StatusCode, Va
         .await
         .unwrap();
     let status = response.status();
-    let bytes = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let bytes = response.into_body().collect().await.unwrap().to_bytes();
     (
         status,
         serde_json::from_slice(&bytes).unwrap_or(Value::Null),

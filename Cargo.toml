@@ -38,7 +38,7 @@ osmocore = ["dep:osmocore-rs"]
 
 [dependencies]
 osmocore-rs = { version = "0.1.0", path = "../libosmocore-rs/osmocore-rs", optional = true }
-axum = { version = "0.6", features = ["json", "macros"] }
+axum = { version = "0.8", features = ["json", "macros"] }
 clap = { version = "4.5", features = ["derive", "env"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -46,6 +46,6 @@ tokio = { version = "1.28", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 
 [dev-dependencies]
-hyper = "0.14"
+http-body-util = "0.1"
 proptest = "1"
-tower = { version = "0.4", features = ["util"] }
+tower = { version = "0.5", features = ["util"] }

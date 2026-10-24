@@ -1,5 +1,6 @@
 use super::super::{config::Mode, dto::from_decoded, network::receive_loop};
 use super::{config, socket, store, wait_for_records};
+use http_body_util::BodyExt;
 use std::sync::Arc;
 use tower::ServiceExt;
 
@@ -72,7 +73,7 @@ async fn relay_batch_forwarding_records_errors_and_increments_counters() {
         .await
         .unwrap();
     assert_eq!(response.status(), axum::http::StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(
         json["results"][0]["status"]

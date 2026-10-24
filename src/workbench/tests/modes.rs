@@ -7,6 +7,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use http_body_util::BodyExt;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tower::ServiceExt;
@@ -56,7 +57,7 @@ async fn listen_mode_receives_without_allowing_transmission() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(json[0]["direction"], "RX");
     assert_eq!(
@@ -259,7 +260,7 @@ async fn modify_preview_does_not_transmit() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::OK);
-    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body = response.into_body().collect().await.unwrap().to_bytes();
     let preview: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(preview["originalDecoded"]["headerLengthBytes"], 16);
     assert_eq!(preview["modifiedDecoded"]["payloadHex"], "CA");
