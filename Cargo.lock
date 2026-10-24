@@ -316,7 +316,7 @@ dependencies = [
  "axum",
  "clap",
  "hyper",
- "libosmocore-rs",
+ "osmocore-rs",
  "proptest",
  "serde",
  "serde_json",
@@ -413,10 +413,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
 
 [[package]]
-name = "libosmocore-rs"
-version = "0.1.0"
-
-[[package]]
 name = "linux-raw-sys"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -486,6 +482,10 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "osmocore-rs"
+version = "0.1.0"
 
 [[package]]
 name = "parking_lot"

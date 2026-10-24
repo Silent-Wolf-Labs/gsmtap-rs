@@ -2,7 +2,7 @@
 name = "gsmtap-rs"
 version = "0.1.1"
 edition = "2021"
-rust-version = "1.85"
+rust-version = "1.99"
 description = "Rust GSMTAP implementation and libosmocore conversion-validation harness"
 license = "Apache-2.0"
 repository = "https://github.com/Silent-Wolf-Labs/gsmtap-rs"
@@ -32,8 +32,12 @@ exclude = [
 [lib]
 path = "src/lib.rs"
 
+[features]
+# Workbench conversion panels backed by the GPL-3.0-or-later osmocore-rs crate.
+osmocore = ["dep:osmocore-rs"]
+
 [dependencies]
-libosmocore-rs = { version = "0.1.0", path = "vendor/libosmocore-rs" }
+osmocore-rs = { version = "0.1.0", path = "../libosmocore-rs/osmocore-rs", optional = true }
 axum = { version = "0.6", features = ["json", "macros"] }
 clap = { version = "4.5", features = ["derive", "env"] }
 serde = { version = "1", features = ["derive"] }

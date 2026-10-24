@@ -141,6 +141,7 @@ export function createAppController(documentRef = document, dependencies = {}) {
     currentStatus = status;
     activeMode = status.mode;
     modePanel.applyStatus(status);
+    if (Array.isArray(status.conversionTools)) navigation.restrict(status.conversionTools);
     packetHistory.setMode(status.mode);
     sendSectionNode.hidden = activeMode !== 'modify';
     if (modeChanged) modifyPanel.resetSelection();

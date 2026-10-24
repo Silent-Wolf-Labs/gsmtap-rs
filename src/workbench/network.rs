@@ -4,11 +4,12 @@ use axum::{routing::get, Router};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc};
 
+#[cfg(feature = "osmocore")]
+use super::conversions;
 use super::{
     api::{self, AppState},
     capture::CaptureControl,
     config::{Config, Mode},
-    conversions,
     dto::{from_decoded, from_error},
     history::PacketStore,
     runtime::RuntimeHandle,
@@ -49,31 +50,10 @@ pub fn build_router_with_runtime(
         capture,
         runtime,
     };
-    Router::new()
-        .route(
-            "/api/conversions/base64",
-            axum::routing::post(conversions::base64::base64).layer(
-                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
-            ),
-        )
-        .route(
-            "/api/conversions/bits",
-            axum::routing::post(conversions::bits::bits).layer(
-                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
-            ),
-        )
-        .route(
-            "/api/conversions/bcd",
-            axum::routing::post(conversions::bcd::bcd).layer(axum::extract::DefaultBodyLimit::max(
-                conversions::MAX_REQUEST_BYTES,
-            )),
-        )
-        .route(
-            "/api/conversions/hexparse",
-            axum::routing::post(conversions::hexparse::hexparse).layer(
-                axum::extract::DefaultBodyLimit::max(conversions::MAX_REQUEST_BYTES),
-            ),
-        )
+    let router = Router::new();
+    #[cfg(feature = "osmocore")]
+    let router = conversions::routes(router);
+    router
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
         .route("/controllers/:asset", get(api::conversion_javascript))

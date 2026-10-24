@@ -31,6 +31,7 @@ fn store() -> Arc<PacketStore> {
 mod api;
 mod capture;
 mod config;
+#[cfg(feature = "osmocore")]
 mod conversions;
 mod forwarding;
 mod history;

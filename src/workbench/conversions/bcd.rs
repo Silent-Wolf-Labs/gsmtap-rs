@@ -20,7 +20,8 @@ struct BcdOptions {
 }
 
 pub async fn bcd(Json(request): Json<BcdRequest>) -> Result<Json<ConversionResult>, ApiError> {
-    use libosmocore_rs::bcd::{osmo_bcd2char, osmo_bcd2str, osmo_char2bcd, osmo_str2bcd, BcdError};
+    use osmocore_rs::bcd::{nibble_to_char, BcdError};
+    use osmocore_rs::compat::bcd::{osmo_bcd2str, osmo_char2bcd, osmo_str2bcd};
     let operation = match request.operation.as_str() {
         "char2bcd" => "char2bcd",
         "bcd2char" => "bcd2char",
@@ -38,7 +39,7 @@ pub async fn bcd(Json(request): Json<BcdRequest>) -> Result<Json<ConversionResul
         let value = if operation == "char2bcd" {
             osmo_char2bcd(source[0])
         } else {
-            osmo_bcd2char(source[0])
+            nibble_to_char(source[0])
                 .ok_or_else(|| bad_request("BCD nibble must be between 00 and 0F."))?
         };
         return Ok(Json(ConversionResult {
