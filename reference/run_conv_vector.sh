@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -65,18 +64,6 @@ if mode == '--verify':
 
 with tempfile.TemporaryDirectory(prefix='conv-evidence-') as tmp:
     work = Path(tmp)
-    # These exact source excerpts are fixture-only; the entire source is pinned.
-    source = (root / 'tests/conv/conv_test.c').read_text()
-    tables = source[source.index('static const uint8_t conv_gmr1'):source.index('/**\n * LTE PBCH')]
-    vectors = []
-    for key, label in [('conv_gmr1_tch3_speech', 'gmr'), ('conv_wimax_fch', 'wimax')]:
-        block = source[source.index('.code = &' + key):]
-        for direction in ('in', 'out'):
-            match = re.search(r'\.vec_' + direction + r'\s*=\s*\{([^}]+)\}', block)
-            if not match:
-                sys.exit('Upstream vector extraction failed')
-            vectors.append('static const uint8_t upstream_' + label + '_' + direction + '[] = {' + match[1] + '};\n')
-    (work / 'conv_upstream.h').write_text(tables + '\n' + ''.join(vectors))
     cc = ['cc', '-std=gnu11', '-O1', '-g', '-Wall', '-Wextra', '-Werror',
           '-I' + str(work), '-I' + str(root), '-isystem', str(root / 'include'),
           '-I' + str(root / 'src/core')]

@@ -13,7 +13,6 @@
 #else
 int osmo_conv_decode_acc(const struct osmo_conv_code *, const sbit_t *, ubit_t *);
 #endif
-#include "conv_upstream.h"
 
 #define CAP 8192
 #define MAX_AE 0x00ffffff
@@ -431,17 +430,21 @@ int main(int argc, char **argv)
 	/* Safely rejected accelerated length zero, including public dispatch. */
 	struct osmo_conv_code zero = make_code(2, 5, 0, CONV_TERM_TRUNCATION, 1, 0);
 	descriptor("zero-acc", &zero); run_case(&zero, "zero-acc", input, 0, 0);
-	for (int v = 0; v < 2; v++) {
-		const struct osmo_conv_code *c = v ? &conv_wimax_fch : &conv_gmr1_tch3_speech;
-		const uint8_t *packed = v ? upstream_wimax_in : upstream_gmr_in;
-		const uint8_t *expected = v ? upstream_wimax_out : upstream_gmr_out;
-		uint8_t encoded[CAP];
-		for (int i = 0; i < c->len; i++) input[i] = (packed[i / 8] >> (7 - i % 8)) & 1;
-		int count = osmo_conv_encode(c, input, encoded);
-		for (int i = 0; i < count; i++) assert(encoded[i] == ((expected[i / 8] >> (7 - i % 8)) & 1));
-		descriptor(v ? "upstream-wimax" : "upstream-gmr", c);
+	/* Independently selected synthetic replacements, not protocol vectors.
+	 * K=7 gives the existing mathematical masks 0x45 and 0x43. Both
+	 * length-97 inputs use a new LCG seed; only puncturing differs. */
+	for (int punctured = 0; punctured < 2; punctured++) {
+		struct osmo_conv_code c = make_code(2, 7, 97, CONV_TERM_FLUSH, punctured ? 2 : 0, 0);
+		uint32_t seed = 0x8f32d6a1;
+		memset(input, 0, sizeof(input));
+		for (int i = 0; i < c.len; i++) {
+			seed = seed * 1664525u + 1013904223u;
+			input[i] = seed >> 31;
+		}
+		snprintf(cid, sizeof(cid), "synthetic-rate2-k7-l97-%s", punctured ? "punctured" : "unpunctured");
+		descriptor(cid, &c);
 		for (int mode = 0; mode < 6; mode++) {
-			snprintf(id, sizeof(id), "%s-s%d", code_id, mode); run_case(c, id, input, mode, mode == 0);
+			snprintf(id, sizeof(id), "%s-s%d", cid, mode); run_case(&c, id, input, mode, mode == 0);
 		}
 	}
 	return 0;

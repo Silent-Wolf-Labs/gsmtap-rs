@@ -39,7 +39,6 @@
     "include/osmocom/core/Makefile.am": "3474af2d135857e1da1814fbae33aff8b24292d7d740041d4454cdf72c49e83e",
     "tests/conv/conv.c": "02518ac877c7a6f1c5b3922c80e8a5201dbba15514a6d0f6c6632394cd6d6650",
     "tests/conv/conv.h": "581ad648a971947e88aea7c7e72a24998ee838baa636abb173f832bd5d306a4d",
-    "tests/conv/conv_test.c": "77db4d20c70f446f614df7b6d75431f86ed531ddc76d597d00c932d672a8437a",
     "src/core/.libs/libosmocore.so.22.4.1": "f452c264ec62f77420e96bfdf3c66a64b40ba025f1c8629ca8c1244bae45bf40"
   }
 }

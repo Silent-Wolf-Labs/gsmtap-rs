@@ -1011,8 +1011,8 @@ C evidence. No vendored crate refresh is needed for independent fixture support.
 ## Convolutional evidence and backend gate
 
 `conv_vector.c` calls all 17 selected core convolutional exports directly.
-`run_conv_vector.sh all` emits 36,254 flat NDJSON records: four metadata,
-1,066 descriptor and 35,184 operation records across 1,707 case identifiers.
+`run_conv_vector.sh all` emits 36,256 flat NDJSON records: four metadata,
+1,066 descriptor and 35,186 operation records across 1,707 case identifiers.
 The linked public dispatcher stream and forced isolated scalar/SSE/AVX streams
 are labeled separately. Snapshots contain semantic state and valid history,
 not C memory layout, addresses or uninitialized allocation bytes. Full inputs
@@ -1027,7 +1027,7 @@ from the pinned sources. Exact-source scalar/SSE/AVX observations remain
 separately identified. The required untracked local
 snapshot has no `.git`; upstream Git revision is `unknown`. Embedded version
 `1.14.1.1-95043` is descriptive, not proof of a revision.
-`conv_provenance.json` pins 34 participating source/header/template/build/version
+`conv_provenance.json` pins 33 participating source/header/template/build/version
 files plus the existing library. `conv_generator_provenance.json` pins the
 harness, runner, reference manifest and schema/coverage. Missing or mismatched
 files, unpinned transitive project includes and external library aliases fail
@@ -1036,7 +1036,7 @@ closed. No system library or other checkout is substituted.
 The matrix covers small exhaustive input, larger seeded/structured patterns,
 rates `1,2,3,4,5,8,9`, constraints `2,3,5,7,9,10`, termination `0,1,2,42`,
 recursion, puncturing, soft erasures/noise/ties/`-128`, normalization boundaries,
-state reuse/reset/rewind and GMR/WiMax upstream fixture-only vectors.
+state reuse/reset/rewind and two generated length-97 synthetic replacement cases.
 State loading packs and narrows bits instead of walking transitions. The length
 helper subtracts all puncture entries, even beyond the stream, so it can differ
 from actual write counts and can return defined negative lengths. The approved
@@ -1165,7 +1165,8 @@ for pass in 1 2; do
   cmp "target/conv-stateful-validation/conv.$pass.ndjson" ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_vectors.ndjson || exit
 done
 cmp target/conv-stateful-validation/conv.1.ndjson target/conv-stateful-validation/conv.2.ndjson
-cmp tests/support/conv_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/conv_fixture.rs
+# Readers have the same integrity checks, but rustfmt follows each crate's edition.
+# Evidence and manifests below must match byte-for-byte.
 cmp reference/conv_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_provenance.json
 cmp reference/conv_generator_provenance.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/conv/conv_generator_provenance.json
 ```
@@ -1187,6 +1188,57 @@ and keep temporary exact-source builds inside this repository via `TMPDIR`.
 Review intentional evidence changes before updating shared copies, manifests
 or frozen reader fingerprints. No vendored Rust snapshot refresh,
 workbench endpoint, packet/replay integration or commit is part of this stage.
+
+### Independent synthetic replacement and lineage (2026-10-13)
+
+The replacement cases are `synthetic-rate2-k7-l97-unpunctured` and
+`synthetic-rate2-k7-l97-punctured`, with six soft modes each. Their parameters
+were independently selected for this test using the existing local synthetic
+rule, not copied from another upstream or standard vector and not chosen to
+recreate the removed protocol tables. For N=2, K=7 the local rule
+`(1 << (K-1)) | 1 | (j % 2 ? 2 : 4)` gives masks `0x45, 0x43`.
+
+For state `s=0..63` and input `b=0..1`, `register=(s<<1)|b`,
+`next_state=register&63`, and
+`output=(parity(register&0x45)<<1)|parity(register&0x43)`. There are no explicit
+recursive termination tables; flush uses six zero-input steps. The unpunctured
+case has a null puncture list. The punctured case omits raw positions
+`0,3,...,204` in the 206-symbol stream, ending its C list with `-1`.
+
+Both paired cases start a uint32 LCG at the new seed `0x8f32d6a1`; before each
+bit, `seed=(1664525*seed+1013904223) mod 2^32`, then `input=seed>>31`, for 97 bits.
+Their shared hard input SHA-256 is
+`65c593a6bed7222d2c04961409d7953ab0cef862c4df92eb4bebbd9941f878ef`. The new input
+and output tables were checked against the removed cases; neither input matches
+an old vector or its equal-length prefix, and the output tables differ.
+
+Producers in this repository are `reference/conv_vector.c`, `reference/run_conv_vector.sh`,
+`reference/conv_provenance.json`, and `reference/conv_generator_provenance.json`.
+The existing mathematical helper generates descriptors and inputs only. Direct
+local C calls produce encoding/decoding results, metrics, history, returns and
+buffer observations. Rust never supplies expected encode/decode outputs.
+Conversion-repository consumers are the three `tests/conv/conv_{encoder,decoder,correlation}.rs` replays,
+`tests/conv/conv_reference_vectors.rs` and `tests/support/conv_fixture.rs`, plus
+this repository's `tests/conv_reference_vectors.rs` and `tests/support/conv_fixture.rs`.
+Both repositories retain identical NDJSON and provenance-manifest bytes.
+
+Two full focused generations matched byte-for-byte across linked dispatch and
+isolated scalar/SSE/AVX. All unrelated descriptor/operation records are unchanged;
+only the two replacement families and producer metadata changed. The existing
+recursive/systematic and tail-biting cases remain. Isolated sanitizer audits
+passed, including the separate excluded UB diagnostics; linked-library
+instrumentation and NEON remain outside the claim.
+
+Historically `upstream-gmr` and `upstream-wimax` used GMR-1/WiMAX fragments
+extracted from `libosmocore/tests/conv/conv_test.c`, including packed input and
+expected output arrays. Those active records, assertions, source extraction and
+temporary `conv_upstream.h` were removed. No upstream vector source is read by
+the current runner. The old provenance remains documented without retaining
+copied fixture content. The two protocol cases have been replaced, rather than
+retaining protocol-specific coverage claims.
+
+Use the focused commands above for this replacement. Never run the broad
+reference generator to regenerate unrelated fixtures or rebuild the C checkout.
 
 ## Time and timer evidence (Stages 1–2)
 
