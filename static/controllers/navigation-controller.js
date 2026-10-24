@@ -8,8 +8,19 @@ export function createNavigationController(documentRef = document) {
     if (selector) selector.value = view;
   }
   const onChange = () => select(selector.value);
+  // Hide views the server was built without, falling back to packets.
+  function restrict(views) {
+    const allowed = new Set(['packets', ...views]);
+    for (const option of selector?.options ?? []) {
+      option.hidden = !allowed.has(option.value);
+      option.disabled = option.hidden;
+    }
+    const current = selector?.value ?? panels.find(panel => !panel.hidden)?.dataset.workbenchView;
+    if (!allowed.has(current)) select('packets');
+  }
   return {
     select,
+    restrict,
     start() {
       if (started || !selector) return;
       started = true;

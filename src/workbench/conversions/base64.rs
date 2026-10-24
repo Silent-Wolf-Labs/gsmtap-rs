@@ -21,7 +21,7 @@ struct Base64Options {
 pub async fn base64(
     Json(request): Json<Base64Request>,
 ) -> Result<Json<ConversionResult>, ApiError> {
-    use libosmocore_rs::base64::{
+    use osmocore_rs::compat::base64::{
         osmo_base64_decode, osmo_base64_encode, BASE64_BUFFER_TOO_SMALL, BASE64_INVALID_INPUT,
     };
     let operation = match request.operation.as_str() {

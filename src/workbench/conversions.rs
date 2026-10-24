@@ -1,6 +1,6 @@
 //! Bounded HTTP adapters for the sibling crate's conversion APIs.
 
-use axum::{http::StatusCode, Json};
+use axum::{http::StatusCode, Json, Router};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -10,6 +10,34 @@ pub const MAX_BUFFER_BYTES: usize = 65_536;
 const MAX_SOURCE_BYTES: usize = MAX_BUFFER_BYTES * 3;
 pub const MAX_REQUEST_BYTES: usize = 2 * 1024 * 1024;
 type ApiError = (StatusCode, String);
+
+/// Adds the bounded conversion endpoints to the workbench router.
+pub fn routes<S>(router: Router<S>) -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    router
+        .route(
+            "/api/conversions/base64",
+            axum::routing::post(base64::base64)
+                .layer(axum::extract::DefaultBodyLimit::max(MAX_REQUEST_BYTES)),
+        )
+        .route(
+            "/api/conversions/bits",
+            axum::routing::post(bits::bits)
+                .layer(axum::extract::DefaultBodyLimit::max(MAX_REQUEST_BYTES)),
+        )
+        .route(
+            "/api/conversions/bcd",
+            axum::routing::post(bcd::bcd)
+                .layer(axum::extract::DefaultBodyLimit::max(MAX_REQUEST_BYTES)),
+        )
+        .route(
+            "/api/conversions/hexparse",
+            axum::routing::post(hexparse::hexparse)
+                .layer(axum::extract::DefaultBodyLimit::max(MAX_REQUEST_BYTES)),
+        )
+}
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

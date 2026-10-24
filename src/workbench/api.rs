@@ -45,7 +45,14 @@ pub struct StatusResponse {
     pub receive_state: &'static str,
     pub capture_paused: bool,
     pub stats: RuntimeStats,
+    pub conversion_tools: &'static [&'static str],
 }
+
+/// Conversion panels served by this build; empty without the `osmocore` feature.
+#[cfg(feature = "osmocore")]
+const CONVERSION_TOOLS: &[&str] = &["hexparse", "bcd", "bits", "base64"];
+#[cfg(not(feature = "osmocore"))]
+const CONVERSION_TOOLS: &[&str] = &[];
 
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -93,6 +100,7 @@ pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
         receive_state: "listening",
         capture_paused: state.capture.is_paused(),
         stats: state.store.counters().snapshot(),
+        conversion_tools: CONVERSION_TOOLS,
     })
 }
 

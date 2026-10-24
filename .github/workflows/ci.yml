@@ -31,11 +31,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.85.0
+          toolchain: 1.99.0
       - run: cargo fmt --check
-      - run: cargo clippy --all-targets --locked
+      - run: cargo clippy --all-targets --all-features --locked
       - run: cargo test --locked
-      - run: cargo build --release --locked
+      - run: cargo test --all-features --locked
+      - run: cargo build --release --all-features --locked
 
   security-audit:
     runs-on: ubuntu-latest
@@ -43,7 +44,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.85.0
+          toolchain: 1.99.0
       - uses: taiki-e/install-action@cargo-audit
       - run: cargo audit
 
@@ -53,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.85.0
+          toolchain: 1.99.0
       - uses: taiki-e/install-action@cargo-deny
       - run: cargo deny check
 
@@ -63,9 +64,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.85.0
+          toolchain: 1.99.0
       - uses: taiki-e/install-action@cargo-auditable
-      - run: cargo auditable build --release --locked
+      - run: cargo auditable build --release --all-features --locked
 
   container:
     runs-on: ubuntu-latest

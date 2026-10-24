@@ -19,8 +19,8 @@ struct BitsOptions {
 }
 
 pub async fn bits(Json(request): Json<BitsRequest>) -> Result<Json<ConversionResult>, ApiError> {
-    use libosmocore_rs::bits::{
-        osmo_pbit2ubit, osmo_pbit2ubit_ext, osmo_ubit2pbit, osmo_ubit2pbit_ext, BitError,
+    use osmocore_rs::bits::{
+        pack_into, pack_into_offset, unpack_into, unpack_into_offset, BitError,
     };
     let operation = match request.operation.as_str() {
         "pack" => "pack",
@@ -94,9 +94,9 @@ pub async fn bits(Json(request): Json<BitsRequest>) -> Result<Json<ConversionRes
     let mut destination = request.destination.bytes()?;
     let initial_destination_hex = hex(&destination);
     let converted = match operation {
-        "pack" => osmo_ubit2pbit(&mut destination, &source, options.num_bits),
-        "unpack" => osmo_pbit2ubit(&mut destination, &source, options.num_bits),
-        "pack-ext" => osmo_ubit2pbit_ext(
+        "pack" => pack_into(&mut destination, &source, options.num_bits),
+        "unpack" => unpack_into(&mut destination, &source, options.num_bits),
+        "pack-ext" => pack_into_offset(
             &mut destination,
             output,
             &source,
@@ -104,7 +104,7 @@ pub async fn bits(Json(request): Json<BitsRequest>) -> Result<Json<ConversionRes
             options.num_bits,
             options.lsb_mode.unwrap_or(false),
         ),
-        _ => osmo_pbit2ubit_ext(
+        _ => unpack_into_offset(
             &mut destination,
             output,
             &source,

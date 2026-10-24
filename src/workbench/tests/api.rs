@@ -292,6 +292,12 @@ async fn status_reports_the_active_mode_and_endpoints() {
     let status: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(status["mode"], "modify");
     assert_eq!(status["gsmtapForward"], forward);
+    let expected_tools: &[&str] = if cfg!(feature = "osmocore") {
+        &["hexparse", "bcd", "bits", "base64"]
+    } else {
+        &[]
+    };
+    assert_eq!(status["conversionTools"], serde_json::json!(expected_tools));
 }
 
 #[tokio::test]

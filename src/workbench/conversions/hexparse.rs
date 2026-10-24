@@ -21,7 +21,7 @@ pub async fn hexparse(
     let source = request.source.bytes()?;
     let mut destination = request.destination.bytes()?;
     let initial_destination_hex = hex(&destination);
-    let converted = libosmocore_rs::hexparse::osmo_hexparse(&source, &mut destination);
+    let converted = osmocore_rs::hexparse::parse_into(&source, &mut destination);
     let return_value = converted.ok();
     let output = return_value.map(|length| &destination[..length]);
     Ok(Json(ConversionResult {

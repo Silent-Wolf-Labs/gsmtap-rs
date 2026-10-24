@@ -1,10 +1,9 @@
-FROM rust:1.85-bookworm AS builder
+FROM rust:1.99-bookworm AS builder
 WORKDIR /build
 COPY Cargo.toml Cargo.lock ./
-COPY vendor ./vendor
 COPY src ./src
 COPY static ./static
-RUN cargo build --release --locked --bin gsmtap-workbench
+RUN cargo build --release --locked --features osmocore --bin gsmtap-workbench
 
 FROM debian:bookworm-slim AS workbench
 RUN apt-get update \

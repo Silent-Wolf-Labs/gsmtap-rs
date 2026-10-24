@@ -31,6 +31,20 @@ test('navigation shows one view and retains each tool input while switching', ()
   navigation.start(); expect(panel('bcd').hidden).toBe(false);
 });
 
+test('navigation hides conversion views the server does not provide', () => {
+  const { navigation } = setup();
+  select('bits');
+  navigation.restrict(['hexparse']);
+  const options = [...document.querySelectorAll('#workbench-view option')];
+  expect(options.filter(option => !option.hidden).map(option => option.value)).toEqual(['packets', 'hexparse']);
+  expect(options.find(option => option.value === 'bits').disabled).toBe(true);
+  expect(document.querySelector('#workbench-view').value).toBe('packets');
+  expect(document.querySelector('[data-workbench-view="packets"]').hidden).toBe(false);
+  expect(panel('bits').hidden).toBe(true);
+  navigation.restrict(['hexparse', 'bcd', 'bits', 'base64']);
+  expect(options.every(option => !option.hidden && !option.disabled)).toBe(true);
+});
+
 test('forms have labeled inputs, disabled conversion buttons, and functional reset', () => {
   const { controller } = setup({ available: false });
   for (const tool of ['hexparse', 'bcd', 'bits', 'base64']) {
@@ -104,5 +118,20 @@ test('packet refresh and mode changes preserve conversion view, form nodes, inpu
   expect(panel('hexparse').querySelector('.conversion-result').textContent).toContain('CA');
   select('packets');
   expect(document.querySelector('[data-workbench-view="packets"]').hidden).toBe(false);
+  app.stop();
+});
+
+test('status without conversion tools limits navigation to packets', async () => {
+  document.documentElement.innerHTML = readFileSync(new URL('../../static/index.html', import.meta.url), 'utf8');
+  const app = createAppController(document, {
+    refreshWorkbench: jest.fn(async () => ({ status: { mode: 'listen', gsmtapListen: '127.0.0.1:4729', gsmtapForward: null, conversionTools: [] }, packets: [] })),
+    subscribeToUpdates: jest.fn(() => jest.fn()),
+    setInterval: jest.fn(() => 1), clearInterval: jest.fn(),
+  });
+  app.start(); select('hexparse'); await app.refresh();
+  const visible = [...document.querySelectorAll('#workbench-view option')].filter(option => !option.hidden);
+  expect(visible.map(option => option.value)).toEqual(['packets']);
+  expect(document.querySelector('[data-workbench-view="packets"]').hidden).toBe(false);
+  expect(panel('hexparse').hidden).toBe(true);
   app.stop();
 });
