@@ -22,7 +22,7 @@ pub async fn base64(
     Json(request): Json<Base64Request>,
 ) -> Result<Json<ConversionResult>, ApiError> {
     use osmocore_rs::compat::base64::{
-        osmo_base64_decode, osmo_base64_encode, BASE64_BUFFER_TOO_SMALL, BASE64_INVALID_INPUT,
+        BASE64_BUFFER_TOO_SMALL, BASE64_INVALID_INPUT, osmo_base64_decode, osmo_base64_encode,
     };
     let operation = match request.operation.as_str() {
         "encode" => "encode",
@@ -88,8 +88,7 @@ pub async fn base64(
             }),
             BASE64_INVALID_INPUT => Some(ConversionError {
                 code: "invalidInput",
-                message:
-                    "Invalid Base64 input. The destination and output-length value are preserved.",
+                message: "Invalid Base64 input. The destination and output-length value are preserved.",
             }),
             _ => None,
         },

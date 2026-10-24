@@ -11,7 +11,7 @@ use axum::{
 use std::sync::Arc;
 use tokio::{
     sync::Notify,
-    time::{sleep, timeout, Duration},
+    time::{Duration, sleep, timeout},
 };
 use tower::ServiceExt;
 
@@ -44,9 +44,11 @@ async fn paused_capture_counts_traffic_without_history_or_sse() {
     .unwrap();
     assert_eq!(store.counters().snapshot().capture_skipped, 1);
     assert!(store.list().await.is_empty());
-    assert!(timeout(Duration::from_millis(30), events.recv())
-        .await
-        .is_err());
+    assert!(
+        timeout(Duration::from_millis(30), events.recv())
+            .await
+            .is_err()
+    );
     task.abort();
 }
 

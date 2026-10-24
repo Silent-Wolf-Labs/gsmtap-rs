@@ -1,8 +1,6 @@
 //! Frozen adapter inputs and strict C fixture schema. No outcomes generated here.
-#[allow(dead_code)]
-#[path = "bitvec_fixture.rs"]
-mod primitive;
-pub use primitive::{number, Record};
+use crate::bitvec_fixture as primitive;
+pub use primitive::{Record, number};
 pub const COUNT: usize = 6_757;
 const SEEDS: [u8; 8] = [0, 0xff, 0x2b, 0x80, 0xfe, 0x7f, 0x55, 0xa5];
 const TEXTS: &[(&str, &[u8])] = &[
@@ -55,9 +53,10 @@ const STRINGS: &[&str] = &[
 
 pub fn bytes(hex: &str) -> Vec<u8> {
     assert_eq!(hex.len() % 2, 0);
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..hex.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
@@ -258,11 +257,14 @@ pub fn validated_records(fixture: &str) -> Vec<Record> {
                 assert_eq!(after, before);
                 assert_eq!(rc, 0);
                 assert_eq!(cursor, input.cursor);
-                let chars = input.cursor + input.cursor / 8 + usize::from(input.cursor % 8 != 0);
+                let chars =
+                    input.cursor + input.cursor / 8 + usize::from(!input.cursor.is_multiple_of(8));
                 assert_eq!(io_after[1 + chars], 0);
-                assert!(io_after[1..1 + chars]
-                    .iter()
-                    .all(|b| matches!(b, b' ' | b'0' | b'1')));
+                assert!(
+                    io_after[1..1 + chars]
+                        .iter()
+                        .all(|b| matches!(b, b' ' | b'0' | b'1'))
+                );
                 assert_eq!(io_after[2 + chars..], io_before[2 + chars..]);
             }
             _ => unreachable!(),

@@ -1,7 +1,7 @@
 //! Step 1 evidence integrity only: no Rust-versus-C conversion claim.
 #[path = "support/conv_fixture.rs"]
 mod conv_fixture;
-use conv_fixture::{checks, Fixture};
+use conv_fixture::{Fixture, checks};
 use std::sync::OnceLock;
 
 const VECTORS: &str = include_str!("vectors/conv/conv_vectors.ndjson");

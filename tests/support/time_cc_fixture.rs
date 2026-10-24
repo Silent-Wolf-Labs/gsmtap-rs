@@ -135,7 +135,9 @@ pub fn validate_structure(text: &str) -> Vec<Record> {
     assert_eq!(&counts[..448], &[13; 448]);
     assert_eq!(
         &counts[448..],
-        &[9, 8, 7, 6, 9, 14, 7, 5, 5, 5, 5, 4, 4, 4, 6, 4, 5, 4, 4, 4, 4]
+        &[
+            9, 8, 7, 6, 9, 14, 7, 5, 5, 5, 5, 4, 4, 4, 6, 4, 5, 4, 4, 4, 4
+        ]
     );
     let mut cursor = 0;
     for gran in [0, 1, 2, 3, 10, 1000000, 2147483648000000, u64::MAX] {

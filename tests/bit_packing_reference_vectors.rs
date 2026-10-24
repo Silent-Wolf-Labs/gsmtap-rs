@@ -16,7 +16,7 @@ struct Case {
 }
 
 fn packed_size(bits: usize) -> usize {
-    bits / 8 + usize::from(bits % 8 != 0)
+    bits / 8 + usize::from(!bits.is_multiple_of(8))
 }
 
 // This freezes input construction and case order, not converted output. The
@@ -247,7 +247,7 @@ fn validate_record(record: &Map<String, Value>, expected: &Case) -> Vec<u8> {
         &before[written..],
         "{case} untouched suffix"
     );
-    if expected.packing && bits % 8 != 0 {
+    if expected.packing && !bits.is_multiple_of(8) {
         let unused_mask = (1u8 << (8 - bits % 8)) - 1;
         assert_eq!(
             after[written - 1] & unused_mask,

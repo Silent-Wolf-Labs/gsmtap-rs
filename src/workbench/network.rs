@@ -1,6 +1,6 @@
 use std::{net::SocketAddr, sync::Arc};
 
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc};
 

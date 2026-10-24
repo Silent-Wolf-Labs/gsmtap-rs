@@ -97,19 +97,23 @@ async fn relay_records_valid_and_malformed_datagrams_without_automatic_forwardin
     }
     wait_for_records(&store, 2).await;
     let mut received = [0u8; 64];
-    assert!(tokio::time::timeout(
-        std::time::Duration::from_millis(50),
-        target.recv_from(&mut received)
-    )
-    .await
-    .is_err());
+    assert!(
+        tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            target.recv_from(&mut received)
+        )
+        .await
+        .is_err()
+    );
     let records = store.list().await;
     assert_eq!(records.len(), 2);
     assert!(records.iter().all(|packet| packet.direction == "RX"));
     assert!(records.iter().all(|packet| packet.forward_status.is_none()));
-    assert!(records
-        .iter()
-        .all(|packet| packet.destination.as_deref() == Some(&forward)));
+    assert!(
+        records
+            .iter()
+            .all(|packet| packet.destination.as_deref() == Some(&forward))
+    );
     let stats = store.counters().snapshot();
     assert_eq!(stats.forward_sent, 0);
     assert_eq!(stats.forward_failed, 0);
@@ -231,12 +235,14 @@ async fn modify_mode_rejects_invalid_modification() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
     let mut received = [0u8; 64];
-    assert!(tokio::time::timeout(
-        std::time::Duration::from_millis(50),
-        target.recv_from(&mut received)
-    )
-    .await
-    .is_err());
+    assert!(
+        tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            target.recv_from(&mut received)
+        )
+        .await
+        .is_err()
+    );
 }
 
 #[tokio::test]
@@ -259,12 +265,14 @@ async fn modify_preview_does_not_transmit() {
     assert_eq!(preview["modifiedDecoded"]["payloadHex"], "CA");
     assert_eq!(preview["fieldChanges"][0]["field"], "arfcn");
     let mut received = [0u8; 64];
-    assert!(tokio::time::timeout(
-        std::time::Duration::from_millis(50),
-        target.recv_from(&mut received)
-    )
-    .await
-    .is_err());
+    assert!(
+        tokio::time::timeout(
+            std::time::Duration::from_millis(50),
+            target.recv_from(&mut received)
+        )
+        .await
+        .is_err()
+    );
 }
 
 #[tokio::test]

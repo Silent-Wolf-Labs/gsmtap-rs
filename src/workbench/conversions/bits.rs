@@ -20,7 +20,7 @@ struct BitsOptions {
 
 pub async fn bits(Json(request): Json<BitsRequest>) -> Result<Json<ConversionResult>, ApiError> {
     use osmocore_rs::bits::{
-        pack_into, pack_into_offset, unpack_into, unpack_into_offset, BitError,
+        BitError, pack_into, pack_into_offset, unpack_into, unpack_into_offset,
     };
     let operation = match request.operation.as_str() {
         "pack" => "pack",
@@ -77,7 +77,7 @@ pub async fn bits(Json(request): Json<BitsRequest>) -> Result<Json<ConversionRes
                 _ => {
                     return Err(bad_request(
                         "Bit input accepts only 0, 1, and ASCII whitespace.",
-                    ))
+                    ));
                 }
             }
         }

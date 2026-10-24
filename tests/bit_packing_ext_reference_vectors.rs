@@ -19,8 +19,12 @@ struct Case {
     before: Vec<u8>,
 }
 fn packed(n: usize) -> usize {
-    n / 8 + usize::from(n % 8 != 0)
+    n / 8 + usize::from(!n.is_multiple_of(8))
 }
+#[allow(
+    clippy::too_many_arguments,
+    reason = "mirrors the C harness's case builders"
+)]
 fn case(
     name: String,
     pack: bool,
@@ -50,6 +54,10 @@ fn case(
     }
 }
 // Frozen input construction only. No converted output is generated here.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "mirrors the C harness's case builders"
+)]
 fn patterned(
     name: String,
     pack: bool,
@@ -399,13 +407,13 @@ fn extended_fixture_has_complete_c_observations() {
         } else {
             None
         };
-        if let Some(key) = key {
-            if let Some(previous) = equivalents.insert(key, after.clone()) {
-                assert_eq!(
-                    previous, after,
-                    "source neighbors/truthiness/nonzero mode independence"
-                );
-            }
+        if let Some(key) = key
+            && let Some(previous) = equivalents.insert(key, after.clone())
+        {
+            assert_eq!(
+                previous, after,
+                "source neighbors/truthiness/nonzero mode independence"
+            );
         }
     }
 }

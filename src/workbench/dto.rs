@@ -175,7 +175,7 @@ pub fn parse_hex(input: &str) -> Result<Vec<u8>, String> {
     if !compact.is_ascii() {
         return Err("hex input must contain only ASCII characters".into());
     }
-    if compact.len() % 2 != 0 {
+    if !compact.len().is_multiple_of(2) {
         return Err("hex input must contain complete bytes".into());
     }
     (0..compact.len())

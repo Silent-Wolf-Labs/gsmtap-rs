@@ -1,9 +1,7 @@
 //! Strict schema and frozen C input manifest for fields/search/runs/shifts/arrays.
 //! This constructs inputs only; expected outcomes come from direct C calls.
-#[allow(dead_code)]
-#[path = "bitvec_fixture.rs"]
-mod primitive;
-pub use primitive::{number, Record};
+use crate::bitvec_fixture as primitive;
+pub use primitive::{Record, number};
 pub const COUNT: usize = 38_643;
 const WIDTHS: &[u32] = &[
     0,
@@ -58,9 +56,10 @@ const STRINGS: &[&str] = &[
 
 pub fn bytes(hex: &str) -> Vec<u8> {
     assert_eq!(hex.len(), 16, "eight-byte backing array");
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..16)
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
@@ -69,9 +68,10 @@ pub fn bytes(hex: &str) -> Vec<u8> {
 
 pub fn word(hex: &str) -> u64 {
     assert_eq!(hex.len(), 16);
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     u64::from_str_radix(hex, 16).unwrap()
 }
 
@@ -105,7 +105,7 @@ fn safe_read(len: usize, pattern: usize, index: u32, n: u32) -> bool {
     let data = initial(pattern);
     for i in 0..n {
         let pos = index + i;
-        if data[pos as usize / 8] & (1 << (7 - pos % 8)) != 0 && n - i - 1 >= 64 {
+        if data[pos as usize / 8] & (1 << (7 - pos % 8)) != 0 && n - i > 64 {
             return false;
         }
     }

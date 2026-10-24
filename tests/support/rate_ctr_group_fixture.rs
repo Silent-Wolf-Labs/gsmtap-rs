@@ -62,9 +62,10 @@ fn string(s: &str) -> Option<Vec<u8>> {
     }
     let hex = s.strip_prefix("s:").unwrap();
     assert_eq!(hex.len() % 2, 0);
-    assert!(hex
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        hex.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     let bytes: Vec<_> = (0..hex.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
@@ -253,9 +254,11 @@ pub fn corruptions(text: &str, reference: &str, generator: &str, diagnostics: &s
             native.to_owned(),
         ];
         files[i].push(' ');
-        assert!(std::panic::catch_unwind(|| integrity(
-            &files[0], &files[1], &files[2], &files[3], &files[4]
-        ))
-        .is_err());
+        assert!(
+            std::panic::catch_unwind(|| integrity(
+                &files[0], &files[1], &files[2], &files[3], &files[4]
+            ))
+            .is_err()
+        );
     }
 }

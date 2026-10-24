@@ -15,9 +15,10 @@ pub fn signed(r: &Record, key: &str) -> i32 {
 }
 pub fn bytes(text: &str) -> Vec<u8> {
     assert_eq!(text.len() % 2, 0);
-    assert!(text
-        .bytes()
-        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)));
+    assert!(
+        text.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
     (0..text.len())
         .step_by(2)
         .map(|i| u8::from_str_radix(&text[i..i + 2], 16).unwrap())

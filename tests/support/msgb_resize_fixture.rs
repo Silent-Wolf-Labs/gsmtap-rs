@@ -1,9 +1,7 @@
 //! Shared frozen copy/resize inputs and strict integrity checks; no observations generated.
-#[allow(dead_code)]
-#[path = "msgb_fixture.rs"]
-mod primitive;
-pub use primitive::{bytes, number, words, Record};
-use primitive::{parse, schema, state, HASHES, STATES};
+use crate::msgb_fixture as primitive;
+use primitive::{HASHES, STATES, parse, schema, state};
+pub use primitive::{Record, bytes, number, words};
 pub const COUNT: usize = 8_888;
 const EXTRA_HASHES: &[(&str, &str)] = &[
     (

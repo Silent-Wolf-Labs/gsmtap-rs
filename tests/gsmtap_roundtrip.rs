@@ -1,4 +1,4 @@
-use gsmtap_rs::gsmtap::{parse, GsmtapEncodeInput, GsmtapHeader};
+use gsmtap_rs::gsmtap::{GsmtapEncodeInput, GsmtapHeader, parse};
 use proptest::prelude::*;
 
 // Rust-owned invariants. C-backed encoder evidence lives in

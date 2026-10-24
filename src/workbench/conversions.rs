@@ -1,6 +1,6 @@
 //! Bounded HTTP adapters for the sibling crate's conversion APIs.
 
-use axum::{http::StatusCode, Json, Router};
+use axum::{Json, Router, http::StatusCode};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 

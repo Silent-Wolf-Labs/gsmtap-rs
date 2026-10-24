@@ -77,13 +77,12 @@ impl Config {
         {
             return Err(format!("--gsmtap-forward is required in {:?} mode", mode));
         }
-        if let Some(destination) = gsmtap_forward.as_deref() {
-            if destination
+        if let Some(destination) = gsmtap_forward.as_deref()
+            && destination
                 .parse::<SocketAddr>()
                 .is_ok_and(|address| address.is_ipv6())
-            {
-                return Err("the workbench currently supports IPv4 forwarding only".into());
-            }
+        {
+            return Err("the workbench currently supports IPv4 forwarding only".into());
         }
         Ok(Self {
             mode,
@@ -131,32 +130,38 @@ mod tests {
 
     #[test]
     fn all_constructors_enforce_forward_and_ipv4_invariants() {
-        assert!(Config::from_values(
-            Mode::Relay,
-            "127.0.0.1:4729".parse().unwrap(),
-            None,
-            "127.0.0.1:8080".parse().unwrap(),
-            8,
-            16,
-        )
-        .is_err());
-        assert!(Config::from_values(
-            Mode::Listen,
-            "[::1]:4729".parse().unwrap(),
-            None,
-            "127.0.0.1:8080".parse().unwrap(),
-            8,
-            16,
-        )
-        .is_err());
-        assert!(Config::from_values(
-            Mode::Relay,
-            "127.0.0.1:4729".parse().unwrap(),
-            Some("[::1]:9000".into()),
-            "127.0.0.1:8080".parse().unwrap(),
-            8,
-            16,
-        )
-        .is_err());
+        assert!(
+            Config::from_values(
+                Mode::Relay,
+                "127.0.0.1:4729".parse().unwrap(),
+                None,
+                "127.0.0.1:8080".parse().unwrap(),
+                8,
+                16,
+            )
+            .is_err()
+        );
+        assert!(
+            Config::from_values(
+                Mode::Listen,
+                "[::1]:4729".parse().unwrap(),
+                None,
+                "127.0.0.1:8080".parse().unwrap(),
+                8,
+                16,
+            )
+            .is_err()
+        );
+        assert!(
+            Config::from_values(
+                Mode::Relay,
+                "127.0.0.1:4729".parse().unwrap(),
+                Some("[::1]:9000".into()),
+                "127.0.0.1:8080".parse().unwrap(),
+                8,
+                16,
+            )
+            .is_err()
+        );
     }
 }

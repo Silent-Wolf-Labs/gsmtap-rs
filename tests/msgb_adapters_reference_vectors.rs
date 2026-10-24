@@ -1,5 +1,8 @@
 #[path = "support/msgb_adapters_fixture.rs"]
 mod fixture;
+#[allow(dead_code)]
+#[path = "support/msgb_fixture.rs"]
+mod msgb_fixture;
 const FIXTURE: &str = include_str!("vectors/msgb/msgb_adapters_vectors.json");
 #[test]
 fn validates_remaining_adapter_observations_and_frozen_coverage() {

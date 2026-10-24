@@ -211,16 +211,46 @@ pub fn validate_structure(text: &str) -> Vec<Record> {
     }
     // Frozen event identities protect scenario coverage without a scheduler model.
     const EVENTS: &[(&str, &str)] = &[
-        ("batch_order", "before:-1:0 callback:1:0 callback:0:0 callback:2:0 after:-1:0 second:-1:0 clean:-1:0"),
-        ("nested_empty", "before:-1:0 callback:0:0 nested_enter:0:1 nested_exit:0:1 after:-1:0 second:-1:0 clean:-1:0"),
-        ("nested_immediate", "before:-1:0 callback:0:0 nested_enter:0:1 callback:2:1 nested_exit:0:1 after:-1:0 second:-1:0 clean:-1:0"),
-        ("prepare_during_dispatch", "before:-1:0 callback:0:0 prepared:0:0 prepared_future:0:0 after:-1:0 second:-1:0 clean:-1:0"),
-        ("self_reschedule", "before:-1:0 callback:0:0 after:-1:0 callback:0:0 second:-1:0 clean:-1:0"),
-        ("cancel_peer", "before:-1:0 callback:0:0 after:-1:0 second:-1:0 clean:-1:0"),
-        ("reschedule_peer", "before:-1:0 callback:0:0 after:-1:0 callback:1:0 second:-1:0 clean:-1:0"),
-        ("immediate_deferred", "before:-1:0 callback:0:0 after:-1:0 callback:2:0 second:-1:0 clean:-1:0"),
-        ("replace_self", "before:-1:0 callback:0:0 after:-1:0 replacement:0:0 second:-1:0 clean:-1:0"),
-        ("replace_peer", "before:-1:0 callback:0:0 replacement:1:0 after:-1:0 second:-1:0 clean:-1:0"),
+        (
+            "batch_order",
+            "before:-1:0 callback:1:0 callback:0:0 callback:2:0 after:-1:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "nested_empty",
+            "before:-1:0 callback:0:0 nested_enter:0:1 nested_exit:0:1 after:-1:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "nested_immediate",
+            "before:-1:0 callback:0:0 nested_enter:0:1 callback:2:1 nested_exit:0:1 after:-1:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "prepare_during_dispatch",
+            "before:-1:0 callback:0:0 prepared:0:0 prepared_future:0:0 after:-1:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "self_reschedule",
+            "before:-1:0 callback:0:0 after:-1:0 callback:0:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "cancel_peer",
+            "before:-1:0 callback:0:0 after:-1:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "reschedule_peer",
+            "before:-1:0 callback:0:0 after:-1:0 callback:1:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "immediate_deferred",
+            "before:-1:0 callback:0:0 after:-1:0 callback:2:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "replace_self",
+            "before:-1:0 callback:0:0 after:-1:0 replacement:0:0 second:-1:0 clean:-1:0",
+        ),
+        (
+            "replace_peer",
+            "before:-1:0 callback:0:0 replacement:1:0 after:-1:0 second:-1:0 clean:-1:0",
+        ),
     ];
     for (case, events) in EVENTS {
         for event in events.split_whitespace() {
