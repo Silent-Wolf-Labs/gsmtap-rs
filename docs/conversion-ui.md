@@ -23,14 +23,11 @@ extended pack/unpack operations. Source format can be text, hex bytes, or
 unpacked `0/1` digits for packing. Results show complete destination bytes,
 binary representation for packing, written bit values for unpacking, and a
 paged before/after comparison. Base64 is executable through `POST /api/conversions/base64`, supporting
-encoding, decoding, and decode size probes. Local, CI, and Docker builds use
-`libosmocore-rs` version `0.1.0` from an exact snapshot in `vendor/libosmocore-rs`.
-The source repository is private, so using a Git URL would require credentials
-in both Cargo and Docker. The snapshot records revision
-`25c4bae36a35ca2562e56db384370363ec2a6603` and every source file's SHA-256 hash.
-The sibling project remains the source of API implementations; update the
-snapshot from a reviewed committed revision rather than editing it here.
-Crates.io publication still requires a published conversion dependency.
+encoding, decoding, and decode size probes. All four endpoints call
+`osmocore-rs` and are compiled only with the `osmocore` feature. `GET /api/status`
+lists the available tools in `conversionTools`, and the view selector hides the
+rest. Until osmocore-rs is published, the dependency is a path to the sibling
+checkout at `../libosmocore-rs/osmocore-rs`.
 
 ## Frontend structure
 

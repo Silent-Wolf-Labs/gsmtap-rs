@@ -4,10 +4,19 @@
 
 ## Building
 
-This project requires Rust 1.85 or newer. To build it, run:
+This project requires Rust 1.99 or newer. To build it, run:
 
 ```bash
 cargo build
+```
+
+The optional `osmocore` feature adds the workbench conversion panels, backed by
+[osmocore-rs](https://github.com/Silent-Wolf-Labs/osmocore-rs). Until
+osmocore-rs is published, it is a path dependency on a sibling checkout at
+`../libosmocore-rs/osmocore-rs`:
+
+```bash
+cargo build --features osmocore
 ```
 
 ## Testing
@@ -16,6 +25,7 @@ To run tests, execute:
 
 ```bash
 cargo test
+cargo test --features osmocore
 ```
 
 ## Live web workbench
@@ -23,8 +33,10 @@ cargo test
 Build and run the single-process workbench with:
 
 ```bash
-cargo run --bin gsmtap-workbench
+cargo run --features osmocore --bin gsmtap-workbench
 ```
+
+Without `--features osmocore`, the workbench serves only the packet views.
 
 Open `http://localhost:8080`. Use the status card to change the GSMTAP listen
 address, choose the operating mode, and set a forward target when Relay or
@@ -80,11 +92,9 @@ implemented by the Rust library.
 The **Workbench view** selector opens Hexparse, BCD, Bits, and Base64
 conversion forms. Hexparse, BCD, and Bits support conversion, buffer comparisons, and copy
 controls; Base64 supports encoding, decoding, and decoded-size probes. See [Conversion UI review](docs/conversion-ui.md).
-The conversion dependency is an exact snapshot in `vendor/libosmocore-rs`
-from revision `25c4bae36a35ca2562e56db384370363ec2a6603` of the sibling Rust
-repository. CI and Docker builds use this snapshot without private repository
-credentials. See [snapshot provenance](vendor/libosmocore-rs/README.md).
-Crates.io publication still requires a published conversion dependency.
+These panels require the `osmocore` feature, which the Docker image enables.
+Until osmocore-rs is published to crates.io, Docker and CI builds cannot resolve
+its path dependency.
 
 ### Operating modes
 
@@ -225,13 +235,18 @@ automation compatibility.
 This project is licensed under the Apache License, Version 2.0. See
 [LICENSE](LICENSE) for the full text.
 
+The optional `osmocore` feature links osmocore-rs, which is licensed under
+GPL-3.0-or-later. Binaries and container images built with that feature,
+including the published Docker image, are distributed under GPL-3.0-or-later as
+a whole.
+
 ## Message-buffer stage 1
 
 The dedicated `tests/vectors/msgb/msgb_vectors.json` contains 3,695 direct C
 operation records, with full backing bytes before/after, data/tail offsets,
 length/capacity, layer markers, control words, destination/channel presence,
 query results, and normalized panic/error outcomes. The fixture is identical to
-`../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_vectors.json`.
+`../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_vectors.json`.
 The shared `tests/support/msgb_fixture.rs` validator is identical to the
 conversion crate's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
 order, provenance, ABI, state consistency, sequence continuity, and corruption
@@ -279,8 +294,8 @@ Regenerate and validate from this repository root:
 ```bash
 ./reference/run_msgb_vector.sh > /tmp/msgb_vectors.fresh.json
 cmp /tmp/msgb_vectors.fresh.json tests/vectors/msgb/msgb_vectors.json
-cmp tests/vectors/msgb/msgb_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_vectors.json
-cmp tests/support/msgb_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_fixture.rs
+cmp tests/vectors/msgb/msgb_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_vectors.json
+cmp tests/support/msgb_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -357,8 +372,8 @@ From this repository root, regenerate and verify:
 ```bash
 ./reference/run_msgb_vector.sh --layers > /tmp/msgb_layers.fresh.json
 cmp /tmp/msgb_layers.fresh.json tests/vectors/msgb/msgb_layers_vectors.json
-cmp tests/vectors/msgb/msgb_layers_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_layers_vectors.json
-cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_layers_fixture.rs
+cmp tests/vectors/msgb/msgb_layers_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_layers_vectors.json
+cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_layers_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -440,8 +455,8 @@ From this repository root:
 ```bash
 ./reference/run_msgb_vector.sh --resize > /tmp/msgb_resize.fresh.json
 cmp /tmp/msgb_resize.fresh.json tests/vectors/msgb/msgb_resize_vectors.json
-cmp tests/vectors/msgb/msgb_resize_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_resize_vectors.json
-cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_resize_fixture.rs
+cmp tests/vectors/msgb/msgb_resize_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_resize_vectors.json
+cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_resize_fixture.rs
 ./scripts/generate-reference-vectors.sh
 cargo fmt --check
 cargo test
@@ -549,8 +564,8 @@ Regenerate stage 4 from the testing repository:
 ```bash
 ./reference/run_msgb_vector.sh --adapters > /tmp/msgb_adapters.fresh.json
 cmp /tmp/msgb_adapters.fresh.json tests/vectors/msgb/msgb_adapters_vectors.json
-cmp tests/vectors/msgb/msgb_adapters_vectors.json ../libosmocore-rs/libosmocore-rs/tests/compatibility/vectors/msgb_adapters_vectors.json
-cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/libosmocore-rs/tests/support/msgb_adapters_fixture.rs
+cmp tests/vectors/msgb/msgb_adapters_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_adapters_vectors.json
+cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_adapters_fixture.rs
 ```
 
 `./scripts/generate-reference-vectors.sh` includes all four msgb runners.
@@ -645,7 +660,7 @@ remain unchanged. See
 [reference instructions](reference/README.md#convolutional-evidence-and-backend-gate)
 for non-destructive provenance, ASan/UBSan and twice-regenerated full-matrix
 comparisons, and the sibling
-[compatibility boundary](../libosmocore-rs/libosmocore-rs/src/conv/README.md) for exact
+[compatibility boundary](../libosmocore-rs/osmocore-rs/src/conv/README.md) for exact
 APIs and C edge cases. The local C snapshot has unknown upstream Git revision;
 linked-dispatch evidence pins its existing binary, while isolated scalar/SSE/AVX
 evidence uses separately pinned exact sources. NEON was not executed.
@@ -669,7 +684,7 @@ integration. Stage 4 now implements time_cc; combined Stage 1–4 validation
 covers the approved core scope.
 
 See [reference instructions](reference/README.md#time-and-timer-evidence-stages-12)
-and the sibling [time compatibility guide](../libosmocore-rs/libosmocore-rs/src/time/README.md)
+and the sibling [time compatibility guide](../libosmocore-rs/osmocore-rs/src/time/README.md)
 for provenance, audit and regeneration commands. No vendored crate snapshot,
 workbench endpoint or GSMTAP packet/replay loader was changed for this stage.
 
@@ -683,7 +698,7 @@ crate implements core TDef and replays all records, including safe equivalents
 for failure probes. Parity excludes FSM integration and targets the recorded
 64-bit ABI; 32-bit ULONG_MAX behavior is outside the claim. See
 [reference instructions](reference/README.md#tdef-core-evidence-stage-3) and the
-sibling [time compatibility guide](../libosmocore-rs/libosmocore-rs/src/time/README.md).
+sibling [time compatibility guide](../libosmocore-rs/osmocore-rs/src/time/README.md).
 
 ## Stage 4 time_cc evidence and replay
 
@@ -698,6 +713,6 @@ threshold/report caps, forgetting, delayed callbacks, configuration changes,
 absent sinks, cleanup/reuse, clock failure, zero-time startup, UINT64_MAX no-event
 behavior and selected ABI wrapping/narrowing. See
 [reference instructions](reference/README.md#time_cc-evidence-stage-4) and the
-sibling [compatibility guide](../libosmocore-rs/libosmocore-rs/src/time/README.md).
+sibling [compatibility guide](../libosmocore-rs/osmocore-rs/src/time/README.md).
 FSM/TDef integration and VTY remain deferred. No vendor snapshot or workbench
 endpoint was refreshed.
