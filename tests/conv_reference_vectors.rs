@@ -17,7 +17,12 @@ fn fixture() -> &'static Fixture {
 fn conv_direct_c_evidence_integrity_only() {
     conv_fixture::validate_fingerprint(VECTORS);
     conv_fixture::validate_manifests(REFERENCE, GENERATOR, fixture());
-    assert_eq!(fixture().records.len(), 36254);
+    assert_eq!(fixture().records.len(), 36256);
+}
+
+#[test]
+fn conv_synthetic_replacements_have_generated_parameters_and_inputs() {
+    checks::synthetic_replacements(fixture());
 }
 
 #[test]

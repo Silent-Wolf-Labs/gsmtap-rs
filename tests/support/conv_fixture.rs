@@ -52,14 +52,14 @@ pub fn fingerprint(text: &str) -> u64 {
     })
 }
 
-pub const FIXTURE_FINGERPRINT: u64 = 0x812151ef72dd845a;
-const CASE_FINGERPRINT: u64 = 0x364386dfc0b5b163;
+pub const FIXTURE_FINGERPRINT: u64 = 0xfe1fab4c1d20742f;
+const CASE_FINGERPRINT: u64 = 0xc8bf7e357d2c5f2d;
 const BACKENDS: [&str; 4] = ["linked-dispatch", "scalar", "sse", "avx"];
-const REFERENCE_SHA: &str = "4dd99c1d7e2295064dd76e5e2f0666ac967ba857c804ce824fff97bd624fe40f";
-const GENERATOR_SHA: &str = "58d97159bf76938c20993e5e6cd51e0d1cbf72cee71129d2efc10d1dd1bf9b91";
+const REFERENCE_SHA: &str = "dcc2ab8e2341b5c8ccd7942ac79b34f977d477cdd1c4a95a949a666a963d8067";
+const GENERATOR_SHA: &str = "d74188e6657ff3bb8ae9f412ffcc2a1e4b3d6ff92e623fd81601b3c5450dc5e6";
 const LIBRARY_SHA: &str = "f452c264ec62f77420e96bfdf3c66a64b40ba025f1c8629ca8c1244bae45bf40";
-const HARNESS_SHA: &str = "4522ac48df33d3667be94ef8b4cf2ad55151de2ad716a48b9734291cc48d13f4";
-const RUNNER_SHA: &str = "7eae0e932c63adaff72e0e487da9f2ad90a31d7e9152dc3ca0f219a4102ac194";
+const HARNESS_SHA: &str = "f4ba52b97c1dc2ed12eb620a17cea07e3ee9020edb88be19f6fd4dda76fc9203";
+const RUNNER_SHA: &str = "f2c318dede82f14f8662f09bbaa662cce11266c7b32880bf7dffe2682f67d577";
 const STRINGS: &[&str] = &[
     "type",
     "backend",
@@ -116,16 +116,16 @@ const API_COUNTS: [(&str, usize); 17] = [
     ("get_output_length", 5097),
     ("encode", 1699),
     ("encode_init", 728),
-    ("encode_load_state", 462),
+    ("encode_load_state", 460),
     ("encode_raw", 720),
     ("encode_flush", 720),
     ("decode_init", 664),
-    ("decode_reset", 1353),
+    ("decode_reset", 1357),
     ("decode_deinit", 664),
     ("decode_scan", 1328),
-    ("decode_flush", 224),
+    ("decode_flush", 228),
     ("decode_get_best_end_state", 797),
-    ("decode_get_output", 1895),
+    ("decode_get_output", 1891),
     ("decode_rewind", 332),
     ("decode", 6608),
     ("decode_acc", 6796),
@@ -674,7 +674,7 @@ pub fn validate_records<'a>(records: impl IntoIterator<Item = &'a Record>) {
             _ => unreachable!(),
         }
     }
-    assert_eq!(total, 36254);
+    assert_eq!(total, 36256);
     assert_eq!(meta.len(), 4);
     assert_eq!(codes.len(), 1066);
     assert_eq!(distinct.len(), 1707);
@@ -689,7 +689,7 @@ pub fn validate_records<'a>(records: impl IntoIterator<Item = &'a Record>) {
     assert_eq!(
         backend_counts,
         [
-            ("linked-dispatch", 25131),
+            ("linked-dispatch", 25133),
             ("scalar", 3351),
             ("sse", 3351),
             ("avx", 3351)
@@ -721,8 +721,8 @@ pub fn validate_fingerprint(text: &str) {
 /// Pins complete local manifests and joins their source entries to metadata.
 /// No sibling repository or C installation is needed by ordinary tests.
 pub fn validate_manifests(reference: &str, generator: &str, fixture: &Fixture) {
-    assert_eq!(fingerprint(reference), 0x5cc12c6b195fa1d6);
-    assert_eq!(fingerprint(generator), 0x1a307579c08acc8b);
+    assert_eq!(fingerprint(reference), 0x144cae78eeb44ce8);
+    assert_eq!(fingerprint(generator), 0xca166ee81f8fef3b);
     assert!(reference.contains("\"upstream_git_revision\": \"unknown\""));
     assert!(reference.contains("\"embedded_version_descriptive\": \"1.14.1.1-95043\""));
     assert!(generator.contains(&format!(
@@ -825,6 +825,69 @@ pub fn compare_observation(
 pub mod checks {
     use super::*;
     use std::panic::{catch_unwind, UnwindSafe};
+
+    /// Independently check descriptor/input generation, never decoder outputs.
+    pub fn synthetic_replacements(fixture: &Fixture) {
+        let mut seed = 0x8f32d6a1u32;
+        let input: Vec<_> = (0..97)
+            .map(|_| {
+                seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+                (seed >> 31) as u8
+            })
+            .collect();
+        for backend in BACKENDS {
+            for (suffix, punctured) in [("unpunctured", false), ("punctured", true)] {
+                let id = format!("synthetic-rate2-k7-l97-{suffix}");
+                let code = fixture.descriptor(backend, &id);
+                assert_eq!(
+                    (
+                        unsigned(code, "n"),
+                        unsigned(code, "k"),
+                        signed(code, "len"),
+                        signed(code, "term")
+                    ),
+                    (2, 7, 97, 0)
+                );
+                let states = bytes(&code["next_state"]);
+                let outputs = bytes(&code["next_output"]);
+                for register in 0u32..128 {
+                    assert_eq!(states[register as usize], (register & 63) as u8);
+                    let symbol = (((register & 0x45).count_ones() & 1) << 1)
+                        | ((register & 0x43).count_ones() & 1);
+                    assert_eq!(outputs[register as usize], symbol as u8);
+                }
+                assert!(code["next_term_state"].is_empty());
+                assert!(code["next_term_output"].is_empty());
+                assert_eq!(unsigned(code, "puncture_present"), u32::from(punctured));
+                let punctures = if punctured {
+                    (0..206)
+                        .step_by(3)
+                        .map(|p| p.to_string())
+                        .collect::<Vec<_>>()
+                        .join(";")
+                } else {
+                    String::new()
+                };
+                assert_eq!(code["puncture"], punctures);
+                if backend == "linked-dispatch" {
+                    let encodes: Vec<_> = fixture
+                        .records
+                        .iter()
+                        .filter(|r| {
+                            r["type"] == "op"
+                                && r["backend"] == backend
+                                && r["code"] == id
+                                && r["api"] == "encode"
+                        })
+                        .collect();
+                    assert_eq!(encodes.len(), 6);
+                    for record in encodes {
+                        assert_eq!(bytes(&record["input_before"]), input);
+                    }
+                }
+            }
+        }
+    }
 
     fn rejected(label: &str, check: impl FnOnce() + UnwindSafe) {
         assert!(catch_unwind(check).is_err(), "corruption accepted: {label}");
@@ -1215,7 +1278,7 @@ pub mod checks {
         rejected("reference manifest", || {
             validate_manifests(&bad_reference, generator, fixture)
         });
-        let bad_generator = generator.replacen("35184", "35183", 1);
+        let bad_generator = generator.replacen("35186", "35185", 1);
         rejected("generator coverage manifest", || {
             validate_manifests(reference, &bad_generator, fixture)
         });
