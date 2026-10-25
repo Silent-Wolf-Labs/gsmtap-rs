@@ -159,7 +159,19 @@ impl RuntimeHandle {
         let mode = config.mode;
         let forward = config.gsmtap_forward.clone();
         pipeline_factory.preflight(mode, forward.as_deref())?;
-        let receiver = Arc::new(UdpSocket::bind(config.gsmtap_listen).await?);
+        let receiver = Arc::new(
+            UdpSocket::bind(config.gsmtap_listen)
+                .await
+                .map_err(|error| {
+                    io::Error::new(
+                        error.kind(),
+                        format!(
+                            "cannot listen for GSMTAP on {}: {error}",
+                            config.gsmtap_listen
+                        ),
+                    )
+                })?,
+        );
         let listen_address = receiver.local_addr()?;
         let pipeline = PipelineHandle::start(
             &config,
