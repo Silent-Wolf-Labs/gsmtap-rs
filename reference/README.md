@@ -134,7 +134,7 @@ To verify the committed fixture against a fresh C run without replacing it:
 `bit_packing_vector.c` directly calls `osmo_ubit2pbit()` and
 `osmo_pbit2ubit()`. This scope covers basic MSB-first packing and unpacking.
 Extended variants have their own harness below. Soft-bit conversions and CRC
-helpers remain separate future conversions requiring their own harness support.
+helpers remain separate future work requiring their own harness support.
 No bit-conversion API is added to the GSMTAP library, workbench, or replay tools.
 
 The reference is upstream libosmocore revision
@@ -222,7 +222,7 @@ without building C. It validates the exact schema, provenance, frozen input
 manifest and order, safe backing sizes, return values, complete destinations,
 partial-byte clearing, untouched suffixes, and capacity/source-suffix
 independence. It also checks rejection of corrupt observations and normalized
-zero-bit results. It does not implement Rust conversion APIs.
+zero-bit results. It does not implement Rust APIs.
 
 The coordinated Rust port belongs in the sibling repository's nested crate.
 Its conformance test should compare API return counts and complete destinations
@@ -240,7 +240,7 @@ That fixture and Rust port are coordinated follow-up work, not deliverables
 implemented by this harness-only change. Safe Rust zero-work behavior for
 zero bits, empty or undersized slices, invalid input, and arithmetic limits
 must be documented and tested separately from compatible C observations.
-Testing support completion alone does not complete the Rust conversion.
+Testing support completion alone does not complete the Rust implementation.
 
 ## Extended bit-packing vectors
 
@@ -248,7 +248,7 @@ Testing support completion alone does not complete the Rust conversion.
 `osmo_pbit2ubit_ext()` directly. Expected returns and complete final buffers
 come exclusively from those C calls. The fixture is
 `tests/vectors/bits/bit_packing_ext_vectors.json`; it stays outside the
-nonrecursive packet and replay loaders. No conversion API is added to the
+nonrecursive packet and replay loaders. No bit-packing API is added to the
 GSMTAP library or tools.
 
 The upstream revision and two source hashes are the same as for basic packing
@@ -368,7 +368,7 @@ Its owner should copy this completed JSON unchanged into the nested crate's
 `tests/vectors/bit_packing_ext_vectors.json` and compare it byte-for-byte.
 This task changes only `gsmtap-rs` source, fixtures, documentation and Git state;
 it does not copy files into or implement APIs in the sibling repository.
-Testing support completion is one part of the overall conversion.
+Testing support completion is one part of the overall osmocore-rs work.
 
 ## Base64 workbench reference
 
@@ -419,7 +419,7 @@ uses a substitute C installation.
 The dedicated `tests/vectors/bitvec/bitvec_vectors.json` fixture stays outside
 packet/replay loaders. `tests/bitvec_reference_vectors.rs` validates its schema,
 provenance, frozen inputs/order/count, output types, and untouched backing suffix.
-Its `tests/support/bitvec_fixture.rs` validator must match the conversion
+Its `tests/support/bitvec_fixture.rs` validator must match the osmocore-rs
 repository's `osmocore-rs/tests/support/bitvec_fixture.rs` byte-for-byte.
 Rust-versus-C comparisons belong in the sibling crate. Rust preserves the reference's
 32-bit unsigned tailroom wraparound directly; a separate checked helper validates
@@ -463,7 +463,7 @@ in separate unit tests; it does not generate expected C outcomes.
 inputs/order/count, full buffers and guards in the dedicated
 `tests/vectors/bitvec/bitvec_buffers_vectors.json` fixture. Its shared validator
 and parser, `tests/support/bitvec_buffers_fixture.rs` and `bitvec_fixture.rs`,
-must match the corresponding files in the conversion crate's `tests/support/`.
+must match the corresponding files in osmocore-rs's `tests/support/`.
 The general fixture generation script includes both bit-vector runners.
 
 From this repository root:
@@ -498,7 +498,7 @@ The dedicated `tests/vectors/bitvec/bitvec_operations_vectors.json` file stays
 outside packet/replay loading. `tests/bitvec_operations_reference_vectors.rs`
 checks strict schema/provenance and the frozen input manifest through
 `tests/support/bitvec_operations_fixture.rs`. The shared validator and its
-`bitvec_fixture.rs` parser must match the conversion crate's `tests/support/` copies.
+`bitvec_fixture.rs` parser must match osmocore-rs's `tests/support/` copies.
 C input filters avoid undefined storage accesses and shifts; unsafe-call handling
 belongs in Rust safety tests. C field-read errno is represented by explicit Rust
 errors; Rust does not reproduce the global errno side effect.
@@ -537,7 +537,7 @@ terminators are checked. The formatting harness allocates the actual
 The fixture is isolated in `tests/vectors/bitvec/bitvec_adapters_vectors.json`.
 `tests/bitvec_adapters_reference_vectors.rs` validates its strict schema and
 frozen input manifest through `tests/support/bitvec_adapters_fixture.rs`; that
-validator and its shared `bitvec_fixture.rs` parser must match the conversion
+validator and its shared `bitvec_fixture.rs` parser must match the osmocore-rs
 crate's `tests/support/` copies. Unsafe short buffers/invalid cursor errors belong
 in Rust safety tests, not C observations.
 
@@ -563,8 +563,8 @@ operation records, with full backing bytes before/after, data/tail offsets,
 length/capacity, layer markers, control words, destination/channel presence,
 query results, and normalized panic/error outcomes. The fixture is identical to
 `../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_vectors.json`.
-The shared `tests/support/msgb_fixture.rs` validator is identical to the
-conversion crate's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
+The shared `tests/support/msgb_fixture.rs` validator is identical to
+osmocore-rs's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
 order, provenance, ABI, state consistency, sequence continuity, and corruption
 rejection. Normal Cargo tests consume committed JSON without building C.
 
@@ -591,7 +591,7 @@ distinguishes aborts. Allocation snapshots record actual C zero initialization.
 
 No unsafe C trim with headroom, nonempty reserve, invalid offsets, or NULL
 access is used to generate evidence. Rust-only safety tests live in the
-conversion repository. That crate owns fixed-capacity storage up to 65,535,
+osmocore-rs repository. That crate owns fixed-capacity storage up to 65,535,
 returns checked errors and pointer offsets, and preserves C's wrapping headlen
 and reset behavior (L1 and bytes survive; L2–L4 and control words clear).
 It checks trim against remaining storage after data and reserve against an
@@ -669,7 +669,7 @@ pushes; that extension has separate Rust-only tests. The C fixture excludes
 unsafe NULL subtraction, out-of-storage trim, and implementation-defined signed
 narrowing. Both projects validate exact schema/provenance/input order, untouched
 bytes, typed byte order, query consistency, metadata changes, and corrupt records.
-The conversion crate compares Rust results against C and tests safety differences.
+osmocore-rs compares Rust results against C and tests safety differences.
 
 The runner's `--layers` mode additionally pins `bits.h`, `utils.h`, the endian
 header template, its `Makefile.am` generation rule, and generated `bit16gen.h`
@@ -698,7 +698,7 @@ git diff --check
 
 The stage-2 validator in `tests/support/msgb_layers_fixture.rs` uses shared
 `msgb_fixture.rs` schema helpers. Both files and both msgb fixtures match the
-conversion repository byte-for-byte. `tests/msgb_layers_reference_vectors.rs`
+osmocore-rs repository byte-for-byte. `tests/msgb_layers_reference_vectors.rs`
 validates structure and corruption rejection; it does not implement Rust APIs
 or generate expected outputs. All new fixtures stay outside packet/replay loaders.
 
@@ -781,13 +781,13 @@ git diff --check
 
 `tests/msgb_resize_reference_vectors.rs` validates the frozen schema/coverage
 and corruption rejection through `tests/support/msgb_resize_fixture.rs`, which
-matches the conversion crate byte-for-byte. Fixture directories remain separate
+matches the osmocore-rs copy byte-for-byte. Fixture directories remain separate
 from packet/replay loaders. Expected observations come only from direct C calls.
 Review full regeneration and restore unrelated formatting-only fixture changes.
 
 ## Message-buffer remaining adapters (stage 4)
 
-Stage 4 completes the planned conversion and adapter inventory. Rust queues
+Stage 4 completes the planned message-buffer API and adapter inventory. Rust queues
 own their messages in `MsgbQueue` (`VecDeque<Msgb>`): `msgb_enqueue`,
 `msgb_dequeue`, `msgb_queue_free`, `msgb_enqueue_count`, and
 `msgb_dequeue_count` preserve FIFO order. Counted operations use a separate
@@ -938,7 +938,7 @@ independent fixtures require no vendored crate snapshot refresh.
 
 ## Core CRC observations
 
-The CRC conversion covers byte-oriented CRC-16/CCITT and generic parameterized
+The CRC scope covers byte-oriented CRC-16/CCITT and generic parameterized
 8/16/32/64-bit CRCs. GSM parity/channel definitions and convolutional coding
 are outside its scope.
 
@@ -1055,7 +1055,7 @@ comparison differs in inspected source and was not executed, so NEON is outside
 the claimed backend-parity boundary. Review has approved the observed
 scalar/SSE/AVX tie behavior (scalar `>=`, including the equality choice) as the
 portable Rust correlation contract, independent of CPU. No universal backend
-equivalence is claimed. The conversion repository now implements checked
+equivalence is claimed. The osmocore-rs repository now implements checked
 descriptors, signed compatibility lengths, independent operation capacities and
 reusable/one-shot encoding, with conformance in `tests/conv/conv_encoder.rs`,
 plus the generic stateful squared-error decoder, portable scalar correlation
@@ -1119,14 +1119,14 @@ selected metric narrowing or normalization differences outside `i16` produce
 sizing and history arithmetic are checked with fallible allocation. All
 one-shot errors preserve output; success preserves unused suffixes.
 
-Independent final-stage replays in the conversion repository's
+Independent final-stage replays in the osmocore-rs repository's
 `tests/conv/conv_correlation.rs` passed 6,796 direct correlation observations
 (1,699 each linked/scalar/SSE/AVX) and 6,608 public dispatch observations
 (1,652 each), totaling 13,404 full-buffer, status/metric and unchanged-input
 comparisons. These are separate from this utility's integrity checks below.
 Frozen fixtures, shared readers, manifests and harnesses remain unchanged.
 
-Final full suites passed: conversion repository 130 tests (64 unit, 65 core
+Final full suites passed: osmocore-rs repository 130 tests (64 unit, 65 core
 integration, one GSMTAP integration) and this utility 85. The final stage adds
 13 private unit safety/semantics tests and two independent frozen replays.
 Actual final-stage versions were `rustc 1.97.1`, `cargo 1.97.1` and
@@ -1145,11 +1145,11 @@ no linked-library instrumentation, NEON execution or arbitrary-backend parity
 is claimed. Allocation failure and out-of-domain arithmetic remain Rust-only
 safety coverage, not golden C observations.
 
-`tests/support/conv_fixture.rs` is shared byte-for-byte with the conversion
+`tests/support/conv_fixture.rs` is shared byte-for-byte with the osmocore-rs
 repository; `tests/conv_reference_vectors.rs` checks schema/provenance,
 operations/state/buffers, frozen coverage/digest, corruptions and available
 backend comparisons. It does not implement or validate Rust convolutional
-engines. Rust-versus-C encoder/decoder comparisons remain in the conversion
+engines. Rust-versus-C encoder/decoder comparisons remain in the osmocore-rs
 repository, not this utility's packet/replay loaders. Ordinary Cargo tests require no C
 installation. No unreviewed vendored Rust snapshot refresh is included.
 
@@ -1217,7 +1217,7 @@ Producers in this repository are `reference/conv_vector.c`, `reference/run_conv_
 The existing mathematical helper generates descriptors and inputs only. Direct
 local C calls produce encoding/decoding results, metrics, history, returns and
 buffer observations. Rust never supplies expected encode/decode outputs.
-Conversion-repository consumers are the three `tests/conv/conv_{encoder,decoder,correlation}.rs` replays,
+osmocore-rs consumers are the three `tests/conv/conv_{encoder,decoder,correlation}.rs` replays,
 `tests/conv/conv_reference_vectors.rs` and `tests/support/conv_fixture.rs`, plus
 this repository's `tests/conv_reference_vectors.rs` and `tests/support/conv_fixture.rs`.
 Both repositories retain identical NDJSON and provenance-manifest bytes.
@@ -1268,8 +1268,8 @@ prepare/nearest during callbacks. Stage 2 also records self/peer callback
 replacement, remaining equality and raw boundaries, relative scheduling,
 nearest rounding through INT_MAX, absolute lifecycle/cache behavior, missing
 callbacks, and LONG_MAX dispatch. LONG_MAX suppresses only the nearest cache,
-not activation or dispatch. Stage 1 converts clock/time primitives; Stage 2
-implements the owned scheduler in the sibling conversion crate.
+not activation or dispatch. Stage 1 implements clock/time primitives; Stage 2
+implements the owned scheduler in osmocore-rs.
 The planned TDef claim is core TDef parity excluding FSM integration.
 
 Verify/regenerate without overwriting committed evidence:
@@ -1299,9 +1299,9 @@ use the targeted commands above for this block to preserve unrelated fixtures.
 Review any changed C records before updating fingerprints and shared copies.
 No vendor snapshot update or packet/replay integration is included.
 
-The conversion project's Stage 1 replay compares 20,828 C observations; this
+osmocore-rs's Stage 1 replay compares 20,828 C observations; this
 utility validates evidence only. Stage 2 replays 57 nonrecursive timer trace
-records and 32 timer API observations in the conversion project; 15 recursive
+records and 32 timer API observations in osmocore-rs; 15 recursive
 C records remain policy evidence, with separate Rust rejection tests.
 See [time compatibility](../../libosmocore-rs/osmocore-rs/src/time/README.md) for
 Rust API shapes, safety boundaries and reentrant-dispatch findings.
@@ -1329,8 +1329,8 @@ All expected outputs come from direct C calls. `tables()` directly calls
 `osmo_tdef_get_entry()` and records its returned index for signed/zero IDs,
 duplicate first matches, missing IDs and hidden entries after the sentinel.
 Null and hidden-traversal cases also call it directly. This testing utility
-continues to validate integrity/coverage only; the sibling Rust conversion
-crate now implements core TDef and replays all records against the frozen C
+continues to validate integrity/coverage only; osmocore-rs
+now implements core TDef and replays all records against the frozen C
 observations, with explicit safety exceptions for assertion/UB cases.
 
 `tdef_diagnostics.json` is separate diagnostic evidence, never a golden numeric
@@ -1375,13 +1375,13 @@ cargo fmt --check
 cargo test
 ```
 
-Also compare all four files in `tests/vectors/tdef/` byte-for-byte with the
-conversion project's `tests/compatibility/vectors/tdef/`, and both provenance
+Also compare all four files in `tests/vectors/tdef/` byte-for-byte with
+osmocore-rs's `tests/compatibility/vectors/tdef/`, and both provenance
 manifests with the copies in `reference/`. Review observations before changing
 reader fingerprints. The full generator includes TDef and stages both outputs
 before publishing; use targeted regeneration for a TDef-only update to preserve
 unrelated fixtures. No vendor snapshot or packet/replay loader changes belong
-in this stage. See the conversion repository's `osmocore-rs/src/time/README.md` for
+in this stage. See the osmocore-rs repository's `osmocore-rs/src/time/README.md` for
 implemented scope, replay and safety policies. No vendor snapshot was refreshed.
 
 ## time_cc evidence (Stage 4)
@@ -1483,9 +1483,9 @@ Four bounded isolated null add/inc/difference/reset probes are separate
 sanitizer diagnostics; no unsafe probe contributes golden output.
 
 Dedicated files in `tests/vectors/rate_ctr/` and the shared independent reader
-`tests/support/rate_ctr_fixture.rs` must match the sibling conversion crate.
+`tests/support/rate_ctr_fixture.rs` must match the osmocore-rs copies.
 This repository validates integrity, provenance and corruptions; Rust API and
-complete state replay belongs in `osmocore-rs`. The conversion also replays
+complete state replay belongs in `osmocore-rs`. osmocore-rs also replays
 all frozen time_cc scenarios with `TimeCc<RateCtr>` and checks that previous and
 every interval field survive reporting. Full registry, interval scheduling,
 initialization, statistics, FSM and VTY remain deferred. No vendor snapshot
@@ -1517,7 +1517,7 @@ diagnostic output before publishing either. ASan+UBSan audit and both pairs of
 fresh generations passed for Stage 5a; LSan is disabled under ptrace. Actual
 Rust/Cargo 1.97.1 was used, and Rust 1.70 execution remains pending.
 
-Stage 5a final checks passed 93 tests here and 164 in the Rust conversion
+Stage 5a final checks passed 93 tests here and 164 in the osmocore-rs
 crate, with formatting/whitespace checks in both repositories. Shared evidence,
 readers and manifests matched byte-for-byte. Existing time, TDef and time_cc
 source verification passed; those frozen fixture families were unchanged.
@@ -1564,14 +1564,14 @@ allocation after unregistering despite its comment; the Rust implementation foll
 the evidence. Storage retention and lookup visibility are separate, with checked
 handles/tombstones during safe termination cascades. Logging/VTY/CTRL, native address
 names, arbitrary talloc ownership/destructors, select/timerfd and statistics remain
-outside this conversion. No vendor snapshot refresh is performed. Scope and safety
+outside this scope. No vendor snapshot refresh is performed. Scope and safety
 boundaries are documented in the sibling's `osmocore-rs/src/fsm/README.md`.
 
 Each family's dedicated `tests/vectors/FAMILY/` directory contains TSV records,
 separate diagnostic JSON and source/generator manifests. The shared independent
 `tests/support/fsm_fixture.rs` validates chronology, canonical numbers/hex strings,
 record shape, frozen observations/manifests and corruption rejection. It contains
-no Rust FSM conversion model. Rust behavior replay belongs in the sibling project.
+no Rust FSM model. Rust behavior replay belongs in the sibling project.
 Core/timer records contain scenario, step, operation, argument, status and instance
 state/T/pending/deadline/terminating/ID lookup/name lookup/count; timer records add
 four operation inputs and the wall-clock value. Tree/shared records contain scenario,
@@ -1611,7 +1611,7 @@ changes require updating both shared-reader test specs, inspecting record differ
 repeating generation and auditing. Expected results come exclusively from C.
 The full generator stages successful/diagnostic outputs before publishing either
 and copies the verified manifests. Stage 6 passed all five audits and repeat
-comparisons, 98 tests here and 178 in the conversion crate. Actual Rust/Cargo 1.97.1
+comparisons, 98 tests here and 178 in the osmocore-rs crate. Actual Rust/Cargo 1.97.1
 was used; Rust 1.70 execution remains pending. Prior time/TDef/time_cc/rate-counter
 fixtures remain unchanged.
 
@@ -1630,7 +1630,7 @@ headers/library files, compiler identity, exact normal/audit/link flags and
 all preprocessing defines. `rate_ctr_group_preprocessor_defines.txt` is pinned
 in the generator manifest and recomputed during source verification. Build
 sources include stats-TCP/stat-item/socket/io_uring dependencies of select;
-no conversion of those families is implied. All observed source paths are
+no Rust implementation of those families is implied. All observed source paths are
 sanitizer-instrumented during audit; pinned external system libraries are not.
 LSan is disabled under ptrace, following the established runner convention.
 
@@ -1692,12 +1692,12 @@ revision: the required snapshot remains `unknown`. Regenerate/review all
 Stage 7 artifacts, update frozen reader fingerprints/input counts as applicable,
 audit and repeat all generations before accepting new evidence.
 
-Stage 7 ends the planned initial upstream conversion. Productization/release
+Stage 7 ends the planned initial osmocore-rs stages. Productization/release
 work follows; no vendor snapshot refresh, commit, push or publication is part
 of this evidence update.
 
 Stage 7 acceptance on 2026-10-12 passed all 100 testing-utility tests, including
-localhost tests with sandbox escalation, and 182 conversion-crate tests plus one
+localhost tests with sandbox escalation, and 182 osmocore-rs tests plus one
 public-API documentation example. Both formatting/whitespace checks passed.
 The new C source/flags/defines verification and ASan+UBSan audit passed; two
 independent successful, diagnostic and native generations matched frozen
