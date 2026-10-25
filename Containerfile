@@ -1,26 +1,14 @@
-# Empty unless scripts/container-build-osmocore.sh supplies the osmocore-rs
-# crate as a named build context.
-FROM scratch AS osmocore-rs
-
 FROM docker.io/library/rust:1.99-alpine AS builder
-# Set to `osmocore` (with the osmocore-rs context) for the conversion panels.
-ARG FEATURES=""
 RUN apk add --no-cache musl-dev \
     && cargo install cargo-auditable --version 0.7.7 --locked
 WORKDIR /build/gsmtap-rs
-COPY Cargo.toml Cargo.lock build.rs ./
-COPY scripts/without-osmocore.sh ./scripts/
+COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY static ./static
-COPY --from=osmocore-rs / /build/libosmocore-rs/osmocore-rs/
 # The binary embeds its dependency list, so image scanners can audit it.
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/build/gsmtap-rs/target \
-    case ",$FEATURES," in \
-        *,osmocore,*) ;; \
-        *) ./scripts/without-osmocore.sh ;; \
-    esac \
-    && cargo auditable build --release --locked --features "$FEATURES" --bin gsmtap-workbench \
+    cargo auditable build --release --locked --bin gsmtap-workbench \
     && cp target/release/gsmtap-workbench /usr/local/bin/
 
 FROM docker.io/library/python:3.12-alpine AS traffic-test
