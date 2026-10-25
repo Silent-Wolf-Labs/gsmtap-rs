@@ -3,8 +3,6 @@
 pub(crate) mod api;
 pub(crate) mod capture;
 pub(crate) mod config;
-#[cfg(feature = "osmocore")]
-pub(crate) mod conversions;
 pub(crate) mod dto;
 pub(crate) mod history;
 pub(crate) mod network;

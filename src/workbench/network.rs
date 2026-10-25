@@ -4,8 +4,6 @@ use axum::{Router, routing::get};
 use tokio::net::UdpSocket;
 use tokio::sync::{broadcast, mpsc};
 
-#[cfg(feature = "osmocore")]
-use super::conversions;
 use super::{
     api::{self, AppState},
     capture::CaptureControl,
@@ -50,22 +48,9 @@ pub fn build_router_with_runtime(
         capture,
         runtime,
     };
-    let router = Router::new();
-    #[cfg(feature = "osmocore")]
-    let router = conversions::routes(router);
-    router
+    Router::new()
         .route("/", get(api::index))
         .route("/app.js", get(api::javascript))
-        .route("/controllers/{asset}", get(api::conversion_javascript))
-        .route("/services/{asset}", get(api::conversion_javascript))
-        .route(
-            "/models/conversion/{asset}",
-            get(api::conversion_javascript),
-        )
-        .route(
-            "/components/conversion/{asset}",
-            get(api::conversion_javascript),
-        )
         .route(
             "/controllers/app-controller.js",
             get(api::app_controller_javascript),

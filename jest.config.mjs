@@ -7,7 +7,6 @@ export default {
     'static/components/**/*.js',
     'static/controllers/**/*.js',
     'static/services/**/*.js',
-    'static/models/conversion/**/*.js',
     '!static/components/package.json',
   ],
   coverageThreshold: {

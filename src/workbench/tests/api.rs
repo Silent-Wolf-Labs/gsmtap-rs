@@ -295,12 +295,7 @@ async fn status_reports_the_active_mode_and_endpoints() {
     let status: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(status["mode"], "modify");
     assert_eq!(status["gsmtapForward"], forward);
-    let expected_tools: &[&str] = if cfg!(feature = "osmocore") {
-        &["hexparse", "bcd", "bits", "base64"]
-    } else {
-        &[]
-    };
-    assert_eq!(status["conversionTools"], serde_json::json!(expected_tools));
+    assert_eq!(status["conversionTools"], serde_json::json!([]));
 }
 
 #[tokio::test]
@@ -449,23 +444,6 @@ async fn stylesheet_entry_point_and_imported_assets_are_served() {
         "/controllers/packet-history-controller.js",
         "/components/packet/packet-history-view.js",
         "/components/dialogs/clear-history-dialog.js",
-        "/controllers/conversion-controller.js",
-        "/controllers/navigation-controller.js",
-        "/services/conversion-service.js",
-        "/components/conversion/conversion-panel.js",
-        "/components/conversion/conversion-field.js",
-        "/components/conversion/buffer-table.js",
-        "/components/conversion/copy-output.js",
-        "/components/conversion/hexparse-result.js",
-        "/components/conversion/bcd-result.js",
-        "/components/conversion/bits-result.js",
-        "/components/conversion/base64-result.js",
-        "/models/conversion/input-model.js",
-        "/models/conversion/hexparse-input-model.js",
-        "/models/conversion/bcd-input-model.js",
-        "/models/conversion/bits-input-model.js",
-        "/models/conversion/base64-input-model.js",
-        "/models/conversion/output-model.js",
     ] {
         let response = router
             .clone()
@@ -479,10 +457,14 @@ async fn stylesheet_entry_point_and_imported_assets_are_served() {
             "{path}"
         );
     }
+    // The conversion panels were removed; their assets must not be served.
     for path in [
-        "/models/conversion/missing.js",
-        "/controllers/output-model.js",
-        "/services/conversion-controller.js",
+        "/controllers/conversion-controller.js",
+        "/controllers/navigation-controller.js",
+        "/services/conversion-service.js",
+        "/components/conversion/conversion-panel.js",
+        "/models/conversion/input-model.js",
+        "/api/conversions/hexparse",
     ] {
         let response = router
             .clone()
