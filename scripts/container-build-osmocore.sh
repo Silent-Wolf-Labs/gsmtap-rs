@@ -16,7 +16,7 @@ stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 cp -R "$crate/Cargo.toml" "$crate/README.md" "$crate/LICENSE" "$crate/src" "$stage/"
 
-buildah build \
+buildah build --layers \
     --build-arg FEATURES=osmocore \
     --build-context osmocore-rs="$stage" \
     --target workbench \
