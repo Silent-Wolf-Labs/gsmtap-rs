@@ -4,8 +4,6 @@ use serde_json::Value;
 
 use super::*;
 
-const LIBOSMOCORE_COMMIT: &str = "950430e829a3dc1d162aa241bc0505745c5a7311";
-
 fn vectors() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/vectors")
 }
@@ -92,41 +90,6 @@ fn assert_single_mismatch(report: &ModuleReport, field: &str) {
 }
 
 #[test]
-fn every_committed_case_matches() {
-    let report = run(&vectors(), &[]);
-    let summary: Vec<_> = report
-        .modules
-        .iter()
-        .map(|module| (module.module, module.cases(), module.matched))
-        .collect();
-    assert_eq!(
-        summary,
-        [
-            ("hexparse", 21, 21),
-            ("bcd", 76, 76),
-            ("bits", 72_400, 72_400),
-            ("base64", 24, 24),
-            ("crc", 26_320, 26_320),
-            ("conv", 35_186, 35_186),
-            ("gsmtap", 7, 7),
-        ]
-    );
-    assert!(report.passed(false));
-    assert!(report.osmocore_rs_version.starts_with("0."));
-    for module in &report.modules {
-        for fixture in &module.fixtures {
-            assert_eq!(fixture.sha256.len(), 64);
-            let expected = if module.module == "conv" {
-                "unknown"
-            } else {
-                LIBOSMOCORE_COMMIT
-            };
-            assert_eq!(fixture.libosmocore_revision, expected, "{}", fixture.path);
-        }
-    }
-}
-
-#[test]
 fn selected_modules_run_alone() {
     let report = run(&vectors(), &["gsmtap", "hexparse"]);
     let modules: Vec<_> = report.modules.iter().map(|module| module.module).collect();
@@ -146,6 +109,16 @@ fn corrupted_hexparse_return_is_reported() {
     assert_single_mismatch(&report, "return_code");
     assert_eq!(report.mismatched[0].case, "lowercase");
     assert_eq!(report.mismatched[0].fields[0].c, "9");
+
+    let summary = Report {
+        osmocore_rs_version: OSMOCORE_RS_VERSION,
+        modules: vec![report],
+    }
+    .to_string();
+    assert!(
+        summary.contains("hexparse: mismatch lowercase: return_code c=9 rust=4"),
+        "{summary}"
+    );
 }
 
 #[test]
@@ -231,8 +204,10 @@ fn unknown_apis_are_unsupported_not_matched() {
         osmocore_rs_version: OSMOCORE_RS_VERSION,
         modules: vec![report],
     };
-    assert!(!full.passed(false));
-    assert!(full.passed(true));
+    assert!(!full.passed());
+    let summary = full.to_string();
+    assert!(summary.contains("bcd: unsupported"), "{summary}");
+    assert!(summary.ends_with("result: failed\n"), "{summary}");
 }
 
 #[test]
@@ -243,11 +218,11 @@ fn unreadable_fixtures_fail_the_module() {
     let report = run(&empty, &[]);
     std::fs::remove_dir_all(&empty).unwrap();
     assert_eq!(report.errors(), MODULES.len());
-    assert!(!report.passed(true));
+    assert!(!report.passed());
 }
 
 #[test]
-fn report_serializes_for_the_cli_and_ui() {
+fn report_serializes_for_the_ui() {
     let report = run(&vectors(), &["gsmtap"]);
     let json = serde_json::to_value(&report).unwrap();
     assert_eq!(json["modules"][0]["module"], "gsmtap");

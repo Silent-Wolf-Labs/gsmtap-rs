@@ -9,6 +9,7 @@
 *.swp
 reference
 scripts
+!scripts/without-osmocore.sh
 docs
 *.md
 .junie

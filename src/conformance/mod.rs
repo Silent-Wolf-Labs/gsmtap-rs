@@ -56,10 +56,74 @@ impl Report {
     }
 
     /// True when every case matched and every fixture loaded.
-    pub fn passed(&self, allow_unsupported: bool) -> bool {
-        self.mismatched() == 0
-            && self.errors() == 0
-            && (allow_unsupported || self.unsupported() == 0)
+    pub fn passed(&self) -> bool {
+        self.mismatched() == 0 && self.errors() == 0 && self.unsupported() == 0
+    }
+}
+
+/// Cases listed per module and outcome in the text summary; the JSON has all.
+const SUMMARY_CASES: usize = 20;
+
+impl fmt::Display for Report {
+    /// A plain-text summary: per-module counts, then failing cases.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "osmocore-rs {}", self.osmocore_rs_version)?;
+        writeln!(
+            f,
+            "{:<10} {:>8} {:>8} {:>10} {:>11}",
+            "module", "cases", "matched", "mismatched", "unsupported"
+        )?;
+        for module in &self.modules {
+            writeln!(
+                f,
+                "{:<10} {:>8} {:>8} {:>10} {:>11}",
+                module.module,
+                module.cases(),
+                module.matched,
+                module.mismatched.len(),
+                module.unsupported.len()
+            )?;
+        }
+        for module in &self.modules {
+            if let Some(error) = &module.error {
+                writeln!(f, "{}: error: {error}", module.module)?;
+            }
+            for mismatch in module.mismatched.iter().take(SUMMARY_CASES) {
+                let fields: Vec<_> = mismatch
+                    .fields
+                    .iter()
+                    .map(|diff| format!("{} c={} rust={}", diff.field, diff.c, diff.rust))
+                    .collect();
+                writeln!(
+                    f,
+                    "{}: mismatch {}: {}",
+                    module.module,
+                    mismatch.case,
+                    fields.join("; ")
+                )?;
+            }
+            for unsupported in module.unsupported.iter().take(SUMMARY_CASES) {
+                writeln!(
+                    f,
+                    "{}: unsupported {}: {}",
+                    module.module, unsupported.case, unsupported.reason
+                )?;
+            }
+            let omitted = module.mismatched.len().saturating_sub(SUMMARY_CASES)
+                + module.unsupported.len().saturating_sub(SUMMARY_CASES);
+            if omitted > 0 {
+                writeln!(
+                    f,
+                    "{}: {omitted} more failing cases in the JSON report",
+                    module.module
+                )?;
+            }
+        }
+        writeln!(
+            f,
+            "result: {}",
+            if self.passed() { "passed" } else { "failed" }
+        )
     }
 }
 

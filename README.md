@@ -28,6 +28,16 @@ cargo test
 cargo test --features osmocore
 ```
 
+With the `osmocore` feature, the tests also replay every committed fixture in
+`tests/vectors/` through osmocore-rs. Each case is reported as matched,
+mismatched or unsupported, and any mismatch or unsupported case fails the run.
+The report is written to `target/tmp/conformance-report.json`, with a summary
+in `target/tmp/conformance-report.txt`, even when the run fails.
+
+CI builds and tests without osmocore-rs. It runs
+`scripts/without-osmocore.sh`, which removes the path dependency from
+`Cargo.toml` and `Cargo.lock` in place, so run it only in a disposable checkout.
+
 ## Live web workbench
 
 Build and run the single-process workbench with:
@@ -92,9 +102,13 @@ implemented by the Rust library.
 The **Workbench view** selector opens Hexparse, BCD, Bits, and Base64
 conversion forms. Hexparse, BCD, and Bits support conversion, buffer comparisons, and copy
 controls; Base64 supports encoding, decoding, and decoded-size probes. See [Conversion UI review](docs/conversion-ui.md).
-These panels require the `osmocore` feature, which the Docker image enables.
-Until osmocore-rs is published to crates.io, Docker and CI builds cannot resolve
-its path dependency.
+These panels require the `osmocore` feature. The default Docker image is built
+without it. To build an image with the feature from the sibling checkout, use
+Docker Buildx:
+
+```bash
+./scripts/docker-build-osmocore.sh --tag gsmtap-workbench:osmocore
+```
 
 ### Operating modes
 
@@ -236,9 +250,8 @@ This project is licensed under the Apache License, Version 2.0. See
 [LICENSE](LICENSE) for the full text.
 
 The optional `osmocore` feature links osmocore-rs, which is licensed under
-GPL-3.0-or-later. Binaries and container images built with that feature,
-including the published Docker image, are distributed under GPL-3.0-or-later as
-a whole.
+GPL-3.0-or-later. Binaries and container images built with that feature are
+distributed under GPL-3.0-or-later as a whole.
 
 ## Message-buffer stage 1
 
