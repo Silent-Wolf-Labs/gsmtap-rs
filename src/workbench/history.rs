@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use tokio::sync::{Mutex, broadcast};
 
 use super::dto::PacketRecord;
+use super::reference::ReferenceVectors;
 
 const DEFAULT_MAX_HISTORY_BYTES: usize = 256 * 1024 * 1024;
 const MAX_EVENT_CAPACITY: usize = 1_024;
@@ -15,6 +16,7 @@ pub struct PacketStore {
     events: broadcast::Sender<PacketRecord>,
     next_id: AtomicU64,
     counters: RuntimeCounters,
+    references: ReferenceVectors,
 }
 
 #[derive(Default)]
@@ -27,6 +29,7 @@ pub struct RuntimeCounters {
     forward_failed: AtomicU64,
     ui_events_dropped: AtomicU64,
     capture_skipped: AtomicU64,
+    reference_matched: AtomicU64,
 }
 
 #[derive(serde::Serialize)]
@@ -40,6 +43,7 @@ pub struct RuntimeStats {
     pub forward_failed: u64,
     pub ui_events_dropped: u64,
     pub capture_skipped: u64,
+    pub reference_matched: u64,
 }
 
 impl RuntimeCounters {
@@ -67,6 +71,9 @@ impl RuntimeCounters {
     pub fn capture_skipped(&self) {
         self.capture_skipped.fetch_add(1, Ordering::Relaxed);
     }
+    pub fn reference_matched(&self) {
+        self.reference_matched.fetch_add(1, Ordering::Relaxed);
+    }
     pub fn snapshot(&self) -> RuntimeStats {
         RuntimeStats {
             received: self.received.load(Ordering::Relaxed),
@@ -77,12 +84,18 @@ impl RuntimeCounters {
             forward_failed: self.forward_failed.load(Ordering::Relaxed),
             ui_events_dropped: self.ui_events_dropped.load(Ordering::Relaxed),
             capture_skipped: self.capture_skipped.load(Ordering::Relaxed),
+            reference_matched: self.reference_matched.load(Ordering::Relaxed),
         }
     }
 }
 
 impl PacketStore {
+    #[cfg(test)]
     pub fn new(capacity: usize) -> Self {
+        Self::with_references(capacity, ReferenceVectors::default())
+    }
+
+    pub fn with_references(capacity: usize, references: ReferenceVectors) -> Self {
         let (events, _) = broadcast::channel(capacity.clamp(1, MAX_EVENT_CAPACITY));
         Self {
             packets: Mutex::new(VecDeque::with_capacity(capacity.min(MAX_EVENT_CAPACITY))),
@@ -92,6 +105,7 @@ impl PacketStore {
             events,
             next_id: AtomicU64::new(1),
             counters: RuntimeCounters::default(),
+            references,
         }
     }
 
@@ -164,6 +178,10 @@ impl PacketStore {
     pub fn counters(&self) -> &RuntimeCounters {
         &self.counters
     }
+
+    pub fn references(&self) -> &ReferenceVectors {
+        &self.references
+    }
 }
 
 fn packet_memory_bytes(packet: &PacketRecord) -> usize {
@@ -178,5 +196,6 @@ fn packet_memory_bytes(packet: &PacketRecord) -> usize {
         + packet.forward_status.as_ref().map_or(0, String::len)
         + packet.original_raw_hex.as_ref().map_or(0, String::len)
         + packet.final_raw_hex.as_ref().map_or(0, String::len)
+        + packet.reference_case.as_ref().map_or(0, String::len)
         + decoded_bytes
 }

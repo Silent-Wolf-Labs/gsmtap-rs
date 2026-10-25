@@ -366,6 +366,10 @@ async fn inspect_datagram(
     };
     record.timestamp_ms = datagram.timestamp_ms;
     record.destination = destination.map(String::from);
+    record.reference_case = store.references().case(bytes).map(String::from);
+    if record.reference_case.is_some() {
+        store.counters().reference_matched();
+    }
     if datagram.capture_enabled {
         store.record(record).await;
     }

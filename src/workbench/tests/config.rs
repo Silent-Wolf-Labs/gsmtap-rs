@@ -10,6 +10,7 @@ fn relay_and_modify_require_a_forward_endpoint() {
             http_listen: "127.0.0.1:8080".parse().unwrap(),
             history_capacity: 8,
             ingress_capacity: 16,
+            reference_vectors: None,
         };
         assert!(Config::try_from(args).is_err());
     }
@@ -52,5 +53,23 @@ fn ipv6_addresses_are_rejected_by_all_constructor_paths() {
             16,
         )
         .is_err()
+    );
+}
+
+#[test]
+fn reference_vectors_directory_is_passed_through() {
+    let args = ConfigArgs {
+        mode: Mode::Listen,
+        gsmtap_listen: "127.0.0.1:4729".parse().unwrap(),
+        gsmtap_forward: None,
+        http_listen: "127.0.0.1:8080".parse().unwrap(),
+        history_capacity: 8,
+        ingress_capacity: 16,
+        reference_vectors: Some("/vectors".into()),
+    };
+    let config = Config::try_from(args).unwrap();
+    assert_eq!(
+        config.reference_vectors.as_deref(),
+        Some(std::path::Path::new("/vectors"))
     );
 }

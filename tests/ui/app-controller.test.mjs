@@ -279,7 +279,7 @@ test('shows relay forwarding state without adding unsupported controls', async (
 
   await controller.refresh();
 
-  expect(document.querySelector('#packets th:nth-child(7)').textContent).toBe('Forward');
+  expect(document.querySelector('#packets th:nth-child(8)').textContent).toBe('Forward');
   expect(document.querySelector('#packets tbody tr').textContent).toContain('error: target unavailable');
   expect(document.querySelectorAll('#packets .packet-column-filter-trigger')).toHaveLength(4);
 });

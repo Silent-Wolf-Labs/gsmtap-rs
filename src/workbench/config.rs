@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 
@@ -25,6 +26,9 @@ pub struct ConfigArgs {
     pub history_capacity: usize,
     #[arg(long, env = "PACKET_INGRESS_CAPACITY", default_value_t = 1_024)]
     pub ingress_capacity: usize,
+    /// Directory of C-recorded GSMTAP vectors to match received packets against.
+    #[arg(long, env = "GSMTAP_REFERENCE_VECTORS")]
+    pub reference_vectors: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -35,6 +39,7 @@ pub struct Config {
     pub http_listen: SocketAddr,
     pub history_capacity: usize,
     pub ingress_capacity: usize,
+    pub reference_vectors: Option<PathBuf>,
 }
 
 impl Config {
@@ -91,6 +96,7 @@ impl Config {
             http_listen,
             history_capacity: history_capacity.max(1),
             ingress_capacity: ingress_capacity.max(1),
+            reference_vectors: None,
         })
     }
 }
@@ -99,14 +105,16 @@ impl TryFrom<ConfigArgs> for Config {
     type Error = String;
 
     fn try_from(args: ConfigArgs) -> Result<Self, Self::Error> {
-        Self::from_values(
+        let mut config = Self::from_values(
             args.mode,
             args.gsmtap_listen,
             args.gsmtap_forward,
             args.http_listen,
             args.history_capacity,
             args.ingress_capacity,
-        )
+        )?;
+        config.reference_vectors = args.reference_vectors;
+        Ok(config)
     }
 }
 
