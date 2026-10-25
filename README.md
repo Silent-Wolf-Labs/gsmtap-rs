@@ -243,8 +243,8 @@ operation records, with full backing bytes before/after, data/tail offsets,
 length/capacity, layer markers, control words, destination/channel presence,
 query results, and normalized panic/error outcomes. The fixture is identical to
 `../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_vectors.json`.
-The shared `tests/support/msgb_fixture.rs` validator is identical to the
-conversion crate's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
+The shared `tests/support/msgb_fixture.rs` validator is identical to
+osmocore-rs's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
 order, provenance, ABI, state consistency, sequence continuity, and corruption
 rejection. Normal Cargo tests consume committed JSON without building C.
 
@@ -271,7 +271,7 @@ distinguishes aborts. Allocation snapshots record actual C zero initialization.
 
 No unsafe C trim with headroom, nonempty reserve, invalid offsets, or NULL
 access is used to generate evidence. Rust-only safety tests live in the
-conversion repository. That crate owns fixed-capacity storage up to 65,535,
+osmocore-rs repository. That crate owns fixed-capacity storage up to 65,535,
 returns checked errors and pointer offsets, and preserves C's wrapping headlen
 and reset behavior (L1 and bytes survive; L2–L4 and control words clear).
 It checks trim against remaining storage after data and reserve against an
@@ -349,7 +349,7 @@ pushes; that extension has separate Rust-only tests. The C fixture excludes
 unsafe NULL subtraction, out-of-storage trim, and implementation-defined signed
 narrowing. Both projects validate exact schema/provenance/input order, untouched
 bytes, typed byte order, query consistency, metadata changes, and corrupt records.
-The conversion crate compares Rust results against C and tests safety differences.
+osmocore-rs compares Rust results against C and tests safety differences.
 
 The runner's `--layers` mode additionally pins `bits.h`, `utils.h`, the endian
 header template, its `Makefile.am` generation rule, and generated `bit16gen.h`
@@ -378,7 +378,7 @@ git diff --check
 
 The stage-2 validator in `tests/support/msgb_layers_fixture.rs` uses shared
 `msgb_fixture.rs` schema helpers. Both files and both msgb fixtures match the
-conversion repository byte-for-byte. `tests/msgb_layers_reference_vectors.rs`
+osmocore-rs repository byte-for-byte. `tests/msgb_layers_reference_vectors.rs`
 validates structure and corruption rejection; it does not implement Rust APIs
 or generate expected outputs. All new fixtures stay outside packet/replay loaders.
 
@@ -461,13 +461,13 @@ git diff --check
 
 `tests/msgb_resize_reference_vectors.rs` validates the frozen schema/coverage
 and corruption rejection through `tests/support/msgb_resize_fixture.rs`, which
-matches the conversion crate byte-for-byte. Fixture directories remain separate
+matches the osmocore-rs copy byte-for-byte. Fixture directories remain separate
 from packet/replay loaders. Expected observations come only from direct C calls.
 Review full regeneration and restore unrelated formatting-only fixture changes.
 
 ## Message-buffer remaining adapters (stage 4)
 
-Stage 4 completes the planned conversion and adapter inventory. Rust queues
+Stage 4 completes the planned message-buffer API and adapter inventory. Rust queues
 own their messages in `MsgbQueue` (`VecDeque<Msgb>`): `msgb_enqueue`,
 `msgb_dequeue`, `msgb_queue_free`, `msgb_enqueue_count`, and
 `msgb_dequeue_count` preserve FIFO order. Counted operations use a separate
@@ -592,7 +592,7 @@ vendored crate snapshot refresh.
 
 ## Generic convolutional decoder evidence
 
-The conversion repository now implements checked convolutional descriptors,
+The osmocore-rs repository now implements checked convolutional descriptors,
 signed length helpers, independent capacities, reusable/one-shot encoding and
 the generic stateful squared-error decoder, portable scalar correlation via
 `osmo_conv_decode_acc` and public one-shot `osmo_conv_decode` dispatch. Both
@@ -639,15 +639,15 @@ arithmetic and traceback errors preserve the entire output; success preserves su
 
 The unchanged 36,254-record matrix includes 332 generic stateful cases with
 7,257 lifecycle observations (6,593 callable API observations plus 664 drops).
-The shared reader remains byte-identical to the conversion repository. See
-the conversion repository's `tests/conv/conv_correlation.rs` for independent
+The shared reader remains byte-identical to the osmocore-rs repository. See
+the osmocore-rs repository's `tests/conv/conv_correlation.rs` for independent
 final-stage replays: 6,796 direct correlation records (1,699 per backend) and
 6,608 public dispatch records (1,652 per backend), totaling 13,404 complete
 buffer, status/metric and unchanged-input comparisons across linked/scalar/SSE/AVX.
 Final-stage provenance verification, isolated scalar/SSE/AVX sanitizer audit
 and two 36,254-record regenerations passed, matching both fixtures and each other;
 shared reader/manifest comparisons passed too. Frozen evidence and harnesses
-remain unchanged. Final full suites passed: conversion repository 130 tests
+remain unchanged. Final full suites passed: osmocore-rs repository 130 tests
 (64 unit, 65 core integration, one GSMTAP integration) and this utility 85.
 Actual final-stage tools were Rust/Cargo 1.97.1 and Clippy 0.1.97, regardless
 of misleading `1.85.0` directory labels. CI Rust 1.70 was not tested locally;
@@ -664,7 +664,7 @@ evidence uses separately pinned exact sources. NEON was not executed.
 ## Time and timer evidence (Stages 1–2)
 
 The dedicated time fixture supplies 20,828 clock/time/helper observations for
-the sibling Rust conversion, 72 timer trace observations, and 32 timer API
+osmocore-rs, 72 timer trace observations, and 32 timer API
 observations. Stage 2 implements the sibling owned scheduler and replays all
 nonrecursive timer observations; nested updates return a typed error.
 This utility validates fixture integrity and provenance; Rust-versus-C execution
@@ -674,8 +674,8 @@ temporary storage and uses deterministic public clock overrides.
 Coverage includes abnormal raw fractions, callback mutation, nested timer
 updates and prepare/nearest during dispatch. The Rust scheduler's nested
 update rejection is an intentional compatibility exception informed by C probes.
-Stage 2 implements timers and Stage 3 implements core TDef in the sibling
-conversion crate, with parity against the recorded 64-bit ABI excluding FSM
+Stage 2 implements timers and Stage 3 implements core TDef in osmocore-rs,
+with parity against the recorded 64-bit ABI excluding FSM
 integration. Stage 4 now implements time_cc; combined Stage 1–4 validation
 covers the approved core scope.
 
@@ -689,8 +689,8 @@ workbench endpoint or GSMTAP packet/replay loader was changed for this stage.
 The dedicated TDef harness supplies 2,175 direct C golden observations and 95
 separate failure probes, covering core lookup/mutation, unsigned conversion,
 reset, sentinel traversal, range buffers, names and state-timeout tables.
-This project validates evidence integrity and coverage; the sibling conversion
-crate implements core TDef and replays all records, including safe equivalents
+This project validates evidence integrity and coverage; osmocore-rs
+implements core TDef and replays all records, including safe equivalents
 for failure probes. Parity excludes FSM integration and targets the recorded
 64-bit ABI; 32-bit ULONG_MAX behavior is outside the claim. See
 [reference instructions](reference/README.md#tdef-core-evidence-stage-3) and the
@@ -702,7 +702,7 @@ The dedicated time_cc harness supplies 5,948 records across 469 scenarios and
 five isolated failure probes. This utility validates frozen inputs, outputs and
 provenance; the sibling `core::time_cc` replays the observations using Stages
 1–3 clocks, timers and TDef lookup. Counter sinks are caller-supplied; rate counter
-groups and their periodic statistics are outside this conversion.
+groups and their periodic statistics are outside the time_cc scope.
 
 Evidence covers independent monotonic accounting and wall wakeups, defaults,
 threshold/report caps, forgetting, delayed callbacks, configuration changes,
