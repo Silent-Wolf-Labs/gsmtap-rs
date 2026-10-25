@@ -10,14 +10,9 @@ This project requires Rust 1.99 or newer. To build it, run:
 cargo build
 ```
 
-The optional `osmocore` feature adds the conformance engine, backed by
-[osmocore-rs](https://github.com/Silent-Wolf-Labs/osmocore-rs). Until
-osmocore-rs is published, it is a path dependency on a sibling checkout at
-`../libosmocore-rs/osmocore-rs`:
-
-```bash
-cargo build --features osmocore
-```
+gsmtap-rs does not depend on osmocore-rs or libosmocore. The workbench listens
+for GSMTAP over UDP and can forward it, so it works with traffic from
+osmocore-rs, libosmocore or any other GSMTAP sender.
 
 ## Testing
 
@@ -25,28 +20,15 @@ To run tests, execute:
 
 ```bash
 cargo test
-cargo test --features osmocore
 ```
-
-With the `osmocore` feature, the tests also replay every committed fixture in
-`tests/vectors/` through osmocore-rs. Each case is reported as matched,
-mismatched or unsupported, and any mismatch or unsupported case fails the run.
-The report is written to `target/tmp/conformance-report.json`, with a summary
-in `target/tmp/conformance-report.txt`, even when the run fails.
-
-CI builds and tests without osmocore-rs. It runs
-`scripts/without-osmocore.sh`, which removes the path dependency from
-`Cargo.toml` and `Cargo.lock` in place, so run it only in a disposable checkout.
 
 ## Live web workbench
 
 Build and run the single-process workbench with:
 
 ```bash
-cargo run --features osmocore --bin gsmtap-workbench
+cargo run --bin gsmtap-workbench
 ```
-
-Without `--features osmocore`, the workbench serves only the packet views.
 
 Open `http://localhost:8080`. Use the status card to change the GSMTAP listen
 address, choose the operating mode, and set a forward target when Relay or
@@ -237,10 +219,6 @@ automation compatibility.
 
 This project is licensed under the Apache License, Version 2.0. See
 [LICENSE](LICENSE) for the full text.
-
-The optional `osmocore` feature links osmocore-rs, which is licensed under
-GPL-3.0-or-later. Binaries and container images built with that feature are
-distributed under GPL-3.0-or-later as a whole.
 
 ## Message-buffer stage 1
 
