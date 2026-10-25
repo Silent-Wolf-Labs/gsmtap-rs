@@ -10,7 +10,7 @@ This project requires Rust 1.99 or newer. To build it, run:
 cargo build
 ```
 
-The optional `osmocore` feature adds the workbench conversion panels, backed by
+The optional `osmocore` feature adds the conformance engine, backed by
 [osmocore-rs](https://github.com/Silent-Wolf-Labs/osmocore-rs). Until
 osmocore-rs is published, it is a path dependency on a sibling checkout at
 `../libosmocore-rs/osmocore-rs`:
@@ -98,17 +98,6 @@ docker run --rm -p 8080:8080 -p 4729:4729/udp \
 
 The browser only calls the application API. GSMTAP parsing and encoding remain
 implemented by the Rust library.
-
-The **Workbench view** selector opens Hexparse, BCD, Bits, and Base64
-conversion forms. Hexparse, BCD, and Bits support conversion, buffer comparisons, and copy
-controls; Base64 supports encoding, decoding, and decoded-size probes. See [Conversion UI review](docs/conversion-ui.md).
-These panels require the `osmocore` feature. The default Docker image is built
-without it. To build an image with the feature from the sibling checkout, use
-Docker Buildx:
-
-```bash
-./scripts/docker-build-osmocore.sh --tag gsmtap-workbench:osmocore
-```
 
 ### Operating modes
 
