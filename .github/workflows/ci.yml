@@ -3,10 +3,19 @@ name: CI
 on:
   push:
     branches: [main]
+    # A vX.Y.Z tag also runs the release job once every check passes.
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
   pull_request:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  IMAGE_NAME: ghcr.io/silent-wolf-labs/gsmtap-rs
 
 jobs:
   ui:
@@ -17,8 +26,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Install frontend dependencies
-        run: npm ci
+      - run: npm ci
       - name: Check frontend JavaScript syntax
         run: find static -type f -name '*.js' -print0 | xargs -0 -n1 node --check
       - name: Run frontend tests
@@ -29,73 +37,103 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.99.0
-      # osmocore-rs is verified locally with `cargo test --all-features`.
-      - name: Remove the local-only osmocore-rs dependency
-        run: ./scripts/without-osmocore.sh
+      # rustup installs the toolchain pinned in rust-toolchain.toml.
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@cargo-deny
       - run: cargo fmt --check
       - run: cargo clippy --all-targets --locked -- -D warnings
       - run: cargo test --locked
-      - run: cargo build --release --locked
-
-  security-audit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.99.0
-      - uses: taiki-e/install-action@cargo-audit
-      - run: cargo audit
-
-  security-policy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.99.0
-      - uses: taiki-e/install-action@cargo-deny
-      - name: Remove the local-only osmocore-rs dependency
-        run: ./scripts/without-osmocore.sh
+      # Licenses, bans, sources and RustSec advisories.
       - run: cargo deny check
-
-  security-auditable:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: 1.99.0
-      - uses: taiki-e/install-action@cargo-auditable
-      - name: Remove the local-only osmocore-rs dependency
-        run: ./scripts/without-osmocore.sh
-      - run: cargo auditable build --release --locked
 
   container:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build --target workbench --tag gsmtap-workbench:ci .
-      - run: docker build --target traffic-test --tag gsmtap-traffic-test:ci .
+      # Buildah and Podman are preinstalled on GitHub's Ubuntu runners.
+      - name: Build images and run listen, relay and modify checks
+        run: ./scripts/integration.sh
 
-  integration:
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ui, rust, container]
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: [listen, relay, modify]
+    permissions:
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      - name: Run ${{ matrix.mode }}-mode Compose verification
+      - name: Check the tag matches the crate version
         run: |
-          set -eu
-          compose_file=tests/integration/compose.yaml
-          export GSMTAP_MODE="${{ matrix.mode }}"
-          trap 'docker compose -f "$compose_file" down --remove-orphans --volumes' EXIT
-          docker compose -f "$compose_file" build
-          docker compose -f "$compose_file" up \
-            --abort-on-container-exit \
-            --exit-code-from traffic
+          crate_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
+          if [ "v$crate_version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match Cargo.toml version $crate_version" >&2
+            exit 1
+          fi
+          echo "VERSION=$crate_version" >> "$GITHUB_ENV"
+
+      - uses: taiki-e/install-action@cargo-cyclonedx
+      - run: cargo cyclonedx --format json
+      - name: Package the crate
+        run: |
+          cargo package --locked
+          crate=target/package/gsmtap-rs-$VERSION.crate
+          if tar -tzf "$crate" | grep -Eq '^[^/]+/(docs/|tests/|scripts/|README\.md$)'; then
+            echo "The crate unexpectedly contains documentation, tests or scripts" >&2
+            exit 1
+          fi
+          cp "$crate" .
+
+      - name: Build the workbench image
+        run: |
+          buildah build --target workbench \
+            --label "org.opencontainers.image.source=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --label "org.opencontainers.image.version=$VERSION" \
+            --tag "$IMAGE_NAME:$VERSION" --tag "$IMAGE_NAME:latest" .
+          podman save --output image.tar "$IMAGE_NAME:$VERSION"
+      - name: Scan the image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          input: image.tar
+          format: sarif
+          output: trivy-image.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+      - name: Keep the scan report when the scan fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-image
+          path: trivy-image.sarif
+          if-no-files-found: ignore
+
+      # Publishing starts here; every step can be rerun after a partial release.
+      - name: Publish the crate to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if curl --fail --silent "https://crates.io/api/v1/crates/gsmtap-rs/$VERSION" > /dev/null; then
+            echo "gsmtap-rs $VERSION is already on crates.io"
+          else
+            cargo publish --locked
+          fi
+      - name: Push the image to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io --username "${{ github.actor }}" --password-stdin
+          podman push "$IMAGE_NAME:$VERSION"
+          podman push "$IMAGE_NAME:latest"
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha256sum "gsmtap-rs-$VERSION.crate" gsmtap-rs.cdx.json trivy-image.sarif > SHA256SUMS.txt
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists"
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
+              --title "$GITHUB_REF_NAME" \
+              "gsmtap-rs-$VERSION.crate" gsmtap-rs.cdx.json trivy-image.sarif SHA256SUMS.txt
+          fi
