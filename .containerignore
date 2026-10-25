@@ -2,7 +2,7 @@
 .git
 .github
 .gitignore
-.dockerignore
+.containerignore
 .idea
 .vscode
 .DS_Store
@@ -47,9 +47,9 @@ static/components/package.json
 
 # Keep only the test inputs required by the traffic-test image.
 tests/*
-!tests/
-!tests/vectors/
+!tests/vectors
+tests/vectors/*
 !tests/vectors/*.json
-!tests/traffic/
+!tests/traffic
+tests/traffic/*
 !tests/traffic/*.py
-!tests/traffic/*.toml
