@@ -34,6 +34,19 @@ Open `http://localhost:8080`. Use the status card to change the GSMTAP listen
 address, choose the operating mode, and set a forward target when Relay or
 Modify mode is active.
 
+To check received traffic against the C-recorded GSMTAP vectors, pass the
+directory that holds them:
+
+```bash
+cargo run --bin gsmtap-workbench -- --reference-vectors tests/vectors
+```
+
+Each received packet whose bytes exactly match a recorded vector shows that
+vector's case in the **Reference** column, and `/api/status` reports
+`referenceVectors` and `stats.referenceMatched`. The container image ships the
+vectors and enables this by default. The option is also read from
+`GSMTAP_REFERENCE_VECTORS`.
+
 [![Watch the GSMTAP workbench demo](https://img.youtube.com/vi/k0_CIiQXFq0/hqdefault.jpg)](https://youtu.be/k0_CIiQXFq0)
 
 Watch the [GSMTAP workbench demo](https://youtu.be/k0_CIiQXFq0) on YouTube.

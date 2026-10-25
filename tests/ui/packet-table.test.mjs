@@ -6,6 +6,7 @@ test('uses mode-specific table columns', () => {
   expect(tableColumns('relay')).not.toContain('Modified');
   expect(tableColumns('modify')).toContain('Modified');
   expect(tableColumns('listen')).toContain('Decode');
+  for (const mode of ['listen', 'relay', 'modify']) expect(tableColumns(mode)).toContain('Reference');
   expect(tableColumns('relay')).toContain('Forward');
   expect(tableColumns('listen')).not.toContain('Forward');
   expect(tableColumns('listen')).not.toContain('Details');
@@ -225,7 +226,7 @@ test('renders the per-packet relay result in its own column', () => {
   const node = document.createElement('div');
   const packet = { id: 4, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA FE', decoded: {}, parseError: null, forwardStatus: 'sent', modified: false };
   renderPacketTable(node, [packet], 'relay', jest.fn());
-  expect(node.querySelectorAll('th')[6].textContent).toBe('Forward');
+  expect(node.querySelectorAll('th')[7].textContent).toBe('Forward');
   expect(node.querySelector('tbody tr').textContent).toContain('sent');
 });
 
@@ -376,5 +377,19 @@ test('expands details with correct colSpan in relay mode', () => {
   node.querySelector('tbody tr td:nth-child(2)').click();
   const detailsCell = node.querySelector('.packet-details-row td');
   expect(detailsCell).not.toBeNull();
-  expect(detailsCell.colSpan).toBe(7);
+  expect(detailsCell.colSpan).toBe(8);
+});
+
+test('shows the matched reference vector for each packet', () => {
+  const node = document.createElement('div');
+  const packets = [
+    { id: 1, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'CA', decoded: {}, referenceCase: 'gsmtap_sim_atr' },
+    { id: 2, direction: 'RX', timestampMs: Date.now(), peer: 'peer', rawHex: 'FE', decoded: {}, referenceCase: null },
+  ];
+  renderPacketTable(node, packets, 'listen', jest.fn());
+  const column = tableColumns('listen').indexOf('Reference');
+  const cells = Array.from(node.querySelectorAll('tbody tr'), row => row.cells[column]);
+  expect(cells.map(cell => cell.textContent)).toEqual(['—', 'gsmtap_sim_atr']);
+  expect(cells[1].className).toBe('success');
+  expect(cells[0].className).toBe('');
 });

@@ -46,6 +46,8 @@ pub struct StatusResponse {
     pub capture_paused: bool,
     pub stats: RuntimeStats,
     pub conversion_tools: &'static [&'static str],
+    /// Number of recorded packets that received traffic is matched against.
+    pub reference_vectors: usize,
 }
 
 /// No conversion panels are served; the empty list keeps the status shape stable.
@@ -98,6 +100,7 @@ pub async fn status(State(state): State<AppState>) -> Json<StatusResponse> {
         capture_paused: state.capture.is_paused(),
         stats: state.store.counters().snapshot(),
         conversion_tools: CONVERSION_TOOLS,
+        reference_vectors: state.store.references().len(),
     })
 }
 

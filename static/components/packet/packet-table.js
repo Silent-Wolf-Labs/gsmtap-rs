@@ -15,7 +15,7 @@ function addText(parent, tag, text, className) {
 export function tableColumns(activeMode) {
   const columns = [];
   if (activeMode === 'relay') columns.push('Select');
-  columns.push('Packet', 'Direction', 'Timestamp', 'Source address', 'Decode');
+  columns.push('Packet', 'Direction', 'Timestamp', 'Source address', 'Decode', 'Reference');
   if (activeMode === 'relay') columns.push('Forward');
   if (activeMode === 'modify') columns.push('Modified');
   return columns;
@@ -28,6 +28,7 @@ const columnTooltips = {
   Timestamp: 'Time when the workbench captured or sent the packet.',
   'Source address': 'UDP endpoint that sent the packet to the workbench or local endpoint used to transmit it.',
   Decode: 'Whether the packet decoded successfully as GSMTAP.',
+  Reference: 'The C-recorded reference vector whose bytes this received packet matches exactly.',
   Forward: 'Result of forwarding this relay packet to the configured UDP target.',
   Modified: 'Whether the packet was explicitly edited before sending.',
 };
@@ -174,6 +175,7 @@ export function renderPacketTable(node, packets, activeMode, onModify, {
     addText(row, 'td', new Date(Number(packet.timestampMs)).toLocaleString());
     addText(row, 'td', packetSourceAddress(packet) || '—');
     addText(row, 'td', packet.parseError ? 'Error' : 'Success', packet.parseError ? 'error' : 'success');
+    addText(row, 'td', packet.referenceCase || '—', packet.referenceCase ? 'success' : '');
     if (showForward) {
       const forwarding = relayForwardingState(packet);
       addText(row, 'td', forwarding.status, forwarding.failed ? 'error' : packet.forwardStatus ? 'success' : '');

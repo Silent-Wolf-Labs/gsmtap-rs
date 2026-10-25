@@ -19,7 +19,9 @@ ENTRYPOINT ["python", "/opt/traffic/replay.py"]
 # Last, so the workbench is the default build target.
 FROM docker.io/library/alpine:3.22 AS workbench
 COPY --from=builder /usr/local/bin/gsmtap-workbench /usr/local/bin/gsmtap-workbench
+COPY tests/vectors/*.json /usr/share/gsmtap-rs/vectors/
 USER 65534:65534
-ENV GSMTAP_LISTEN=0.0.0.0:4729 HTTP_LISTEN=0.0.0.0:8080
+ENV GSMTAP_LISTEN=0.0.0.0:4729 HTTP_LISTEN=0.0.0.0:8080 \
+    GSMTAP_REFERENCE_VECTORS=/usr/share/gsmtap-rs/vectors
 EXPOSE 8080/tcp 4729/udp
 ENTRYPOINT ["/usr/local/bin/gsmtap-workbench"]

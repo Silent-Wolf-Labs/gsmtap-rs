@@ -42,7 +42,8 @@ for mode in $modes; do
     if [ -n "$ready" ] && podman run --rm \
         --network "$run" --network-alias traffic \
         "$traffic_image" \
-        --mode "$mode" --workbench-host workbench --sink-port 9000; then
+        --mode "$mode" --workbench-host workbench --sink-port 9000 \
+        --require-references; then
         echo "integration: $mode passed"
     else
         echo "integration: $mode failed; workbench log:" >&2

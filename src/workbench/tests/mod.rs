@@ -34,3 +34,4 @@ mod config;
 mod forwarding;
 mod history;
 mod modes;
+mod reference;

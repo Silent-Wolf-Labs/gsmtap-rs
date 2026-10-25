@@ -90,6 +90,25 @@ def modify_payload(decoded):
     return payload
 
 
+def check_references(records, vectors):
+    """Each received vector carries its case name; other packets carry none."""
+    cases = {packet: Path(name).stem for name, packet in vectors}
+    matched = 0
+    for record in records:
+        if record.get("direction") != "RX":
+            continue
+        expected = cases.get(bytes.fromhex(record["rawHex"]))
+        if record.get("referenceCase") != expected:
+            raise RuntimeError(
+                f"packet #{record['id']} has reference {record.get('referenceCase')!r}, "
+                f"expected {expected!r}"
+            )
+        matched += expected is not None
+    if not matched:
+        raise RuntimeError("no received packet matched a reference vector")
+    print(f"reference: {matched} received packets matched their recorded vectors")
+
+
 def check(args, vectors):
     base = f"http://{args.workbench_host}:{args.workbench_port}"
     initial_status = workbench_status(base)
@@ -98,6 +117,8 @@ def check(args, vectors):
             f"workbench mode is {initial_status['mode']!r}, expected {args.mode!r}; "
             "restart it with the matching --mode"
         )
+    if args.require_references and not initial_status.get("referenceVectors"):
+        raise RuntimeError("workbench has no reference vectors; start it with --reference-vectors")
     source = [packet for _, packet in vectors]
     rounds = args.rounds
     # Include a deliberately malformed datagram in every mode so the UI's
@@ -121,6 +142,8 @@ def check(args, vectors):
     parse_errors = sum(1 for record in records if record.get("parseError"))
     if parse_errors < rounds:
         raise RuntimeError(f"API returned {parse_errors} parse errors, expected at least {rounds}")
+    if args.require_references:
+        check_references(records, vectors)
 
     if args.mode == "listen":
         if status["stats"]["received"] < expected:
@@ -219,6 +242,11 @@ def main(default_mode=None):
     parser.add_argument("--sink-port", type=int)
     parser.add_argument("--vectors", default="/opt/traffic/vectors")
     parser.add_argument("--rounds", type=int, default=1)
+    parser.add_argument(
+        "--require-references",
+        action="store_true",
+        help="fail unless every received vector is tagged with its recorded case",
+    )
     args = parser.parse_args()
     args.mode = default_mode or args.mode
     if args.rounds < 1:

@@ -21,6 +21,8 @@ pub struct PacketRecord {
     pub modified: bool,
     pub original_raw_hex: Option<String>,
     pub final_raw_hex: Option<String>,
+    /// The C-recorded vector whose packet is exactly these bytes.
+    pub reference_case: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -134,6 +136,7 @@ pub fn from_decoded(
         modified: false,
         original_raw_hex: None,
         final_raw_hex: None,
+        reference_case: None,
     }
 }
 
@@ -159,6 +162,7 @@ pub fn from_error(
         modified: false,
         original_raw_hex: None,
         final_raw_hex: None,
+        reference_case: None,
     }
 }
 
