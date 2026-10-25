@@ -1,4 +1,12 @@
+use std::process::ExitCode;
+
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    gsmtap_rs::run_workbench().await
+async fn main() -> ExitCode {
+    match gsmtap_rs::run_workbench().await {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("gsmtap-workbench: {error}");
+            ExitCode::FAILURE
+        }
+    }
 }

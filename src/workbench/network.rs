@@ -194,13 +194,46 @@ pub async fn run(
         runtime,
     );
     let http_listen = config.http_listen;
-
-    let http = async move {
-        let listener = tokio::net::TcpListener::bind(http_listen).await?;
-        axum::serve(listener, router).await
-    };
-    http.await?;
+    let listener = tokio::net::TcpListener::bind(http_listen)
+        .await
+        .map_err(|error| {
+            std::io::Error::new(
+                error.kind(),
+                format!("cannot serve HTTP on {http_listen}: {error}"),
+            )
+        })?;
+    // Open event streams never finish, so stop serving instead of draining them.
+    tokio::select! {
+        result = axum::serve(listener, router) => result?,
+        () = shutdown_signal() => {}
+    }
     Ok(())
+}
+
+/// Resolves on Ctrl-C or, on Unix, SIGTERM, which container runtimes send to
+/// stop the workbench. A signal that cannot be watched never resolves.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        if tokio::signal::ctrl_c().await.is_err() {
+            std::future::pending::<()>().await;
+        }
+    };
+    #[cfg(unix)]
+    let terminate = async {
+        use tokio::signal::unix::{SignalKind, signal};
+        match signal(SignalKind::terminate()) {
+            Ok(mut terminate) => {
+                terminate.recv().await;
+            }
+            Err(_) => std::future::pending::<()>().await,
+        }
+    };
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+    tokio::select! {
+        () = ctrl_c => {}
+        () = terminate => {}
+    }
 }
 
 /// Runs the canonical UDP intake and inspection pipeline without the HTTP server.
