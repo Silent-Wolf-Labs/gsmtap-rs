@@ -12,8 +12,8 @@ Modify, and configure its `host:port` forward target, from the status card in
 the web UI. GSMTAP uses UDP port `4729`; the web UI uses TCP port `8080`.
 
 ```bash
-docker build -t gsmtap-workbench .
-docker run --rm \
+buildah build --layers --tag gsmtap-workbench .
+podman run --rm \
   -p 8080:8080 -p 4729:4729/udp \
   gsmtap-workbench
 ```
@@ -67,14 +67,15 @@ Modify mode is capture-and-replay. Incoming packets are retained for later
 selection; they are not paused while a person edits them. A packet is sent to
 the forward endpoint only after an explicit replay or edit-and-send action.
 
-## Dockerfile terminology
+## Containerfile stages
 
-The Dockerfile contains build/runtime stages, not separate workbench modes:
+The Containerfile contains build and runtime stages, not separate workbench
+modes:
 
-| Dockerfile stage | Purpose |
+| Stage | Purpose |
 | --- | --- |
-| `workbench` | Runtime image containing `gsmtap-workbench` |
+| `builder` | Builds a static `gsmtap-workbench` with `cargo auditable` on Alpine |
 | `traffic-test` | Python image used to replay test vectors against a workbench |
-| `default` | The default output image; currently based on `workbench` |
+| `workbench` | Alpine runtime image with `gsmtap-workbench` and the reference vectors; the default target |
 
 The operating mode is selected at runtime from the workbench status card.
