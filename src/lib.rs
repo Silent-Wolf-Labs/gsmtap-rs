@@ -1,5 +1,8 @@
 //! GSMTAP parsing and encoding primitives.
 
+#[cfg(feature = "osmocore")]
+#[doc(hidden)]
+pub mod conformance;
 pub mod gsmtap;
 mod workbench;
 

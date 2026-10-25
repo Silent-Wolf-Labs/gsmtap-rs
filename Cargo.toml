@@ -33,8 +33,9 @@ exclude = [
 path = "src/lib.rs"
 
 [features]
-# Workbench conversion panels backed by the GPL-3.0-or-later osmocore-rs crate.
-osmocore = ["dep:osmocore-rs"]
+# Conversion panels and the conformance engine, backed by the GPL-3.0-or-later
+# osmocore-rs crate.
+osmocore = ["dep:osmocore-rs", "dep:sha2"]
 
 [dependencies]
 osmocore-rs = { version = "0.1.0", path = "../libosmocore-rs/osmocore-rs", optional = true }
@@ -42,6 +43,7 @@ axum = { version = "0.8", features = ["json", "macros"] }
 clap = { version = "4.5", features = ["derive", "env"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = { version = "0.10", optional = true }
 tokio = { version = "1.28", features = ["full"] }
 tokio-stream = { version = "0.1", features = ["sync"] }
 

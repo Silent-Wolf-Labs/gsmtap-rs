@@ -1,6 +1,6 @@
 FROM rust:1.99-bookworm AS builder
 WORKDIR /build
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml Cargo.lock build.rs ./
 COPY src ./src
 COPY static ./static
 RUN cargo build --release --locked --features osmocore --bin gsmtap-workbench
