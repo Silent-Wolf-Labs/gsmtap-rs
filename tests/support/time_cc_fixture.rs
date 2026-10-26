@@ -12,13 +12,13 @@ pub fn fingerprint(text: &str) -> u64 {
         (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
     })
 }
-const TEXT_HASH: u64 = 0x10fe283872969608;
+const TEXT_HASH: u64 = 0xa2ee3659631ad0a1;
 const REFERENCE_HASH: u64 = 0x04574c0d977731bc;
-const GENERATOR_HASH: u64 = 0x1284f2f5b390d3d3;
-const DIAGNOSTICS_HASH: u64 = 0xf140dc47fbe05937;
+const GENERATOR_HASH: u64 = 0x6aa076d90713d7fa;
+const DIAGNOSTICS_HASH: u64 = 0xe4fee62e58e5ab1a;
 const INPUT_HASH: u64 = 0x557742451d06e0f1;
 const REFERENCE_SHA: &str = "782c22f7112724bac91f6132bdf2e21ed679b09af57b70be950419078d98a2d7";
-const GENERATOR_SHA: &str = "ecd819d783262dec0227bd237df65911b94d922377579d794a51e59951ead9bd";
+const GENERATOR_SHA: &str = "2b35e42c040f38b86bce8c2a7b04514936c755025592f4df14c8ee1da3082226";
 const INPUT_KEYS: &str = "scenario step op arg mono_s mono_ns wall_s wall_us fail a b c d e";
 const TRACE_KEYS: &str = "a active arg b bindings c counter d deadline_s deadline_us e fail flag forget gran last mono_ns mono_s op previous reported scenario sink start step sum threshold timers total type wall_s wall_us work";
 fn parse(line: &str) -> Record {

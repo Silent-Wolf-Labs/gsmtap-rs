@@ -15,13 +15,13 @@ pub fn fingerprint(text: &str) -> u64 {
         (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
     })
 }
-const TEXT_HASH: u64 = 0x43a802c3543ac26c;
+const TEXT_HASH: u64 = 0x04eee8893d02480c;
 const REFERENCE_HASH: u64 = 0xc13de6d46e859cfd;
-const GENERATOR_HASH: u64 = 0x283a68920650ac60;
-const DIAGNOSTICS_HASH: u64 = 0xa30d3e372736d58d;
+const GENERATOR_HASH: u64 = 0x434be14b6d318ef3;
+const DIAGNOSTICS_HASH: u64 = 0x95d9c6678d8ab839;
 const INPUT_HASH: u64 = 0x99fb7448c0b91e80;
 const REFERENCE_SHA: &str = "151fa6367553e99b81fbe0fe4543ed747336c0b380b299963ae775b3fb2a5fc5";
-const GENERATOR_SHA: &str = "f3b91b7d125065f9733138fc9983d46a02d286fe5592fa217274070bf3976a58";
+const GENERATOR_SHA: &str = "0629517cd95662f7b41c166cad152c059b44143d6940d50b0c66659f367bbbd5";
 fn number<T: std::str::FromStr + ToString>(s: &str) -> T
 where
     T::Err: std::fmt::Debug,

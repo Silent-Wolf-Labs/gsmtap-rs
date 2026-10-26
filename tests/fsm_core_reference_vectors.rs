@@ -6,12 +6,12 @@ const REFERENCE: &str = include_str!("vectors/fsm_core/fsm_core_provenance.json"
 const GENERATOR: &str = include_str!("vectors/fsm_core/fsm_core_generator_provenance.json");
 const DIAGNOSTICS: &str = include_str!("vectors/fsm_core/fsm_core_diagnostics.json");
 const SPEC: fsm_fixture::Evidence = fsm_fixture::Evidence {
-    text_hash: 0xc800eca23162bfac,
+    text_hash: 0xbbde5a5c6b3dc6c2,
     reference_hash: 0xcab6c5c42bd14581,
     reference_sha: "f572b2e98589d209217fdd17b117b79f1ad113b499a96898fd6c7c251d3d7fe0",
-    generator_hash: 0xd80aa50df9f8b7fc,
-    generator_sha: "7c21fa06c2a084af8a38eac787ff2ef43fc2815c26ed17fa23f6654c2c5a54e8",
-    diagnostics_hash: 0x4ca0415a998b1987,
+    generator_hash: 0x2d92181512c078c7,
+    generator_sha: "9f5c41d6e60b9999ee511de720b6abd66eacf5c70a9b09a1f22436325bce38bd",
+    diagnostics_hash: 0xb7a8b2b8e70d7d35,
     records: 1506,
     scenarios: 64,
     fields: 14,

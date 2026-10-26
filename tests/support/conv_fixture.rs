@@ -53,14 +53,14 @@ pub fn fingerprint(text: &str) -> u64 {
     })
 }
 
-pub const FIXTURE_FINGERPRINT: u64 = 0xfe1fab4c1d20742f;
+pub const FIXTURE_FINGERPRINT: u64 = 0x8f2c0427eb58d013;
 const CASE_FINGERPRINT: u64 = 0xc8bf7e357d2c5f2d;
 const BACKENDS: [&str; 4] = ["linked-dispatch", "scalar", "sse", "avx"];
 const REFERENCE_SHA: &str = "dcc2ab8e2341b5c8ccd7942ac79b34f977d477cdd1c4a95a949a666a963d8067";
-const GENERATOR_SHA: &str = "d74188e6657ff3bb8ae9f412ffcc2a1e4b3d6ff92e623fd81601b3c5450dc5e6";
+const GENERATOR_SHA: &str = "ea292ede99d0b7143fe7c4c78409da48733dede5bf673a516657a86e9dff41b8";
 const LIBRARY_SHA: &str = "f452c264ec62f77420e96bfdf3c66a64b40ba025f1c8629ca8c1244bae45bf40";
 const HARNESS_SHA: &str = "f4ba52b97c1dc2ed12eb620a17cea07e3ee9020edb88be19f6fd4dda76fc9203";
-const RUNNER_SHA: &str = "f2c318dede82f14f8662f09bbaa662cce11266c7b32880bf7dffe2682f67d577";
+const RUNNER_SHA: &str = "7145c28c8681aa7bc08b83c3728bd6af369429593dcb4bf0535c5168156f84a5";
 const STRINGS: &[&str] = &[
     "type",
     "backend",
@@ -725,7 +725,7 @@ pub fn validate_fingerprint(text: &str) {
 /// No sibling repository or C installation is needed by ordinary tests.
 pub fn validate_manifests(reference: &str, generator: &str, fixture: &Fixture) {
     assert_eq!(fingerprint(reference), 0x144cae78eeb44ce8);
-    assert_eq!(fingerprint(generator), 0xca166ee81f8fef3b);
+    assert_eq!(fingerprint(generator), 0x44e8c13a9dc0a0f8);
     assert!(reference.contains("\"upstream_git_revision\": \"unknown\""));
     assert!(reference.contains("\"embedded_version_descriptive\": \"1.14.1.1-95043\""));
     assert!(generator.contains(&format!(

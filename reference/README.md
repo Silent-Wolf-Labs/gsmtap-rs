@@ -72,21 +72,21 @@ loaders. The `gsmtap-rs` test checks fixture structure and provenance; the
 From the `libosmocore-rs` repository root, regenerate the fixture with:
 
 ```bash
-../gsmtap-rs/reference/run_bcd_conversion_vector.sh > osmocore-rs/tests/compatibility/vectors/bcd_conversion_vectors.json
+../gsmtap-rs/reference/bcd/run_bcd_conversion_vector.sh > osmocore-rs/tests/compatibility/vectors/bcd_conversion_vectors.json
 ```
 
 The two committed BCD fixtures should match byte for byte. To regenerate only
 the `gsmtap-rs` copy, run from this repository root:
 
 ```bash
-./reference/run_bcd_conversion_vector.sh > tests/vectors/bcd/bcd_conversion_vectors.json
+./reference/bcd/run_bcd_conversion_vector.sh > tests/vectors/bcd/bcd_conversion_vectors.json
 ```
 
 To verify the committed `gsmtap-rs` fixture against a fresh C run without
 replacing it, run:
 
 ```bash
-./reference/run_bcd_conversion_vector.sh | cmp - tests/vectors/bcd/bcd_conversion_vectors.json
+./reference/bcd/run_bcd_conversion_vector.sh | cmp - tests/vectors/bcd/bcd_conversion_vectors.json
 ```
 
 The cases use only in-bounds C arrays. Review the complete fixture diff after
@@ -111,7 +111,7 @@ byte for byte.
 From the `libosmocore-rs` repository root, regenerate the Rust fixture with:
 
 ```bash
-../gsmtap-rs/reference/run_hexparse_vector.sh > osmocore-rs/tests/compatibility/vectors/hexparse_buffer_vectors.json
+../gsmtap-rs/reference/hexparse/run_hexparse_vector.sh > osmocore-rs/tests/compatibility/vectors/hexparse_buffer_vectors.json
 ```
 
 Review the generated diff before committing. The normal Rust tests consume the
@@ -120,13 +120,13 @@ committed fixture and do not need the C library.
 To regenerate only the `gsmtap-rs` copy, run from this repository root:
 
 ```bash
-./reference/run_hexparse_vector.sh > tests/vectors/hexparse/hexparse_buffer_vectors.json
+./reference/hexparse/run_hexparse_vector.sh > tests/vectors/hexparse/hexparse_buffer_vectors.json
 ```
 
 To verify the committed fixture against a fresh C run without replacing it:
 
 ```bash
-./reference/run_hexparse_vector.sh | cmp - tests/vectors/hexparse/hexparse_buffer_vectors.json
+./reference/hexparse/run_hexparse_vector.sh | cmp - tests/vectors/hexparse/hexparse_buffer_vectors.json
 ```
 
 ## Basic bit-packing vectors
@@ -207,8 +207,8 @@ From this repository root, regenerate all reference fixtures:
 To regenerate only this fixture, or compare it with fresh C output:
 
 ```bash
-./reference/run_bit_packing_vector.sh > tests/vectors/bits/bit_packing_vectors.json
-./reference/run_bit_packing_vector.sh > /tmp/bit_packing_vectors.fresh.json
+./reference/bits/run_bit_packing_vector.sh > tests/vectors/bits/bit_packing_vectors.json
+./reference/bits/run_bit_packing_vector.sh > /tmp/bit_packing_vectors.fresh.json
 cmp /tmp/bit_packing_vectors.fresh.json tests/vectors/bits/bit_packing_vectors.json
 cargo fmt --check
 cargo test
@@ -230,7 +230,7 @@ against the same C fixture. From that repository root, after agreeing on the
 Rust API and deliberate safety differences:
 
 ```bash
-../gsmtap-rs/reference/run_bit_packing_vector.sh > osmocore-rs/tests/compatibility/vectors/bit_packing_vectors.json
+../gsmtap-rs/reference/bits/run_bit_packing_vector.sh > osmocore-rs/tests/compatibility/vectors/bit_packing_vectors.json
 cmp ../gsmtap-rs/tests/vectors/bits/bit_packing_vectors.json osmocore-rs/tests/compatibility/vectors/bit_packing_vectors.json
 cargo fmt --manifest-path osmocore-rs/Cargo.toml --check
 cargo test --manifest-path osmocore-rs/Cargo.toml
@@ -341,7 +341,7 @@ Regenerate or verify from the `gsmtap-rs` root:
 
 ```bash
 ./scripts/generate-reference-vectors.sh
-./reference/run_bit_packing_ext_vector.sh > /tmp/bit_packing_ext.fresh.json
+./reference/bits/run_bit_packing_ext_vector.sh > /tmp/bit_packing_ext.fresh.json
 cmp /tmp/bit_packing_ext.fresh.json tests/vectors/bits/bit_packing_ext_vectors.json
 cargo fmt --check
 cargo test
@@ -390,7 +390,7 @@ reference, links its explicit shared library, and selects that directory at
 runtime with preload cleared, failing if the reference is unavailable.
 
 ```bash
-./reference/run_base64_buffer_vector.sh > /tmp/base64.fresh.json
+./reference/base64/run_base64_buffer_vector.sh > /tmp/base64.fresh.json
 cmp /tmp/base64.fresh.json tests/vectors/base64/base64_buffer_vectors.json
 cmp tests/vectors/base64/base64_buffer_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/base64_buffer_vectors.json
 ./scripts/generate-reference-vectors.sh
@@ -428,7 +428,7 @@ capacity. Invalid enum values are excluded by its type.
 From this repository root, verify fresh observations without changing fixtures:
 
 ```bash
-./reference/run_bitvec_vector.sh > /tmp/bitvec.fresh.json
+./reference/bitvec/run_bitvec_vector.sh > /tmp/bitvec.fresh.json
 cmp /tmp/bitvec.fresh.json tests/vectors/bitvec/bitvec_vectors.json
 cmp /tmp/bitvec.fresh.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/bitvec_vectors.json
 cmp tests/support/bitvec_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/bitvec_fixture.rs
@@ -469,7 +469,7 @@ The general fixture generation script includes both bit-vector runners.
 From this repository root:
 
 ```bash
-./reference/run_bitvec_vector.sh --buffers > /tmp/bitvec_buffers.fresh.json
+./reference/bitvec/run_bitvec_vector.sh --buffers > /tmp/bitvec_buffers.fresh.json
 cmp /tmp/bitvec_buffers.fresh.json tests/vectors/bitvec/bitvec_buffers_vectors.json
 cmp /tmp/bitvec_buffers.fresh.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/bitvec_buffers_vectors.json
 cmp tests/support/bitvec_buffers_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/bitvec_buffers_fixture.rs
@@ -506,7 +506,7 @@ errors; Rust does not reproduce the global errno side effect.
 From this repository root:
 
 ```bash
-./reference/run_bitvec_vector.sh --operations > /tmp/bitvec_operations.fresh.json
+./reference/bitvec/run_bitvec_vector.sh --operations > /tmp/bitvec_operations.fresh.json
 cmp /tmp/bitvec_operations.fresh.json tests/vectors/bitvec/bitvec_operations_vectors.json
 cmp /tmp/bitvec_operations.fresh.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/bitvec_operations_vectors.json
 cmp tests/support/bitvec_operations_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/bitvec_operations_fixture.rs
@@ -544,7 +544,7 @@ in Rust safety tests, not C observations.
 From this repository root:
 
 ```bash
-./reference/run_bitvec_vector.sh --adapters > /tmp/bitvec_adapters.fresh.json
+./reference/bitvec/run_bitvec_vector.sh --adapters > /tmp/bitvec_adapters.fresh.json
 cmp /tmp/bitvec_adapters.fresh.json tests/vectors/bitvec/bitvec_adapters_vectors.json
 cmp /tmp/bitvec_adapters.fresh.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/bitvec_adapters_vectors.json
 cmp tests/support/bitvec_adapters_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/bitvec_adapters_fixture.rs
@@ -568,8 +568,8 @@ osmocore-rs's `tests/support/msgb_fixture.rs`. Tests freeze schema, inputs,
 order, provenance, ABI, state consistency, sequence continuity, and corruption
 rejection. Normal Cargo tests consume committed JSON without building C.
 
-`reference/msgb_vector.c` calls the actual APIs, including inline primitives.
-`reference/run_msgb_vector.sh` pins msgb source/header/upstream tests and panic
+`reference/msgb/msgb_vector.c` calls the actual APIs, including inline primitives.
+`reference/msgb/run_msgb_vector.sh` pins msgb source/header/upstream tests and panic
 source/header, rebuilds the required local core library, and selects it at link
 and runtime. All five files were compared byte-for-byte with upstream revision
 `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-08. The runner contains
@@ -608,7 +608,7 @@ GSMTAP-loader integration, or vendored crate snapshot refresh is included.
 Regenerate and validate from this repository root:
 
 ```bash
-./reference/run_msgb_vector.sh > /tmp/msgb_vectors.fresh.json
+./reference/msgb/run_msgb_vector.sh > /tmp/msgb_vectors.fresh.json
 cmp /tmp/msgb_vectors.fresh.json tests/vectors/msgb/msgb_vectors.json
 cmp tests/vectors/msgb/msgb_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_vectors.json
 cmp tests/support/msgb_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_fixture.rs
@@ -686,7 +686,7 @@ Stage 4 below completes the adapter inventory with explicit exclusions. GSMTAP c
 From this repository root, regenerate and verify:
 
 ```bash
-./reference/run_msgb_vector.sh --layers > /tmp/msgb_layers.fresh.json
+./reference/msgb/run_msgb_vector.sh --layers > /tmp/msgb_layers.fresh.json
 cmp /tmp/msgb_layers.fresh.json tests/vectors/msgb/msgb_layers_vectors.json
 cmp tests/vectors/msgb/msgb_layers_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_layers_vectors.json
 cmp tests/support/msgb_layers_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_layers_fixture.rs
@@ -754,7 +754,7 @@ pre-check pointers within backing storage. Rust-only tests cover unset layers,
 unsafe shrink-copy layer offsets, unsafe growth/relocation, extreme arguments,
 copy independence, and preservation of unwritten bytes and removed-area markers.
 
-`reference/run_msgb_vector.sh --resize` pins the existing msgb/panic reference
+`reference/msgb/run_msgb_vector.sh --resize` pins the existing msgb/panic reference
 plus local logging source/header and the assertion header. Logging is initialized
 without targets so legitimate copy-failure logging does not cause an unrelated
 panic. The logging files were verified byte-for-byte against upstream revision
@@ -769,7 +769,7 @@ and the sibling vendored crate snapshot remain unchanged.
 From this repository root:
 
 ```bash
-./reference/run_msgb_vector.sh --resize > /tmp/msgb_resize.fresh.json
+./reference/msgb/run_msgb_vector.sh --resize > /tmp/msgb_resize.fresh.json
 cmp /tmp/msgb_resize.fresh.json tests/vectors/msgb/msgb_resize_vectors.json
 cmp tests/vectors/msgb/msgb_resize_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_resize_vectors.json
 cmp tests/support/msgb_resize_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_resize_fixture.rs
@@ -862,7 +862,7 @@ counters, and missing records. Rust conformance checks every record; separate
 safety tests exercise unsafe C annotation sizes and invalid layer spans.
 Ordinary Cargo tests require no C installation.
 
-`reference/run_msgb_vector.sh --adapters` uses only the required local C
+`reference/msgb/run_msgb_vector.sh --adapters` uses only the required local C
 checkout. It additionally pins `src/core/utils.c`, `utils.h`, and `linuxlist.h`;
 new source/list dependencies were verified byte-for-byte against revision
 `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-09. The queue harness
@@ -878,7 +878,7 @@ No snapshot refresh is required for these independent conformance fixtures.
 Regenerate stage 4 from the testing repository:
 
 ```bash
-./reference/run_msgb_vector.sh --adapters > /tmp/msgb_adapters.fresh.json
+./reference/msgb/run_msgb_vector.sh --adapters > /tmp/msgb_adapters.fresh.json
 cmp /tmp/msgb_adapters.fresh.json tests/vectors/msgb/msgb_adapters_vectors.json
 cmp tests/vectors/msgb/msgb_adapters_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/msgb_adapters_vectors.json
 cmp tests/support/msgb_adapters_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/msgb_adapters_fixture.rs
@@ -915,7 +915,7 @@ not cryptographic authenticity. Corruption tests reject missing/duplicate/unknow
 fields, altered provenance/ABI/inputs/maps/output/association/names, missing or
 extra records, and malformed framing. Ordinary Cargo tests require no C build.
 
-`reference/run_prim_vector.sh` verifies SHA-256 hashes for `prim.c`, `prim.h`,
+`reference/prim/run_prim_vector.sh` verifies SHA-256 hashes for `prim.c`, `prim.h`,
 `utils.c`, `utils.h`, `msgb.c`, and `msgb.h`, verified byte-for-byte against
 revision `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-09. It builds,
 links, and selects runtime libraries only from the required local C checkout.
@@ -925,7 +925,7 @@ unsigned long/pointers. It fails on source or ABI mismatch.
 Regenerate from the testing repository:
 
 ```bash
-./reference/run_prim_vector.sh > /tmp/prim.fresh.json
+./reference/prim/run_prim_vector.sh > /tmp/prim.fresh.json
 cmp /tmp/prim.fresh.json tests/vectors/prim/prim_vectors.json
 cmp tests/vectors/prim/prim_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/prim_vectors.json
 cmp tests/support/prim_fixture.rs ../libosmocore-rs/osmocore-rs/tests/support/prim_fixture.rs
@@ -983,7 +983,7 @@ revision/hashes/ABI, numeric overflow, coverage, observed results, mismatch
 records and output bytes; separate parser tests exercise validation independently
 of the fingerprint. Rust conformance compares every observation.
 
-`reference/run_crc_vector.sh` pins 16 local source/header/template/build-rule
+`reference/crc/run_crc_vector.sh` pins 16 local source/header/template/build-rule
 and generated-file hashes. Nongenerated files were verified byte-for-byte at
 revision `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-09. All eight
 generated CRC files match the verified templates' `XX` substitutions. Build,
@@ -993,9 +993,9 @@ fail. The observed ABI requires 32-bit `int` and 8-bit bytes.
 Regenerate and audit from the testing repository:
 
 ```bash
-./reference/run_crc_vector.sh byte > /tmp/crc-byte.fresh.json
-./reference/run_crc_vector.sh generic > /tmp/crc-generic.fresh.json
-./reference/run_crc_vector.sh --audit
+./reference/crc/run_crc_vector.sh byte > /tmp/crc-byte.fresh.json
+./reference/crc/run_crc_vector.sh generic > /tmp/crc-generic.fresh.json
+./reference/crc/run_crc_vector.sh --audit
 cmp /tmp/crc-byte.fresh.json tests/vectors/crc/crc_byte_vectors.json
 cmp /tmp/crc-generic.fresh.json tests/vectors/crc/crc_generic_vectors.json
 cmp tests/vectors/crc/crc_byte_vectors.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/crc_byte_vectors.json
@@ -1156,19 +1156,19 @@ installation. No unreviewed vendored Rust snapshot refresh is included.
 From this repository:
 
 ```bash
-./reference/run_conv_vector.sh --verify
+./reference/conv/run_conv_vector.sh --verify
 mkdir -p target/conv-stateful-validation
-TMPDIR="$PWD/target/conv-stateful-validation" ./reference/run_conv_vector.sh --audit
+TMPDIR="$PWD/target/conv-stateful-validation" ./reference/conv/run_conv_vector.sh --audit
 for pass in 1 2; do
-  TMPDIR="$PWD/target/conv-stateful-validation" ./reference/run_conv_vector.sh all > "target/conv-stateful-validation/conv.$pass.ndjson" || exit
+  TMPDIR="$PWD/target/conv-stateful-validation" ./reference/conv/run_conv_vector.sh all > "target/conv-stateful-validation/conv.$pass.ndjson" || exit
   cmp "target/conv-stateful-validation/conv.$pass.ndjson" tests/vectors/conv/conv_vectors.ndjson || exit
   cmp "target/conv-stateful-validation/conv.$pass.ndjson" ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/conv/conv_vectors.ndjson || exit
 done
 cmp target/conv-stateful-validation/conv.1.ndjson target/conv-stateful-validation/conv.2.ndjson
 # Readers have the same integrity checks, but rustfmt follows each crate's edition.
 # Evidence and manifests below must match byte-for-byte.
-cmp reference/conv_provenance.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/conv/conv_provenance.json
-cmp reference/conv_generator_provenance.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/conv/conv_generator_provenance.json
+cmp reference/conv/conv_provenance.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/conv/conv_provenance.json
+cmp reference/conv/conv_generator_provenance.json ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/conv/conv_generator_provenance.json
 ```
 
 Individual evidence modes are `linked-dispatch`, `scalar`, `sse` and `avx`.
@@ -1212,8 +1212,8 @@ Their shared hard input SHA-256 is
 and output tables were checked against the removed cases; neither input matches
 an old vector or its equal-length prefix, and the output tables differ.
 
-Producers in this repository are `reference/conv_vector.c`, `reference/run_conv_vector.sh`,
-`reference/conv_provenance.json`, and `reference/conv_generator_provenance.json`.
+Producers in this repository are `reference/conv/conv_vector.c`, `reference/conv/run_conv_vector.sh`,
+`reference/conv/conv_provenance.json`, and `reference/conv/conv_generator_provenance.json`.
 The existing mathematical helper generates descriptors and inputs only. Direct
 local C calls produce encoding/decoding results, metrics, history, returns and
 buffer observations. Rust never supplies expected encode/decode outputs.
@@ -1275,10 +1275,10 @@ The planned TDef claim is core TDef parity excluding FSM integration.
 Verify/regenerate without overwriting committed evidence:
 
 ```bash
-./reference/run_time_vector.sh --verify
-./reference/run_time_vector.sh --audit
-./reference/run_time_vector.sh all > /tmp/time.1.ndjson
-./reference/run_time_vector.sh all > /tmp/time.2.ndjson
+./reference/time/run_time_vector.sh --verify
+./reference/time/run_time_vector.sh --audit
+./reference/time/run_time_vector.sh all > /tmp/time.1.ndjson
+./reference/time/run_time_vector.sh all > /tmp/time.2.ndjson
 cmp /tmp/time.1.ndjson /tmp/time.2.ndjson
 cmp /tmp/time.1.ndjson tests/vectors/time/time_vectors.ndjson
 cmp tests/vectors/time/time_vectors.ndjson ../libosmocore-rs/osmocore-rs/tests/compatibility/vectors/time/time_vectors.ndjson
@@ -1360,12 +1360,12 @@ execution, helper/macros, VTY, and `_osmo_tdef_fsm_inst_state_chg()` remain defe
 Non-destructive validation/regeneration from this repository:
 
 ```bash
-./reference/run_tdef_vector.sh --verify
-./reference/run_tdef_vector.sh --audit
-./reference/run_tdef_vector.sh all > /tmp/tdef.1.ndjson
-./reference/run_tdef_vector.sh all > /tmp/tdef.2.ndjson
-./reference/run_tdef_vector.sh --diagnostics > /tmp/tdef.diagnostics.1.json
-./reference/run_tdef_vector.sh --diagnostics > /tmp/tdef.diagnostics.2.json
+./reference/tdef/run_tdef_vector.sh --verify
+./reference/tdef/run_tdef_vector.sh --audit
+./reference/tdef/run_tdef_vector.sh all > /tmp/tdef.1.ndjson
+./reference/tdef/run_tdef_vector.sh all > /tmp/tdef.2.ndjson
+./reference/tdef/run_tdef_vector.sh --diagnostics > /tmp/tdef.diagnostics.1.json
+./reference/tdef/run_tdef_vector.sh --diagnostics > /tmp/tdef.diagnostics.2.json
 cmp /tmp/tdef.1.ndjson /tmp/tdef.2.ndjson
 cmp /tmp/tdef.1.ndjson tests/vectors/tdef/tdef_vectors.ndjson
 cmp /tmp/tdef.diagnostics.1.json /tmp/tdef.diagnostics.2.json
@@ -1432,12 +1432,12 @@ Rust-only tests exercise typed errors there.
 Non-destructive validation from this repository:
 
 ```bash
-./reference/run_time_cc_vector.sh --verify
-./reference/run_time_cc_vector.sh --audit
-./reference/run_time_cc_vector.sh all > /tmp/time_cc.1.ndjson
-./reference/run_time_cc_vector.sh all > /tmp/time_cc.2.ndjson
-./reference/run_time_cc_vector.sh --diagnostics > /tmp/time_cc.diagnostics.1.json
-./reference/run_time_cc_vector.sh --diagnostics > /tmp/time_cc.diagnostics.2.json
+./reference/time_cc/run_time_cc_vector.sh --verify
+./reference/time_cc/run_time_cc_vector.sh --audit
+./reference/time_cc/run_time_cc_vector.sh all > /tmp/time_cc.1.ndjson
+./reference/time_cc/run_time_cc_vector.sh all > /tmp/time_cc.2.ndjson
+./reference/time_cc/run_time_cc_vector.sh --diagnostics > /tmp/time_cc.diagnostics.1.json
+./reference/time_cc/run_time_cc_vector.sh --diagnostics > /tmp/time_cc.diagnostics.2.json
 cmp /tmp/time_cc.1.ndjson /tmp/time_cc.2.ndjson
 cmp /tmp/time_cc.1.ndjson tests/vectors/time_cc/time_cc_vectors.ndjson
 cmp /tmp/time_cc.diagnostics.1.json /tmp/time_cc.diagnostics.2.json
@@ -1494,12 +1494,12 @@ refresh is performed for these uncommitted changes.
 Regenerate only this family (the full generator rewrites unrelated families):
 
 ```bash
-./reference/run_rate_ctr_vector.sh --verify
-./reference/run_rate_ctr_vector.sh --audit
-./reference/run_rate_ctr_vector.sh all > /tmp/rate_ctr.1.tsv
-./reference/run_rate_ctr_vector.sh all > /tmp/rate_ctr.2.tsv
-./reference/run_rate_ctr_vector.sh --diagnostics > /tmp/rate_ctr.diagnostics.1.json
-./reference/run_rate_ctr_vector.sh --diagnostics > /tmp/rate_ctr.diagnostics.2.json
+./reference/rate_ctr/run_rate_ctr_vector.sh --verify
+./reference/rate_ctr/run_rate_ctr_vector.sh --audit
+./reference/rate_ctr/run_rate_ctr_vector.sh all > /tmp/rate_ctr.1.tsv
+./reference/rate_ctr/run_rate_ctr_vector.sh all > /tmp/rate_ctr.2.tsv
+./reference/rate_ctr/run_rate_ctr_vector.sh --diagnostics > /tmp/rate_ctr.diagnostics.1.json
+./reference/rate_ctr/run_rate_ctr_vector.sh --diagnostics > /tmp/rate_ctr.diagnostics.2.json
 cmp /tmp/rate_ctr.1.tsv /tmp/rate_ctr.2.tsv
 cmp /tmp/rate_ctr.1.tsv tests/vectors/rate_ctr/rate_ctr_vectors.tsv
 cmp /tmp/rate_ctr.diagnostics.1.json /tmp/rate_ctr.diagnostics.2.json
@@ -1658,14 +1658,14 @@ The standalone Stage 5a fixture remains unchanged.
 Regenerate only this family while implementing Stage 7:
 
 ```bash
-./reference/run_rate_ctr_group_vector.sh --verify
-./reference/run_rate_ctr_group_vector.sh --audit
-./reference/run_rate_ctr_group_vector.sh all > /tmp/rate_ctr_group.1.tsv
-./reference/run_rate_ctr_group_vector.sh all > /tmp/rate_ctr_group.2.tsv
-./reference/run_rate_ctr_group_vector.sh --diagnostics > /tmp/rate_ctr_group.diagnostics.1.json
-./reference/run_rate_ctr_group_vector.sh --diagnostics > /tmp/rate_ctr_group.diagnostics.2.json
-./reference/run_rate_ctr_group_vector.sh --native > /tmp/rate_ctr_group.native.1.tsv
-./reference/run_rate_ctr_group_vector.sh --native > /tmp/rate_ctr_group.native.2.tsv
+./reference/rate_ctr/run_rate_ctr_group_vector.sh --verify
+./reference/rate_ctr/run_rate_ctr_group_vector.sh --audit
+./reference/rate_ctr/run_rate_ctr_group_vector.sh all > /tmp/rate_ctr_group.1.tsv
+./reference/rate_ctr/run_rate_ctr_group_vector.sh all > /tmp/rate_ctr_group.2.tsv
+./reference/rate_ctr/run_rate_ctr_group_vector.sh --diagnostics > /tmp/rate_ctr_group.diagnostics.1.json
+./reference/rate_ctr/run_rate_ctr_group_vector.sh --diagnostics > /tmp/rate_ctr_group.diagnostics.2.json
+./reference/rate_ctr/run_rate_ctr_group_vector.sh --native > /tmp/rate_ctr_group.native.1.tsv
+./reference/rate_ctr/run_rate_ctr_group_vector.sh --native > /tmp/rate_ctr_group.native.2.tsv
 cmp /tmp/rate_ctr_group.1.tsv /tmp/rate_ctr_group.2.tsv
 cmp /tmp/rate_ctr_group.1.tsv tests/vectors/rate_ctr_group/rate_ctr_group_vectors.tsv
 cmp /tmp/rate_ctr_group.diagnostics.1.json /tmp/rate_ctr_group.diagnostics.2.json

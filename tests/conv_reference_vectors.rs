@@ -5,8 +5,8 @@ use conv_fixture::{Fixture, checks};
 use std::sync::OnceLock;
 
 const VECTORS: &str = include_str!("vectors/conv/conv_vectors.ndjson");
-const REFERENCE: &str = include_str!("../reference/conv_provenance.json");
-const GENERATOR: &str = include_str!("../reference/conv_generator_provenance.json");
+const REFERENCE: &str = include_str!("../reference/conv/conv_provenance.json");
+const GENERATOR: &str = include_str!("../reference/conv/conv_generator_provenance.json");
 
 fn fixture() -> &'static Fixture {
     static FIXTURE: OnceLock<Fixture> = OnceLock::new();
