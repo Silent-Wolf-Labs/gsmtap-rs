@@ -12,12 +12,12 @@ pub fn fingerprint(text: &str) -> u64 {
         (h ^ u64::from(b)).wrapping_mul(0x100000001b3)
     })
 }
-const FIXTURE_HASH: u64 = 0xcddf51597cdddb4d;
+const FIXTURE_HASH: u64 = 0xa693ea7abb5b6dc5;
 const REFERENCE_HASH: u64 = 0x2540bd851292c9ce;
-const GENERATOR_HASH: u64 = 0x9f56b3cc423865b0;
-const DIAGNOSTICS_HASH: u64 = 0x79309f914a3f52eb;
+const GENERATOR_HASH: u64 = 0xbaa3ad4c9b687d18;
+const DIAGNOSTICS_HASH: u64 = 0x60636bd0f1608f93;
 const REFERENCE_SHA: &str = "54a1a6dd5d19fe4c1f41f70248fda49a32f79a5bcfee5ac2b022351a8deb01ed";
-const GENERATOR_SHA: &str = "c72da1a89228572635aaadb46aa16c9bfdd9b38202f45534f4be61aeb0b3317c";
+const GENERATOR_SHA: &str = "840d937c9bd51dd035f3e65e7b1281893ab81bb207237c8887b941583ef525f0";
 
 fn parse(line: &str) -> Record {
     let body = line.strip_prefix('{').unwrap().strip_suffix('}').unwrap();

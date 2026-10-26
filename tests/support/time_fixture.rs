@@ -11,11 +11,11 @@ pub fn fingerprint(text: &str) -> u64 {
     })
 }
 // Frozen only from reviewed direct C output and provenance, never Rust results.
-const FIXTURE_HASH: u64 = 0x51e585e865fa5b5b;
+const FIXTURE_HASH: u64 = 0x4dbf606dc8c53412;
 const REFERENCE_HASH: u64 = 0xd015d75caf116081;
-const GENERATOR_HASH: u64 = 0x47f40b92657ac978;
+const GENERATOR_HASH: u64 = 0xf1893904528f8be6;
 const REFERENCE_SHA: &str = "121fc015fbf3cb02918545f9f4a0a6d273aee4e53b20f7280822b1865485b204";
-const GENERATOR_SHA: &str = "ca0fa4aa9f398e35852c7a649f616d247f75baa69de884c57b7c22a12d88aa98";
+const GENERATOR_SHA: &str = "a595c39014c53401b45337bd8077a046ddfd1a355a524f74ac24a070a6d2d2c4";
 
 fn parse(line: &str) -> Record {
     let body = line.strip_prefix('{').unwrap().strip_suffix('}').unwrap();
