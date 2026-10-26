@@ -238,7 +238,7 @@ pushes to `main` and on pull requests:
 - `container`: `scripts/integration.sh`, which builds both images and runs the
   listen, relay and modify traffic checks.
 
-Pushing a `vX.Y.Z` tag, such as `v0.1.1`, also runs a `release` job once those
+Pushing a `vX.Y.Z` tag, such as `v0.2.0`, also runs a `release` job once those
 checks pass. It checks the tag against the crate version, writes a CycloneDX
 SBOM, packages the crate, and builds the workbench image and scans it with
 Trivy. It then publishes the crate to crates.io, pushes

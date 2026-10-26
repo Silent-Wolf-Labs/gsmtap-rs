@@ -1,12 +1,12 @@
 [package]
 name = "gsmtap-rs"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.99"
 description = "Rust GSMTAP parser and encoder, with a workbench that checks GSMTAP traffic against libosmocore-recorded vectors"
 license = "Apache-2.0"
 repository = "https://github.com/Silent-Wolf-Labs/gsmtap-rs"
-keywords = ["gsm", "gsmtap", "osmocom", "telecom"]
+keywords = ["gsm", "gsmtap", "libosmocore", "osmocom", "telecom"]
 categories = ["network-programming", "parser-implementations"]
 readme = "README.md"
 exclude = [
