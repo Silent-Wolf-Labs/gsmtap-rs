@@ -65,6 +65,8 @@ conv_fresh=$(mktemp "$conv_output_dir/.conv_vectors.XXXXXX")
 trap 'rm -f "$conv_fresh"' EXIT
 trap 'exit 1' HUP INT TERM
 "$repository_root/reference/conv/run_conv_vector.sh" all > "$conv_fresh"
+cp "$repository_root/reference/conv/conv_provenance.json" "$conv_output_dir/"
+cp "$repository_root/reference/conv/conv_generator_provenance.json" "$conv_output_dir/"
 mv "$conv_fresh" "$conv_output_dir/conv_vectors.ndjson"
 
 # Time evidence builds exact sources only in temporary storage. Publish atomically.
@@ -73,6 +75,8 @@ mkdir -p "$time_output_dir"
 time_fresh=$(mktemp "$time_output_dir/.time_vectors.XXXXXX")
 trap 'rm -f "$time_fresh"' EXIT
 "$repository_root/reference/time/run_time_vector.sh" all > "$time_fresh"
+cp "$repository_root/reference/time/time_provenance.json" "$time_output_dir/"
+cp "$repository_root/reference/time/time_generator_provenance.json" "$time_output_dir/"
 mv "$time_fresh" "$time_output_dir/time_vectors.ndjson"
 
 # TDef golden observations and separate sanitizer diagnostics. Generate both
@@ -84,11 +88,13 @@ tdef_diag_fresh=$(mktemp "$tdef_output_dir/.tdef_diagnostics.XXXXXX")
 trap 'rm -f "$tdef_fresh" "$tdef_diag_fresh"' EXIT
 "$repository_root/reference/tdef/run_tdef_vector.sh" all > "$tdef_fresh"
 "$repository_root/reference/tdef/run_tdef_vector.sh" --diagnostics > "$tdef_diag_fresh"
+cp "$repository_root/reference/tdef/tdef_provenance.json" "$tdef_output_dir/"
+cp "$repository_root/reference/tdef/tdef_generator_provenance.json" "$tdef_output_dir/"
 mv "$tdef_fresh" "$tdef_output_dir/tdef_vectors.ndjson"
 mv "$tdef_diag_fresh" "$tdef_output_dir/tdef_diagnostics.json"
 
-# Stage 4 time_cc: successful traces and isolated sanitizer/assertion diagnostics.
-# Stage both outputs before publishing; manifests are separately content-pinned.
+# time_cc traces and isolated sanitizer and assertion diagnostics. Stage both
+# outputs before publishing either.
 time_cc_output_dir="$output_dir/time_cc"
 mkdir -p "$time_cc_output_dir"
 time_cc_fresh=$(mktemp "$time_cc_output_dir/.time_cc_vectors.XXXXXX")
@@ -96,10 +102,12 @@ time_cc_diag_fresh=$(mktemp "$time_cc_output_dir/.time_cc_diagnostics.XXXXXX")
 trap 'rm -f "$time_cc_fresh" "$time_cc_diag_fresh"' EXIT
 "$repository_root/reference/time_cc/run_time_cc_vector.sh" all > "$time_cc_fresh"
 "$repository_root/reference/time_cc/run_time_cc_vector.sh" --diagnostics > "$time_cc_diag_fresh"
+cp "$repository_root/reference/time_cc/time_cc_provenance.json" "$time_cc_output_dir/"
+cp "$repository_root/reference/time_cc/time_cc_generator_provenance.json" "$time_cc_output_dir/"
 mv "$time_cc_fresh" "$time_cc_output_dir/time_cc_vectors.ndjson"
 mv "$time_cc_diag_fresh" "$time_cc_output_dir/time_cc_diagnostics.json"
 
-# Stage 5a standalone rate-counter calls and isolated null diagnostics.
+# Standalone rate counters and isolated null-pointer diagnostics.
 rate_ctr_output_dir="$output_dir/rate_ctr"
 mkdir -p "$rate_ctr_output_dir"
 rate_ctr_fresh=$(mktemp "$rate_ctr_output_dir/.rate_ctr_vectors.XXXXXX")
@@ -107,10 +115,12 @@ rate_ctr_diag_fresh=$(mktemp "$rate_ctr_output_dir/.rate_ctr_diagnostics.XXXXXX"
 trap 'rm -f "$rate_ctr_fresh" "$rate_ctr_diag_fresh"' EXIT
 "$repository_root/reference/rate_ctr/run_rate_ctr_vector.sh" all > "$rate_ctr_fresh"
 "$repository_root/reference/rate_ctr/run_rate_ctr_vector.sh" --diagnostics > "$rate_ctr_diag_fresh"
+cp "$repository_root/reference/rate_ctr/rate_ctr_provenance.json" "$rate_ctr_output_dir/"
+cp "$repository_root/reference/rate_ctr/rate_ctr_generator_provenance.json" "$rate_ctr_output_dir/"
 mv "$rate_ctr_fresh" "$rate_ctr_output_dir/rate_ctr_vectors.tsv"
 mv "$rate_ctr_diag_fresh" "$rate_ctr_output_dir/rate_ctr_diagnostics.json"
 
-# Stage 6: each FSM evidence family was separately gated before implementation.
+# The five FSM families, each with its own fixtures and diagnostics.
 for fsm_family in fsm_core fsm_timer fsm_tree fsm_registry fsm_shared; do
     fsm_output_dir="$output_dir/$fsm_family"
     mkdir -p "$fsm_output_dir"
@@ -125,7 +135,7 @@ for fsm_family in fsm_core fsm_timer fsm_tree fsm_registry fsm_shared; do
     mv "$fsm_diag_fresh" "$fsm_output_dir/${fsm_family}_diagnostics.json"
 done
 
-# Stage 7 selected rate-counter groups/rollups; native evidence stays separate.
+# Rate-counter groups and rollups; native timer evidence stays separate.
 rate_ctr_group_output_dir="$output_dir/rate_ctr_group"
 mkdir -p "$rate_ctr_group_output_dir"
 rate_ctr_group_fresh=$(mktemp "$rate_ctr_group_output_dir/.vectors.XXXXXX")
