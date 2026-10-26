@@ -10,8 +10,11 @@ suffix bytes.
 ## Fixtures
 
 `tests/vectors/base64/base64_buffer_vectors.json` is a JSON array of 24
-observations. gsmtap-rs has no reader for this fixture; osmocore-rs validates
-it in its own compatibility tests.
+observations. `tests/base64_reference_vectors.rs` pins an FNV-1a fingerprint of
+the file and checks the case names and order, fields, provenance and the buffer
+contract: failed calls leave the destination untouched, size errors report a
+length larger than the destination, decode errors leave `olen` unchanged and
+successful calls write nothing past the reported length.
 
 ## Provenance
 
