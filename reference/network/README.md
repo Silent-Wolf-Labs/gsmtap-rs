@@ -1,32 +1,41 @@
-# Networking establishment reference
+# Networking reference
 
-This focused harness calls `osmo_sock_init2()` and `osmo_sock_set_dscp()` in the
-required local C checkout. It records six stable IPv4 loopback cases: ordinary
-and configured UDP bind, invalid DSCP rejection, connected UDP payload transfer,
-TCP listen and TCP local-bind/connect payload transfer. Ephemeral port numbers
-are normalized to bound/peer-match predicates; they are not frozen as constants.
-No public network services, DNS servers or privileged ports are used. IPv6,
-connect timeouts and Rust validation/cleanup have independent Rust tests.
+`network_vector.c` calls `osmo_sock_init2()` and `osmo_sock_set_dscp()` on IPv4
+loopback. It uses no public network services, DNS servers or privileged ports.
 
-`provenance.json` pins socket source/header/test files verified byte-for-byte
-against revision `950430e829a3dc1d162aa241bc0505745c5a7311` on 2026-10-16.
-`generator_provenance.json` pins this harness, runner and provenance record.
-The runner fails closed on mismatches, builds/links/selects only the required
-local library and writes normalized TSV to stdout. It does not generate or
-replace existing fixtures. This is bounded capability evidence, not a claim of
-C socket API/errno/address-order parity.
+## Fixtures
 
-From the gsmtap-rs root:
+`tests/vectors/net/network_vectors.tsv` has a header comment and six cases:
 
-```sh
+| Case | Covers |
+| --- | --- |
+| `udp_bound` | Ordinary UDP bind |
+| `udp_configured` | UDP bind with nonblocking, address reuse and DSCP 46 |
+| `invalid_dscp` | Rejected DSCP value |
+| `udp_connected` | Connected UDP with a payload round trip |
+| `tcp_listener` | TCP listen |
+| `tcp_connected` | TCP local bind and connect with a payload round trip |
+
+The columns are case, bound, connected, nonblocking, address reuse, DSCP and
+payload match. Ephemeral port numbers are reduced to bound and peer-match
+flags rather than recorded. `tests/support/network_fixture.rs` reads the
+fixture. This is bounded evidence of socket setup, not a claim of parity with
+C socket error codes or address ordering.
+
+IPv6, connect timeouts and cleanup are tested only in osmocore-rs.
+
+## Provenance
+
+`provenance.json` pins the socket source, header and test files, verified
+byte-for-byte against upstream revision
+`950430e829a3dc1d162aa241bc0505745c5a7311`. `generator_provenance.json` pins
+this harness, the runner and `provenance.json`. Both are copied to
+`tests/vectors/net/`. The runner rebuilds `src/core` and links against it.
+
+## Checking
+
+The full generator does not run this harness.
+
+```bash
 ./reference/network/run.sh | cmp - tests/vectors/net/network_vectors.tsv
-cargo test --test network_reference_vectors
 ```
-
-For intentional regeneration, review fresh stdout before replacing either copy
-of `network_vectors.tsv` in `tests/vectors/net/` and the sibling crate's
-`tests/compatibility/vectors/net/`. Keep the source provenance record and the
-independent `tests/support/network_fixture.rs` identical between repositories.
-Normal Rust tests consume frozen observations without building C. The fixture
-and reader are separate from all packet/replay/workbench APIs. Existing vendor
-snapshots, fixtures, APIs and unrelated pending changes are untouched.

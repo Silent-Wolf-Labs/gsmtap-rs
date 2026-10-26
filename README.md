@@ -194,37 +194,38 @@ subdirectory, shared byte-for-byte with osmocore-rs's
 `tests/compatibility/vectors/`. The C generator output in this repository is
 canonical.
 
-| Module | Fixtures | Harness details |
+| Module | Harness | Fixtures |
 | --- | --- | --- |
-| GSMTAP encoder | `tests/vectors/*.json` | [Encoder vectors](reference/README.md#encoder-vectors) |
-| BCD | `tests/vectors/bcd/` | [BCD conversion vectors](reference/README.md#bcd-conversion-vectors) |
-| Hexparse | `tests/vectors/hexparse/` | [Hexparse buffer vectors](reference/README.md#hexparse-buffer-vectors) |
-| Bit packing | `tests/vectors/bits/` | [Basic](reference/README.md#basic-bit-packing-vectors) and [extended](reference/README.md#extended-bit-packing-vectors) bit-packing vectors |
-| Base64 | `tests/vectors/base64/` | [Base64 reference](reference/README.md#base64-workbench-reference) |
-| Bit vectors | `tests/vectors/bitvec/` | [Bit-vector stages](reference/README.md#bit-vector-primitives-first-stage) |
-| Message buffers | `tests/vectors/msgb/` | [Message-buffer stages](reference/README.md#message-buffer-stage-1) |
-| Primitives | `tests/vectors/prim/` | [Primitive observations](reference/README.md#primitive-observations) |
-| CRC | `tests/vectors/crc/` | [Core CRC observations](reference/README.md#core-crc-observations) |
-| Convolutional codes | `tests/vectors/conv/` | [Convolutional evidence](reference/README.md#convolutional-evidence-and-backend-gate) |
-| Time and timers | `tests/vectors/time/` | [Time and timer evidence](reference/README.md#time-and-timer-evidence-stages-12) |
-| TDef | `tests/vectors/tdef/` | [TDef core evidence](reference/README.md#tdef-core-evidence-stage-3) |
-| time_cc | `tests/vectors/time_cc/` | [time_cc evidence](reference/README.md#time_cc-evidence-stage-4) |
-| Rate counters | `tests/vectors/rate_ctr/`, `tests/vectors/rate_ctr_group/` | [Standalone counters](reference/README.md#standalone-rate-counter-evidence-stage-5a) and [counter groups](reference/README.md#stage-7-rate-counter-groups-and-rollups) |
-| FSM | `tests/vectors/fsm_*/` | [FSM execution and lifecycle](reference/README.md#fsm-execution-lifecycle-and-tdef-integration-stage-6) |
-| Networking | `tests/vectors/net/` | [Networking reference](reference/network/README.md) |
+| GSMTAP encoder | [`reference/gsmtap/`](reference/gsmtap/README.md) | `tests/vectors/*.json` |
+| BCD | [`reference/bcd/`](reference/bcd/README.md) | `tests/vectors/bcd/` |
+| Hexparse | [`reference/hexparse/`](reference/hexparse/README.md) | `tests/vectors/hexparse/` |
+| Bit packing | [`reference/bits/`](reference/bits/README.md) | `tests/vectors/bits/` |
+| Base64 | [`reference/base64/`](reference/base64/README.md) | `tests/vectors/base64/` |
+| Bit vectors | [`reference/bitvec/`](reference/bitvec/README.md) | `tests/vectors/bitvec/` |
+| Message buffers | [`reference/msgb/`](reference/msgb/README.md) | `tests/vectors/msgb/` |
+| Primitives | [`reference/prim/`](reference/prim/README.md) | `tests/vectors/prim/` |
+| CRC | [`reference/crc/`](reference/crc/README.md) | `tests/vectors/crc/` |
+| Convolutional codes | [`reference/conv/`](reference/conv/README.md) | `tests/vectors/conv/` |
+| Time and timers | [`reference/time/`](reference/time/README.md) | `tests/vectors/time/` |
+| TDef | [`reference/tdef/`](reference/tdef/README.md) | `tests/vectors/tdef/` |
+| time_cc | [`reference/time_cc/`](reference/time_cc/README.md) | `tests/vectors/time_cc/` |
+| Rate counters | [`reference/rate_ctr/`](reference/rate_ctr/README.md) | `tests/vectors/rate_ctr/`, `tests/vectors/rate_ctr_group/` |
+| FSM | [`reference/fsm/`](reference/fsm/README.md) | `tests/vectors/fsm_*/` |
+| Networking | [`reference/network/`](reference/network/README.md) | `tests/vectors/net/` |
 
 The runners build against the libosmocore checkout at
 `../libosmocore-rs/libosmocore` and fail rather than fall back to a system
-installation. To regenerate every fixture:
+installation. To regenerate every fixture and check the osmocore-rs copies:
 
 ```bash
 ./scripts/generate-reference-vectors.sh
 git status tests/vectors
+./scripts/compare-shared-fixtures.sh
 ```
 
 A clean `git status` means the C output still matches the committed fixtures.
 Review any diff before accepting it. [reference/README.md](reference/README.md)
-covers provenance, pinned source hashes and per-module regeneration commands.
+explains the two kinds of runner, provenance and how to change a fixture.
 
 ## Continuous integration and releases
 
