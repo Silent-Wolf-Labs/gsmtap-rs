@@ -71,9 +71,16 @@ jobs:
             exit 1
           fi
           echo "VERSION=$crate_version" >> "$GITHUB_ENV"
+          # Release files stay outside the checkout so cargo publish sees a
+          # clean working tree.
+          echo "ARTIFACTS=$RUNNER_TEMP/release" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/release"
 
       - uses: taiki-e/install-action@cargo-cyclonedx
-      - run: cargo cyclonedx --format json
+      - name: Write the SBOM
+        run: |
+          cargo cyclonedx --format json
+          cp gsmtap-rs.cdx.json "$ARTIFACTS/"
       - name: Package the crate
         run: |
           cargo package --locked
@@ -86,7 +93,7 @@ jobs:
             echo "The crate is missing README.md" >&2
             exit 1
           fi
-          cp "$crate" .
+          cp "$crate" "$ARTIFACTS/"
 
       - name: Build the workbench image
         run: |
@@ -95,14 +102,14 @@ jobs:
             --label "org.opencontainers.image.revision=$GITHUB_SHA" \
             --label "org.opencontainers.image.version=$VERSION" \
             --tag "$IMAGE_NAME:$VERSION" --tag "$IMAGE_NAME:latest" .
-          podman save --output image.tar "$IMAGE_NAME:$VERSION"
+          podman save --output "$ARTIFACTS/image.tar" "$IMAGE_NAME:$VERSION"
       - name: Scan the image with Trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
-          input: image.tar
+          input: ${{ env.ARTIFACTS }}/image.tar
           format: sarif
-          output: trivy-image.sarif
+          output: ${{ env.ARTIFACTS }}/trivy-image.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: 1
@@ -111,7 +118,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: trivy-image
-          path: trivy-image.sarif
+          path: ${{ env.ARTIFACTS }}/trivy-image.sarif
           if-no-files-found: ignore
 
       # Publishing starts here; every step can be rerun after a partial release.
@@ -132,12 +139,14 @@ jobs:
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ${{ env.ARTIFACTS }}
         run: |
           sha256sum "gsmtap-rs-$VERSION.crate" gsmtap-rs.cdx.json trivy-image.sarif > SHA256SUMS.txt
-          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "Release $GITHUB_REF_NAME already exists"
           else
             gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes \
+              --repo "$GITHUB_REPOSITORY" \
               --title "$GITHUB_REF_NAME" \
               "gsmtap-rs-$VERSION.crate" gsmtap-rs.cdx.json trivy-image.sarif SHA256SUMS.txt
           fi
