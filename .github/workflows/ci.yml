@@ -78,8 +78,12 @@ jobs:
         run: |
           cargo package --locked
           crate=target/package/gsmtap-rs-$VERSION.crate
-          if tar -tzf "$crate" | grep -Eq '^[^/]+/(docs/|tests/|scripts/|README\.md$)'; then
-            echo "The crate unexpectedly contains documentation, tests or scripts" >&2
+          if tar -tzf "$crate" | grep -Eq '^[^/]+/(docs/|tests/|scripts/|reference/)'; then
+            echo "The crate unexpectedly contains documentation, tests, scripts or harnesses" >&2
+            exit 1
+          fi
+          if ! tar -tzf "$crate" | grep -Eq '^[^/]+/README\.md$'; then
+            echo "The crate is missing README.md" >&2
             exit 1
           fi
           cp "$crate" .
