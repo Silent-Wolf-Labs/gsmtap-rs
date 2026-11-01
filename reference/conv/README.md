@@ -15,7 +15,7 @@ calls.
 
 ## Fixtures
 
-`tests/vectors/conv/conv_vectors.ndjson` holds 38,560 flat records: 4 metadata,
+`tests/vectors/conv/conv_vectors.ndjson.gz` holds 38,560 flat records: 4 metadata,
 1,354 descriptor and 37,202 operation records across 1,851 case identifiers.
 Records are labeled by backend:
 
@@ -106,5 +106,5 @@ materially. Keep temporary exact-source builds inside this repository with
 mkdir -p target/conv
 TMPDIR="$PWD/target/conv" ./reference/conv/run_conv_vector.sh --audit
 TMPDIR="$PWD/target/conv" ./reference/conv/run_conv_vector.sh all \
-  | cmp - tests/vectors/conv/conv_vectors.ndjson
+  | cmp - <(gzip -dc tests/vectors/conv/conv_vectors.ndjson.gz)
 ```
