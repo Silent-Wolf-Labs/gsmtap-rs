@@ -15,8 +15,8 @@ calls.
 
 ## Fixtures
 
-`tests/vectors/conv/conv_vectors.ndjson` holds 36,256 flat records: 4 metadata,
-1,066 descriptor and 35,186 operation records across 1,707 case identifiers.
+`tests/vectors/conv/conv_vectors.ndjson` holds 38,560 flat records: 4 metadata,
+1,354 descriptor and 37,202 operation records across 1,851 case identifiers.
 Records are labeled by backend:
 
 | Backend | Built from |
@@ -36,7 +36,8 @@ the fixture and both manifests. `tests/conv_reference_vectors.rs` runs it.
 Small exhaustive inputs, larger seeded and structured patterns, rates
 1, 2, 3, 4, 5, 8 and 9, constraint lengths 2, 3, 5, 7, 9 and 10, termination
 modes 0, 1, 2 and 42, recursive codes, puncturing, soft erasures, noise, ties,
-the value −128, normalization boundaries, and decoder reuse, reset and rewind.
+the value −128, normalization boundaries, full-scale frames that saturate path
+metrics, and decoder reuse, reset and rewind.
 
 Two synthetic cases replace protocol vectors that were once taken from upstream
 `conv_test.c`: `synthetic-rate2-k7-l97-unpunctured` and
@@ -62,7 +63,12 @@ upstream vector source is read by the current runner.
 - Reset with `start_state` equal to the state count disables every survivor.
   This is defined: C reset uses an equality loop.
 - Scalar, SSE and AVX agree on decoded output and status for every comparable
-  frozen case, including the scalar `>=` tie choice. The linked library's
+  frozen case, including the scalar `>=` tie choice. The exception is path-metric
+  overflow on long full-scale frames: scalar wraps while SSE and AVX saturate.
+  They agree on clean ±127 input. Soft mode 3 uses −128, which is outside the
+  documented `sbit_t` range of −127 to 127, and the backends decode it differently,
+  so the `fullscale` cases record it on linked-dispatch, SSE and AVX only.
+  The linked library's
   runtime backend is AVX, identified through pinned ELF symbols. NEON uses a
   strict comparison in the inspected source and was not executed, so it is
   outside this evidence.
