@@ -10,7 +10,7 @@ definitions are not covered; convolutional coding has its own harness in
 | Mode | Fixture in `tests/vectors/crc/` | Records |
 | --- | --- | ---: |
 | `byte` (default) | `crc_byte_vectors.json` | 3,472 |
-| `generic` | `crc_generic_vectors.json` | 22,848 |
+| `generic` | `crc_generic_vectors.json.gz` | 22,848 |
 
 - **Byte CRC:** all 512 table entries, 2,560 single-byte calls covering every
   byte with five initial states, and 400 buffer scenarios. Each scenario calls
@@ -56,6 +56,6 @@ and 32-bit `int`.
 
 ```bash
 ./reference/crc/run_crc_vector.sh byte | cmp - tests/vectors/crc/crc_byte_vectors.json
-./reference/crc/run_crc_vector.sh generic | cmp - tests/vectors/crc/crc_generic_vectors.json
+./reference/crc/run_crc_vector.sh generic | cmp - <(gzip -dc tests/vectors/crc/crc_generic_vectors.json.gz)
 ./reference/crc/run_crc_vector.sh --audit
 ```

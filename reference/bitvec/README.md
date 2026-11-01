@@ -9,9 +9,9 @@ the complete vector backing, including bytes beyond the declared vector length.
 | Mode | Harness | Fixture in `tests/vectors/bitvec/` | Records |
 | --- | --- | --- | ---: |
 | (none) | `bitvec_vector.c` | `bitvec_vectors.json` | 5,944 |
-| `--buffers` | `bitvec_buffers_vector.c` | `bitvec_buffers_vectors.json` | 38,837 |
-| `--operations` | `bitvec_operations_vector.c` | `bitvec_operations_vectors.json` | 38,643 |
-| `--adapters` | `bitvec_adapters_vector.c` | `bitvec_adapters_vectors.json` | 6,757 |
+| `--buffers` | `bitvec_buffers_vector.c` | `bitvec_buffers_vectors.json.gz` | 38,837 |
+| `--operations` | `bitvec_operations_vector.c` | `bitvec_operations_vectors.json.gz` | 38,643 |
+| `--adapters` | `bitvec_adapters_vector.c` | `bitvec_adapters_vectors.json.gz` | 6,757 |
 
 Each fixture has its own reader in `tests/support/bitvec_*_fixture.rs`, built on
 the shared parser `bitvec_fixture.rs`, and a test in
@@ -69,7 +69,7 @@ and, for the later modes, 32-bit signed returns and the recorded `EINTR` and
 
 ```bash
 ./reference/bitvec/run_bitvec_vector.sh | cmp - tests/vectors/bitvec/bitvec_vectors.json
-./reference/bitvec/run_bitvec_vector.sh --buffers | cmp - tests/vectors/bitvec/bitvec_buffers_vectors.json
-./reference/bitvec/run_bitvec_vector.sh --operations | cmp - tests/vectors/bitvec/bitvec_operations_vectors.json
-./reference/bitvec/run_bitvec_vector.sh --adapters | cmp - tests/vectors/bitvec/bitvec_adapters_vectors.json
+./reference/bitvec/run_bitvec_vector.sh --buffers | cmp - <(gzip -dc tests/vectors/bitvec/bitvec_buffers_vectors.json.gz)
+./reference/bitvec/run_bitvec_vector.sh --operations | cmp - <(gzip -dc tests/vectors/bitvec/bitvec_operations_vectors.json.gz)
+./reference/bitvec/run_bitvec_vector.sh --adapters | cmp - <(gzip -dc tests/vectors/bitvec/bitvec_adapters_vectors.json.gz)
 ```
