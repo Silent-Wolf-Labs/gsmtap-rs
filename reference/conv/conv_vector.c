@@ -447,5 +447,21 @@ int main(int argc, char **argv)
 			snprintf(id, sizeof(id), "%s-s%d", cid, mode); run_case(&c, id, input, mode, mode == 0);
 		}
 	}
+	/* Unpunctured full-scale frames drive path metrics past INT16_MAX between
+	 * normalizations. The scalar backend wraps there and SSE/AVX saturate. They
+	 * agree on clean +/-127 input. Mode 3 uses -128, which is outside the
+	 * documented sbit_t range, and the backends decode it differently, so scalar
+	 * records only mode 0. */
+	int full_scale_lengths[] = {125, 184, 224, 456};
+	for (int n = 2; n <= 4; n++) for (int k = 5; k <= 7; k += 2) for (int l = 0; l < 4; l++) for (int term = 0; term < 3; term++) {
+		struct osmo_conv_code c = make_code(n, k, full_scale_lengths[l], term, 0, 0);
+		snprintf(cid, sizeof(cid), "fullscale-n%d-k%d-l%d-t%d", n, k, c.len, term); descriptor(cid, &c);
+		uint32_t seed = 0x12345678;
+		for (int i = 0; i < c.len; i++) { seed = seed * 1664525u + 1013904223u; input[i] = seed >> 31; }
+		for (int mode = 0; mode <= 3; mode += 3) {
+			if (mode == 3 && !strcmp(backend, "scalar")) continue;
+			snprintf(id, sizeof(id), "%s-s%d", cid, mode); run_case(&c, id, input, mode, 0);
+		}
+	}
 	return 0;
 }

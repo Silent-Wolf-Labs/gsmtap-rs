@@ -150,3 +150,19 @@ cp "$repository_root/reference/rate_ctr/rate_ctr_group_generator_provenance.json
 mv "$rate_ctr_group_fresh" "$rate_ctr_group_output_dir/rate_ctr_group_vectors.tsv"
 mv "$rate_ctr_group_diag_fresh" "$rate_ctr_group_output_dir/rate_ctr_group_diagnostics.json"
 mv "$rate_ctr_group_native_fresh" "$rate_ctr_group_output_dir/rate_ctr_group_native.tsv"
+
+# Store the largest fixtures compressed. -n leaves out the name and timestamp, so
+# the same C output always gives the same bytes.
+for fixture in \
+	bitvec/bitvec_adapters_vectors.json \
+	bitvec/bitvec_buffers_vectors.json \
+	bitvec/bitvec_operations_vectors.json \
+	bits/bit_packing_ext_vectors.json \
+	conv/conv_vectors.ndjson \
+	crc/crc_generic_vectors.json \
+	msgb/msgb_adapters_vectors.json \
+	msgb/msgb_layers_vectors.json \
+	msgb/msgb_resize_vectors.json \
+	msgb/msgb_vectors.json; do
+	gzip -9nf "$output_dir/$fixture"
+done
