@@ -119,9 +119,11 @@ with tempfile.TemporaryDirectory(prefix='conv-evidence-') as tmp:
     else:
         if mode == 'all':
             scalar = comparable['scalar']
+            sse = comparable['sse']
             for backend, observations in comparable.items():
                 for key, observation in observations.items():
-                    if observation != scalar[key]:
+                    # Scalar omits saturation cases it decodes differently.
+                    if observation != scalar.get(key, sse[key]):
                         sys.exit('STOP AND REVIEW: backend difference for ' + repr((backend, key)))
         # No partial evidence on compilation, execution, or backend mismatch.
         for evidence in results:
