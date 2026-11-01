@@ -1,12 +1,19 @@
+#[path = "support/gzip_fixture.rs"]
+mod gzip_fixture;
 use serde_json::{Map, Value};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::LazyLock;
 
 const COMMIT: &str = "950430e829a3dc1d162aa241bc0505745c5a7311";
 const COUNT: usize = 63_384;
 const OFFSETS: &[usize] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16];
 const COUNTS: &[usize] = &[1, 7, 8, 9, 15, 16, 17, 31, 32, 33];
 const MODES: &[i32] = &[0, 1, 2, -1];
-const FIXTURE: &str = include_str!("vectors/bits/bit_packing_ext_vectors.json");
+static FIXTURE: LazyLock<String> = LazyLock::new(|| {
+    gzip_fixture::text(include_bytes!(
+        "vectors/bits/bit_packing_ext_vectors.json.gz"
+    ))
+});
 
 struct Case {
     name: String,
@@ -385,7 +392,7 @@ fn validate(record: &Map<String, Value>, c: &Case) -> Vec<u8> {
 }
 #[test]
 fn extended_fixture_has_complete_c_observations() {
-    let records: Vec<Map<String, Value>> = serde_json::from_str(FIXTURE).unwrap();
+    let records: Vec<Map<String, Value>> = serde_json::from_str(&FIXTURE).unwrap();
     let cases = expected_cases();
     assert_eq!(records.len(), COUNT);
     let mut names = BTreeSet::new();
@@ -419,7 +426,7 @@ fn extended_fixture_has_complete_c_observations() {
 }
 #[test]
 fn validator_rejects_corrupt_records() {
-    let records: Vec<Map<String, Value>> = serde_json::from_str(FIXTURE).unwrap();
+    let records: Vec<Map<String, Value>> = serde_json::from_str(&FIXTURE).unwrap();
     let cases = expected_cases();
     for (field, value) in [
         ("case", Value::from("bad")),

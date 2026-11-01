@@ -14,7 +14,7 @@ Soft-bit conversion is not covered.
 | File | Records |
 | --- | ---: |
 | `tests/vectors/bits/bit_packing_vectors.json` | 9,016 |
-| `tests/vectors/bits/bit_packing_ext_vectors.json` | 63,384 |
+| `tests/vectors/bits/bit_packing_ext_vectors.json.gz` | 63,384 |
 
 Sources and before/after destinations are recorded in full, and the C backing
 arrays are allocated at exactly the recorded lengths. Oversized destinations add
@@ -92,5 +92,5 @@ verified byte-for-byte against upstream revision
 
 ```bash
 ./reference/bits/run_bit_packing_vector.sh | cmp - tests/vectors/bits/bit_packing_vectors.json
-./reference/bits/run_bit_packing_ext_vector.sh | cmp - tests/vectors/bits/bit_packing_ext_vectors.json
+./reference/bits/run_bit_packing_ext_vector.sh | cmp - <(gzip -dc tests/vectors/bits/bit_packing_ext_vectors.json.gz)
 ```

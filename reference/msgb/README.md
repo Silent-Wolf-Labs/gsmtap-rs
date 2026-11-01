@@ -15,10 +15,10 @@ for null; destination and channel record presence, never addresses.
 
 | Mode | Harness | Fixture in `tests/vectors/msgb/` | Records |
 | --- | --- | --- | ---: |
-| (none) | `msgb_vector.c` | `msgb_vectors.json` | 3,695 |
-| `--layers` | `msgb_layers_vector.c` | `msgb_layers_vectors.json` | 7,572 |
-| `--resize` | `msgb_resize_vector.c` | `msgb_resize_vectors.json` | 8,888 |
-| `--adapters` | `msgb_adapters_vector.c` | `msgb_adapters_vectors.json` | 4,055 |
+| (none) | `msgb_vector.c` | `msgb_vectors.json.gz` | 3,695 |
+| `--layers` | `msgb_layers_vector.c` | `msgb_layers_vectors.json.gz` | 7,572 |
+| `--resize` | `msgb_resize_vector.c` | `msgb_resize_vectors.json.gz` | 8,888 |
+| `--adapters` | `msgb_adapters_vector.c` | `msgb_adapters_vectors.json.gz` | 4,055 |
 
 Record counts exclude setup calls and snapshot queries. Each fixture has a
 reader in `tests/support/msgb_*fixture.rs`; the later readers build on
@@ -101,10 +101,10 @@ controlled `setjmp`/`longjmp` handler, as the upstream tests do.
 ## Checking
 
 ```bash
-./reference/msgb/run_msgb_vector.sh | cmp - tests/vectors/msgb/msgb_vectors.json
-./reference/msgb/run_msgb_vector.sh --layers | cmp - tests/vectors/msgb/msgb_layers_vectors.json
-./reference/msgb/run_msgb_vector.sh --resize | cmp - tests/vectors/msgb/msgb_resize_vectors.json
-./reference/msgb/run_msgb_vector.sh --adapters | cmp - tests/vectors/msgb/msgb_adapters_vectors.json
+./reference/msgb/run_msgb_vector.sh | cmp - <(gzip -dc tests/vectors/msgb/msgb_vectors.json.gz)
+./reference/msgb/run_msgb_vector.sh --layers | cmp - <(gzip -dc tests/vectors/msgb/msgb_layers_vectors.json.gz)
+./reference/msgb/run_msgb_vector.sh --resize | cmp - <(gzip -dc tests/vectors/msgb/msgb_resize_vectors.json.gz)
+./reference/msgb/run_msgb_vector.sh --adapters | cmp - <(gzip -dc tests/vectors/msgb/msgb_adapters_vectors.json.gz)
 ```
 
 When intentionally changing the adapter cases, update the reader's frozen input

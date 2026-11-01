@@ -92,6 +92,10 @@ osmocore-rs.
 
 ## Regenerating and checking
 
+Fixtures of 5 MB or more are stored as `*.gz`, compressed with `gzip -9n` by the
+generator. Fingerprints and hashes apply to the decompressed text. To review a
+changed fixture as text, run `git config diff.gz.textconv "gzip -dc"` once per clone.
+
 From this repository root:
 
 ```bash

@@ -1,13 +1,20 @@
+#[path = "support/gzip_fixture.rs"]
+mod gzip_fixture;
+use std::sync::LazyLock;
 #[allow(dead_code)]
 #[path = "support/bitvec_fixture.rs"]
 mod bitvec_fixture;
 #[path = "support/bitvec_buffers_fixture.rs"]
 mod fixture;
-const FIXTURE: &str = include_str!("vectors/bitvec/bitvec_buffers_vectors.json");
+static FIXTURE: LazyLock<String> = LazyLock::new(|| {
+    gzip_fixture::text(include_bytes!(
+        "vectors/bitvec/bitvec_buffers_vectors.json.gz"
+    ))
+});
 
 #[test]
 fn bitvec_buffers_fixture_has_complete_c_observations() {
-    assert_eq!(fixture::validated_records(FIXTURE).len(), fixture::COUNT);
+    assert_eq!(fixture::validated_records(&FIXTURE).len(), fixture::COUNT);
 }
 
 #[test]
