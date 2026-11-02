@@ -30,6 +30,13 @@ cargo test
 
 Ordinary tests read the committed fixtures and do not need a C build.
 
+To run ShellCheck on staged shell scripts before each commit, install
+[ShellCheck](https://www.shellcheck.net/) and enable the hook once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Live web workbench
 
 Build and run the workbench with:

@@ -32,5 +32,6 @@ if _gsmtap_reference_env; then
     unset -f _gsmtap_reference_env
 else
     unset -f _gsmtap_reference_env
+    # shellcheck disable=SC2317  # exit is reached only when this file is run, not sourced.
     return 1 2>/dev/null || exit 1
 fi

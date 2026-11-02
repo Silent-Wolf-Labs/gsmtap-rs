@@ -19,6 +19,7 @@ make -C "$reference_dir/src/core" >/dev/null
 make -C "$reference_dir/src/gsm" >/dev/null
 core="$reference_dir/src/core/.libs/libosmocore.so"
 gsm="$reference_dir/src/gsm/.libs/libosmogsm.so"
+# shellcheck disable=SC2015  # The block is meant to run if either test fails.
 [ -f "$core" ] && [ -f "$gsm" ] || { echo 'Canonical C library is unavailable' >&2; exit 1; }
 export LD_LIBRARY_PATH="$reference_dir/src/gsm/.libs:$reference_dir/src/core/.libs"
 export LD_PRELOAD=
