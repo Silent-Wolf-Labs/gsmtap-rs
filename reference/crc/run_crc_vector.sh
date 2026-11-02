@@ -33,9 +33,11 @@ if [ "$mode" = --audit ]; then
         "$reference_dir/src/core/crc16gen.c" "$reference_dir/src/core/crc32gen.c" \
         "$reference_dir/src/core/crc64gen.c" -o "$binary"
     for args in '8 8 1' '16 16 1' '32 31 1' '64 63 1' '32 32 0' '64 64 0' '32 32 -1' '64 64 -1'; do
+        # shellcheck disable=SC2086  # Each entry is three separate arguments.
         "$binary" audit $args
     done
     for args in '32 32 1' '64 64 1' '8 0 1' '16 -2147483648 0'; do
+        # shellcheck disable=SC2086  # Each entry is three separate arguments.
         if "$binary" audit $args 2>"$audit_log"; then
             echo "Expected undefined-behavior diagnostic: $args" >&2; exit 1
         fi

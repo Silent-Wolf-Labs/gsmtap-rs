@@ -1,22 +1,35 @@
 # Repository metadata and development-only files
 .git
+.gitattributes
+.githooks
 .github
 .gitignore
 .containerignore
+.shellcheckrc
 .idea
 .vscode
-.DS_Store
-*.swp
+**/.DS_Store
+**/*.swp
 reference
 scripts
 docs
-*.md
+**/*.md
+LICENSE
+deny.toml
+rust-toolchain.toml
+
+# Local agent state and tooling
+.agents
+.claude
+.codex
 .junie
+.mcp.json
 
 # Rust build output and generated release material
 target
 dist
 build
+*.oci.tar
 *.cdx.json
 SHA256SUMS.txt
 release-artifacts
@@ -33,7 +46,6 @@ static/components/package.json
 # Local configuration and secrets
 .env
 .env.*
-!.env.example
 
 # Python caches, virtual environments, and test-tool state
 **/__pycache__/

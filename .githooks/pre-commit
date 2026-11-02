@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Run ShellCheck on the staged version of each shell script being committed.
+# Enable once per clone with: git config core.hooksPath .githooks
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+temporary=$(mktemp -d)
+trap 'rm -rf "$temporary"' EXIT
+
+# Check staged content so working-tree edits cannot hide a bad commit. The
+# staged .shellcheckrc is exported too, as ShellCheck looks for it upward from
+# each script.
+if git cat-file -e :.shellcheckrc 2> /dev/null; then
+    git checkout-index -f --prefix="$temporary/" -- .shellcheckrc
+fi
+
+status=0
+while IFS= read -r -d '' path; do
+    git checkout-index -f --prefix="$temporary/" -- "$path"
+    first_line=''
+    IFS= read -r first_line < "$temporary/$path" || true
+    if [[ $path == *.sh || $path == *.bash || $path == .githooks/* ||
+          $first_line =~ ^\#!.*(/|[[:space:]])(sh|bash|dash|ksh)([[:space:]]|$) ]]; then
+        command -v shellcheck > /dev/null || {
+            echo 'ShellCheck is required to commit shell scripts. Install shellcheck and retry.' >&2
+            exit 1
+        }
+        printf 'ShellCheck: %s\n' "$path"
+        (cd "$temporary" && shellcheck -- "$path") || status=1
+    fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+exit "$status"

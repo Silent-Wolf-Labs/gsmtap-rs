@@ -1,0 +1,3 @@
+# `CDPATH= cd` deliberately clears CDPATH for that one command. The runners use
+# it throughout, and exact-source runners are pinned by hash.
+disable=SC1007
