@@ -25,6 +25,7 @@ compatibility tests.
 | Hexparse | [`hexparse/`](hexparse/README.md) | `tests/vectors/hexparse/` | `osmo_hexparse` |
 | Bit packing | [`bits/`](bits/README.md) | `tests/vectors/bits/` | Packed and unpacked bit conversion |
 | Base64 | [`base64/`](base64/README.md) | `tests/vectors/base64/` | Base64 encode and decode |
+| PRBS | [`prbs/`](prbs/README.md) | `tests/vectors/prbs/` | `osmo_prbs_*` |
 | Bit vectors | [`bitvec/`](bitvec/README.md) | `tests/vectors/bitvec/` | `bitvec_*` |
 | Message buffers | [`msgb/`](msgb/README.md) | `tests/vectors/msgb/` | `msgb_*` |
 | Primitives | [`prim/`](prim/README.md) | `tests/vectors/prim/` | `osmo_prim_*` |
@@ -56,12 +57,12 @@ directory and rejects `LIBOSMOCORE_ROOT` values that point elsewhere.
 
 ## Two kinds of runner
 
-**Library runners** (gsmtap, bcd, hexparse, bits, base64, bitvec, msgb, prim,
-crc, network) run `make` in the checkout's `src/core` and link the harness
+**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, bitvec, msgb,
+prim, crc, network) run `make` in the checkout's `src/core` and link the harness
 against that library with an rpath. All except gsmtap first check SHA-256
-hashes of the C sources and headers they exercise. The bits, base64, bitvec,
-msgb, prim, crc and network runners also replace `LD_LIBRARY_PATH` and clear
-`LD_PRELOAD` at run time. Their fixtures are JSON or TSV.
+hashes of the C sources and headers they exercise. The bits, base64, prbs,
+bitvec, msgb, prim, crc and network runners also replace `LD_LIBRARY_PATH` and clear
+`LD_PRELOAD` at run time. Their fixtures are JSON, NDJSON or TSV.
 
 **Exact-source runners** (conv, time, tdef, time_cc, rate_ctr, fsm) never
 rebuild the checkout. They compile the exact participating sources into

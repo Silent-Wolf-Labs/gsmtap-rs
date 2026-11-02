@@ -36,6 +36,10 @@ base64_output_dir="$output_dir/base64"
 mkdir -p "$base64_output_dir"
 "$repository_root/reference/base64/run_base64_buffer_vector.sh" > "$base64_output_dir/base64_buffer_vectors.json"
 
+prbs_output_dir="$output_dir/prbs"
+mkdir -p "$prbs_output_dir"
+"$repository_root/reference/prbs/run_prbs_vector.sh" > "$prbs_output_dir/prbs_vectors.ndjson"
+
 bitvec_output_dir="$output_dir/bitvec"
 mkdir -p "$bitvec_output_dir"
 "$repository_root/reference/bitvec/run_bitvec_vector.sh" > "$bitvec_output_dir/bitvec_vectors.json"
