@@ -40,6 +40,10 @@ prbs_output_dir="$output_dir/prbs"
 mkdir -p "$prbs_output_dir"
 "$repository_root/reference/prbs/run_prbs_vector.sh" > "$prbs_output_dir/prbs_vectors.ndjson"
 
+gsm0502_output_dir="$output_dir/gsm0502"
+mkdir -p "$gsm0502_output_dir"
+"$repository_root/reference/gsm0502/run_gsm0502_vector.sh" > "$gsm0502_output_dir/gsm0502_vectors.ndjson"
+
 bitvec_output_dir="$output_dir/bitvec"
 mkdir -p "$bitvec_output_dir"
 "$repository_root/reference/bitvec/run_bitvec_vector.sh" > "$bitvec_output_dir/bitvec_vectors.json"
