@@ -44,6 +44,10 @@ gsm0502_output_dir="$output_dir/gsm0502"
 mkdir -p "$gsm0502_output_dir"
 "$repository_root/reference/gsm0502/run_gsm0502_vector.sh" > "$gsm0502_output_dir/gsm0502_vectors.ndjson"
 
+tlv_output_dir="$output_dir/tlv"
+mkdir -p "$tlv_output_dir"
+"$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
+
 gsm0503_output_dir="$output_dir/gsm0503"
 mkdir -p "$gsm0503_output_dir"
 "$repository_root/reference/gsm0503/run_xcch_vector.sh" > "$gsm0503_output_dir/xcch_vectors.ndjson"
