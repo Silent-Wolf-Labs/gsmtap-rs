@@ -28,7 +28,7 @@ compatibility tests.
 | PRBS | [`prbs/`](prbs/README.md) | `tests/vectors/prbs/` | `osmo_prbs_*` |
 | GSM 05.02 | [`gsm0502/`](gsm0502/README.md) | `tests/vectors/gsm0502/` | `gsm0502_*`, `GSM_TDMA_FN_*`, `GSM_NBITS_*` |
 | GSM 05.03 xCCH | [`gsm0503/`](gsm0503/README.md) | `tests/vectors/gsm0503/` | `gsm0503_xcch_*`, `gsm0503_xcch`, `gsm0503_fire_crc40` |
-| gsm_utils numeric helpers | [`gsm_utils/`](gsm_utils/README.md) | `tests/vectors/gsm_utils/` | Bands, power, ARFCNs, `gsm_time`, RFN, TLLI, classmark and RACH helpers |
+| gsm_utils | [`gsm_utils/`](gsm_utils/README.md) | `tests/vectors/gsm_utils/` | Bands, power, ARFCNs, `gsm_time`, RFN, TLLI, classmark and RACH helpers; `gsm_7bit_*`, `gsm_septet_*`, `gsm_get_octet_len` |
 | TLV | [`tlv/`](tlv/README.md) | `tests/vectors/tlv/` | `tlv_*`, `osmo_tlvp_*`, `osmo_shift_*`, `osmo_tlv_prot_*`, `msgb_*` TLV helpers |
 | Bit vectors | [`bitvec/`](bitvec/README.md) | `tests/vectors/bitvec/` | `bitvec_*` |
 | Message buffers | [`msgb/`](msgb/README.md) | `tests/vectors/msgb/` | `msgb_*` |
