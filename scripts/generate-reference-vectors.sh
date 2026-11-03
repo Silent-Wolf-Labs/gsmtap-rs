@@ -49,6 +49,10 @@ mkdir -p "$gsm_utils_output_dir"
 "$repository_root/reference/gsm_utils/run_gsm_utils_numeric_vector.sh" > "$gsm_utils_output_dir/gsm_utils_numeric_vectors.ndjson"
 "$repository_root/reference/gsm_utils/run_gsm_utils_7bit_vector.sh" > "$gsm_utils_output_dir/gsm_utils_7bit_vectors.ndjson"
 
+a5_output_dir="$output_dir/a5"
+mkdir -p "$a5_output_dir"
+"$repository_root/reference/a5/run_a5_vector.sh" > "$a5_output_dir/a5_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
