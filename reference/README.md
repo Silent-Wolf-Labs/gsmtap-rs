@@ -29,6 +29,7 @@ compatibility tests.
 | GSM 05.02 | [`gsm0502/`](gsm0502/README.md) | `tests/vectors/gsm0502/` | `gsm0502_*`, `GSM_TDMA_FN_*`, `GSM_NBITS_*` |
 | GSM 05.03 xCCH | [`gsm0503/`](gsm0503/README.md) | `tests/vectors/gsm0503/` | `gsm0503_xcch_*`, `gsm0503_xcch`, `gsm0503_fire_crc40` |
 | gsm_utils | [`gsm_utils/`](gsm_utils/README.md) | `tests/vectors/gsm_utils/` | Bands, power, ARFCNs, `gsm_time`, RFN, TLLI, classmark and RACH helpers; `gsm_7bit_*`, `gsm_septet_*`, `gsm_get_octet_len` |
+| Use counts | [`use_count/`](use_count/README.md) | `tests/vectors/use_count/` | `osmo_use_count_*` |
 | A5 ciphers | [`a5/`](a5/README.md) | `tests/vectors/a5/` | `osmo_a5` for A5/0, A5/1 and A5/2, `osmo_a5_fn_count` |
 | TLV | [`tlv/`](tlv/README.md) | `tests/vectors/tlv/` | `tlv_*`, `osmo_tlvp_*`, `osmo_shift_*`, `osmo_tlv_prot_*`, `msgb_*` TLV helpers |
 | Bit vectors | [`bitvec/`](bitvec/README.md) | `tests/vectors/bitvec/` | `bitvec_*` |
@@ -62,12 +63,12 @@ directory and rejects `LIBOSMOCORE_ROOT` values that point elsewhere.
 
 ## Two kinds of runner
 
-**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, gsm0502, gsm_utils, a5, gsm0503, tlv,
+**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, use_count, gsm0502, gsm_utils, a5, gsm0503, tlv,
 bitvec, msgb, prim, crc, network) run `make` in the checkout's `src/core` and link
 the harness against that library with an rpath; gsm0502, gsm_utils, a5 and tlv also build and link
 `src/gsm`, and gsm0503 also `src/codec`, `src/gsm` and `src/coding`. All except
 gsmtap first check SHA-256 hashes of the C sources and headers they exercise. The
-bits, base64, prbs, gsm0502, gsm_utils, a5, gsm0503, tlv, bitvec, msgb, prim, crc and network runners
+bits, base64, prbs, use_count, gsm0502, gsm_utils, a5, gsm0503, tlv, bitvec, msgb, prim, crc and network runners
 also replace `LD_LIBRARY_PATH` and clear
 `LD_PRELOAD` at run time. Their fixtures are JSON, NDJSON or TSV.
 
