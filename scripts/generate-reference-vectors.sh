@@ -49,6 +49,10 @@ mkdir -p "$gsm_utils_output_dir"
 "$repository_root/reference/gsm_utils/run_gsm_utils_numeric_vector.sh" > "$gsm_utils_output_dir/gsm_utils_numeric_vectors.ndjson"
 "$repository_root/reference/gsm_utils/run_gsm_utils_7bit_vector.sh" > "$gsm_utils_output_dir/gsm_utils_7bit_vectors.ndjson"
 
+strrb_output_dir="$output_dir/strrb"
+mkdir -p "$strrb_output_dir"
+"$repository_root/reference/strrb/run_strrb_vector.sh" > "$strrb_output_dir/strrb_vectors.ndjson"
+
 use_count_output_dir="$output_dir/use_count"
 mkdir -p "$use_count_output_dir"
 "$repository_root/reference/use_count/run_use_count_vector.sh" > "$use_count_output_dir/use_count_vectors.ndjson"
