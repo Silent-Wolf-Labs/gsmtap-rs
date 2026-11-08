@@ -72,6 +72,10 @@ a5_output_dir="$output_dir/a5"
 mkdir -p "$a5_output_dir"
 "$repository_root/reference/a5/run_a5_vector.sh" > "$a5_output_dir/a5_vectors.ndjson"
 
+comp128_output_dir="$output_dir/comp128"
+mkdir -p "$comp128_output_dir"
+"$repository_root/reference/comp128/run_comp128_vector.sh" > "$comp128_output_dir/comp128_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"

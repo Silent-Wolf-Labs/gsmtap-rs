@@ -33,6 +33,7 @@ compatibility tests.
 | String ringbuffers | [`strrb/`](strrb/README.md) | `tests/vectors/strrb/` | `osmo_strrb_*` |
 | Use counts | [`use_count/`](use_count/README.md) | `tests/vectors/use_count/` | `osmo_use_count_*` |
 | A5 ciphers | [`a5/`](a5/README.md) | `tests/vectors/a5/` | `osmo_a5` for A5/0, A5/1 and A5/2, `osmo_a5_fn_count` |
+| COMP128 and XOR-2G | [`comp128/`](comp128/README.md) | `tests/vectors/comp128/` | `comp128`, `comp128v2`, `comp128v3`, `osmo_auth_gen_vec2` for COMP128 and XOR-2G |
 | TLV | [`tlv/`](tlv/README.md) | `tests/vectors/tlv/` | `tlv_*`, `osmo_tlvp_*`, `osmo_shift_*`, `osmo_tlv_prot_*`, `msgb_*` TLV helpers |
 | Bit vectors | [`bitvec/`](bitvec/README.md) | `tests/vectors/bitvec/` | `bitvec_*` |
 | Message buffers | [`msgb/`](msgb/README.md) | `tests/vectors/msgb/` | `msgb_*` |
@@ -65,12 +66,12 @@ directory and rejects `LIBOSMOCORE_ROOT` values that point elsewhere.
 
 ## Two kinds of runner
 
-**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, gsm0503, tlv,
+**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, comp128, gsm0503, tlv,
 bitvec, msgb, prim, crc, network) run `make` in the checkout's `src/core` and link
-the harness against that library with an rpath; gsm0502, gsm_utils, a5 and tlv also build and link
+the harness against that library with an rpath; gsm0502, gsm_utils, a5, comp128 and tlv also build and link
 `src/gsm`, and gsm0503 also `src/codec`, `src/gsm` and `src/coding`. All except
 gsmtap first check SHA-256 hashes of the C sources and headers they exercise. The
-bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, gsm0503, tlv, bitvec, msgb, prim, crc and network runners
+bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, comp128, gsm0503, tlv, bitvec, msgb, prim, crc and network runners
 also replace `LD_LIBRARY_PATH` and clear
 `LD_PRELOAD` at run time. Their fixtures are JSON, NDJSON or TSV.
 
