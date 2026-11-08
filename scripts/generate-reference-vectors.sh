@@ -53,6 +53,10 @@ strrb_output_dir="$output_dir/strrb"
 mkdir -p "$strrb_output_dir"
 "$repository_root/reference/strrb/run_strrb_vector.sh" > "$strrb_output_dir/strrb_vectors.ndjson"
 
+sockaddr_str_output_dir="$output_dir/sockaddr_str"
+mkdir -p "$sockaddr_str_output_dir"
+"$repository_root/reference/sockaddr_str/run_sockaddr_str_vector.sh" > "$sockaddr_str_output_dir/sockaddr_str_vectors.ndjson"
+
 use_count_output_dir="$output_dir/use_count"
 mkdir -p "$use_count_output_dir"
 "$repository_root/reference/use_count/run_use_count_vector.sh" > "$use_count_output_dir/use_count_vectors.ndjson"
