@@ -26,6 +26,21 @@ them.
 The `case` field is a stable identifier. Renaming, removing or materially
 changing a case is a fixture-contract change.
 
+## Constants
+
+`gsmtap_constants_vector.c` prints the version, UDP port, message types and channel
+types defined in `gsmtap.h`, by the names the header gives them, including the aliases
+`GSMTAP_CHANNEL_PDCH`, `GSMTAP_CHANNEL_TCH_F` and `GSMTAP_CHANNEL_TCH_H`. It needs only
+the header, and its runner pins the header's hash. The output,
+`tests/vectors/gsmtap_constants/gsmtap_constants.ndjson`, has a metadata line and one
+record per constant. `tests/support/gsmtap_constants_fixture.rs` pins an FNV-1a
+fingerprint of the file and checks its names and values.
+
+```bash
+./reference/gsmtap/run_gsmtap_constants_vector.sh \
+  | cmp - tests/vectors/gsmtap_constants/gsmtap_constants.ndjson
+```
+
 ## Provenance
 
 The fixtures record `libosmocore_commit`

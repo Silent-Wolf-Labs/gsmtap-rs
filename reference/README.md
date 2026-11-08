@@ -20,10 +20,10 @@ compatibility tests.
 
 | Module | Harness | Fixtures | APIs recorded |
 | --- | --- | --- | --- |
-| GSMTAP | [`gsmtap/`](gsmtap/README.md) | `tests/vectors/*.json` | `gsmtap_makemsg_ex`, `gsmtap_makemsg` |
+| GSMTAP | [`gsmtap/`](gsmtap/README.md) | `tests/vectors/*.json`, `tests/vectors/gsmtap_constants/` | `gsmtap_makemsg_ex`, `gsmtap_makemsg`, `gsmtap.h` constants |
 | BCD | [`bcd/`](bcd/README.md) | `tests/vectors/bcd/` | BCD digit and string conversion |
 | Hexparse | [`hexparse/`](hexparse/README.md) | `tests/vectors/hexparse/` | `osmo_hexparse` |
-| Bit packing | [`bits/`](bits/README.md) | `tests/vectors/bits/` | Packed and unpacked bit conversion |
+| Bit packing | [`bits/`](bits/README.md) | `tests/vectors/bits/` | Packed, unpacked and soft bit conversion |
 | Base64 | [`base64/`](base64/README.md) | `tests/vectors/base64/` | Base64 encode and decode |
 | PRBS | [`prbs/`](prbs/README.md) | `tests/vectors/prbs/` | `osmo_prbs_*` |
 | GSM 05.02 | [`gsm0502/`](gsm0502/README.md) | `tests/vectors/gsm0502/` | `gsm0502_*`, `GSM_TDMA_FN_*`, `GSM_NBITS_*` |
