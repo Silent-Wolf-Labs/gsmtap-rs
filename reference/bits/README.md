@@ -1,13 +1,13 @@
 # Bit-packing reference
 
-Two harnesses record conversion between packed bits and unpacked one-byte-per-bit
-arrays:
+Three harnesses record conversion between packed bits, unpacked one-byte-per-bit
+arrays and soft bits:
 
 - `bit_packing_vector.c` calls `osmo_ubit2pbit()` and `osmo_pbit2ubit()`.
 - `bit_packing_ext_vector.c` calls `osmo_ubit2pbit_ext()` and
   `osmo_pbit2ubit_ext()`, which add bit offsets and an LSB-first mode.
-
-Soft-bit conversion is not covered.
+- `soft_bits_vector.c` calls `osmo_ubit2sbit()` on every byte value and
+  `osmo_sbit2ubit()` on every soft bit from -128 to 127, each as one buffer.
 
 ## Fixtures
 
@@ -15,12 +15,17 @@ Soft-bit conversion is not covered.
 | --- | ---: |
 | `tests/vectors/bits/bit_packing_vectors.json` | 9,016 |
 | `tests/vectors/bits/bit_packing_ext_vectors.json.gz` | 63,384 |
+| `tests/vectors/bits/soft_bits.ndjson` | 512 |
 
 Sources and before/after destinations are recorded in full, and the C backing
 arrays are allocated at exactly the recorded lengths. Oversized destinations add
 three bytes. Case names, inputs, order and counts are frozen in
 `tests/bit_packing_reference_vectors.rs` and
 `tests/bit_packing_ext_reference_vectors.rs`.
+
+The soft-bit file is NDJSON: a metadata line, then one record per input.
+`tests/support/soft_bits_fixture.rs` pins an FNV-1a fingerprint of it and checks each
+input and the range of each output.
 
 ### Basic packing
 
@@ -69,6 +74,8 @@ These results come from the C calls and must not be normalized:
 - Extended calls return the ending output position, not the number of bits
   written: `ceil((out_ofs + num_bits) / 8)` for packing and
   `out_ofs + num_bits` for unpacking.
+- Soft conversion gives -127 for any nonzero unpacked byte and 127 for zero. Back from
+  soft bits, only negative values give 1, so an unknown soft bit of 0 gives 0.
 - With zero bits, the extended calls read and write nothing. Unpacking returns
   `out_ofs`. Packing returns `ceil(out_ofs / 8)`, except at output offset 0,
   where an unsigned subtraction underflows to 536870912 on the recorded 32-bit
@@ -93,4 +100,5 @@ verified byte-for-byte against upstream revision
 ```bash
 ./reference/bits/run_bit_packing_vector.sh | cmp - tests/vectors/bits/bit_packing_vectors.json
 ./reference/bits/run_bit_packing_ext_vector.sh | cmp - <(gzip -dc tests/vectors/bits/bit_packing_ext_vectors.json.gz)
+./reference/bits/run_soft_bits_vector.sh | cmp - tests/vectors/bits/soft_bits.ndjson
 ```

@@ -14,6 +14,11 @@ for case_name in $case_names; do
 		> "$output_dir/$case_name.json"
 done
 
+gsmtap_constants_output_dir="$output_dir/gsmtap_constants"
+mkdir -p "$gsmtap_constants_output_dir"
+"$repository_root/reference/gsmtap/run_gsmtap_constants_vector.sh" \
+	> "$gsmtap_constants_output_dir/gsmtap_constants.ndjson"
+
 bcd_output_dir="$output_dir/bcd"
 mkdir -p "$bcd_output_dir"
 "$repository_root/reference/bcd/run_bcd_conversion_vector.sh" \
@@ -31,6 +36,8 @@ mkdir -p "$bits_output_dir"
 
 "$repository_root/reference/bits/run_bit_packing_ext_vector.sh" \
 	> "$bits_output_dir/bit_packing_ext_vectors.json"
+
+"$repository_root/reference/bits/run_soft_bits_vector.sh" > "$bits_output_dir/soft_bits.ndjson"
 
 base64_output_dir="$output_dir/base64"
 mkdir -p "$base64_output_dir"
