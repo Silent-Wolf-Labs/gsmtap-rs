@@ -116,6 +116,8 @@ workbench and demo code separate from `reference/` and `tests/vectors/`.
   `git config core.hooksPath .githooks`. It runs ShellCheck on staged shell
   scripts and requires `shellcheck` to be installed. Repository-wide settings
   are in `.shellcheckrc`. Fix findings rather than bypassing the hook.
+- When work depends on an unmerged change, add it to that change's branch. Do not
+  stack it on a new branch.
 - Do not commit, push, tag, publish or change GitHub settings without a separate
   user instruction.
 
