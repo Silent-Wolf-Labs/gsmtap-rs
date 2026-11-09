@@ -76,6 +76,10 @@ comp128_output_dir="$output_dir/comp128"
 mkdir -p "$comp128_output_dir"
 "$repository_root/reference/comp128/run_comp128_vector.sh" > "$comp128_output_dir/comp128_vectors.ndjson"
 
+auth_output_dir="$output_dir/auth"
+mkdir -p "$auth_output_dir"
+"$repository_root/reference/auth/run_auth_vector.sh" > "$auth_output_dir/auth_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
