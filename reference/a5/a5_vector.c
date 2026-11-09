@@ -1,5 +1,5 @@
 /*
- * Reference harness for libosmogsm's A5/0, A5/1 and A5/2 cipher streams.
+ * Reference harness for libosmogsm's A5/0 to A5/4 cipher streams.
  *
  * Calls the public API directly and writes NDJSON: a metadata line, then one
  * record per observation. The first argument is upstream's a5_test.ok, whose A5/0,
@@ -70,6 +70,12 @@ static void fn_counts(void)
 	}
 }
 
+/* A5/4 takes a 16-byte key, the others 8 bytes. */
+static size_t key_len(int n)
+{
+	return n == 4 ? 16 : 8;
+}
+
 static void stream_record(const char *source, int n, const uint8_t *key, uint32_t frame)
 {
 	ubit_t dl[BITS], ul[BITS], only[BITS];
@@ -82,7 +88,7 @@ static void stream_record(const char *source, int n, const uint8_t *key, uint32_
 	if (osmo_a5(n, key, frame, NULL, only) || memcmp(only, ul, BITS))
 		fail("uplink alone differs");
 	printf("{\"kind\":\"stream\",\"source\":\"%s\",\"n\":%d,\"key\":\"", source, n);
-	for (size_t i = 0; i < 8; i++)
+	for (size_t i = 0; i < key_len(n); i++)
 		printf("%02x", key[i]);
 	printf("\",\"fn\":%u,", frame);
 	print_bits("dl", dl);
@@ -93,24 +99,27 @@ static void stream_record(const char *source, int n, const uint8_t *key, uint32_
 
 static void streams(void)
 {
-	static const uint8_t keys[][8] = {
-		{ 0, 0, 0, 0, 0, 0, 0, 0 },
-		{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
-		{ 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef },
-		{ 0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01 },
+	static const uint8_t keys[][16] = {
+		{ 0 },
+		{ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff },
+		{ 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10 },
+		{ 0xef, 0xcd, 0xab, 0x89, 0x67, 0x45, 0x23, 0x01, 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe },
 	};
 	uint32_t state = 0x51a5;
-	uint8_t key[8];
+	uint8_t key[16];
 
-	for (int n = 0; n <= 2; n++) {
-		stream_record("upstream", n, upstream_key, upstream_fn);
+	for (int n = 0; n <= 4; n++) {
+		/* Upstream's A5/3 and A5/4 vectors take a raw count, so the KASUMI harness
+		 * replays them. */
+		if (n <= 2)
+			stream_record("upstream", n, upstream_key, upstream_fn);
 		for (size_t i = 0; i < ARRAY_SIZE(keys); i++)
 			for (size_t j = 0; j < ARRAY_SIZE(frames); j++)
 				stream_record("sweep", n, keys[i], frames[j]);
 		if (n == 0)
 			continue;
 		/* Each key bit and each frame count bit alone. */
-		for (unsigned int bit = 0; bit < 64; bit++) {
+		for (unsigned int bit = 0; bit < key_len(n) * 8; bit++) {
 			memset(key, 0, sizeof(key));
 			key[bit / 8] = (uint8_t)(0x80 >> (bit % 8));
 			stream_record("sweep", n, key, 0);
@@ -118,17 +127,20 @@ static void streams(void)
 		for (unsigned int bit = 0; bit < 22; bit++)
 			stream_record("sweep", n, keys[0], 1u << bit);
 		for (unsigned int i = 0; i < 64; i++) {
-			for (size_t j = 0; j < sizeof(key); j++)
+			for (size_t j = 0; j < key_len(n); j++)
 				key[j] = (uint8_t)next_random(&state);
 			stream_record("sweep", n, key, next_random(&state) % FN_COUNT_LIMIT);
 		}
 	}
 }
 
-/* A5/3 and A5/4 aren't recorded: they need KASUMI, which isn't ported. */
+/* The key has 16 bytes, so A5/4 reads only bytes it has. */
 static void results(void)
 {
-	static const int values[] = { 0, 1, 2, 5, 6, 7, 8, 255, -1, -2147483647 - 1, 2147483647 };
+	static const uint8_t key[16] = {
+		0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
+	};
+	static const int values[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 255, -1, -2147483647 - 1, 2147483647 };
 	ubit_t dl[BITS], ul[BITS], guard[BITS];
 
 	memset(guard, GUARD, sizeof(guard));
@@ -137,7 +149,7 @@ static void results(void)
 
 		memset(dl, GUARD, sizeof(dl));
 		memset(ul, GUARD, sizeof(ul));
-		rc = osmo_a5(values[i], upstream_key, upstream_fn, dl, ul);
+		rc = osmo_a5(values[i], key, upstream_fn, dl, ul);
 		if (rc && (memcmp(dl, guard, BITS) || memcmp(ul, guard, BITS)))
 			fail("osmo_a5 wrote output and returned an error");
 		printf("{\"kind\":\"result\",\"n\":%d,\"rc\":%d}\n", values[i], rc);
@@ -187,7 +199,7 @@ int main(int argc, char **argv)
 	}
 
 	replay_upstream_output(argv[1]);
-	printf("{\"schema\":\"a5-v1\",\"libosmocore_commit\":\"" COMMIT "\"}\n");
+	printf("{\"schema\":\"a5-v2\",\"libosmocore_commit\":\"" COMMIT "\"}\n");
 	fn_counts();
 	streams();
 	results();
