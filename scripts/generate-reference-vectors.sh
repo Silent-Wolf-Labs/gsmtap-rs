@@ -80,6 +80,14 @@ auth_output_dir="$output_dir/auth"
 mkdir -p "$auth_output_dir"
 "$repository_root/reference/auth/run_auth_vector.sh" > "$auth_output_dir/auth_vectors.ndjson"
 
+kasumi_output_dir="$output_dir/kasumi"
+mkdir -p "$kasumi_output_dir"
+"$repository_root/reference/kasumi/run_kasumi_vector.sh" > "$kasumi_output_dir/kasumi_vectors.ndjson"
+
+gea_output_dir="$output_dir/gea"
+mkdir -p "$gea_output_dir"
+"$repository_root/reference/gea/run_gea_vector.sh" > "$gea_output_dir/gea_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"

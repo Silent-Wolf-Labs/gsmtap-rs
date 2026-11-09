@@ -9,6 +9,8 @@ check_hash() {
     [ "$actual" = "$2" ] || { echo "C reference hash mismatch: $1" >&2; exit 1; }
 }
 check_hash src/gsm/a5.c 993833a1a5547e5a6453d21b30fc5263b364e46b42dc15b26e94cc3fb641f5a7
+check_hash src/gsm/kasumi.c c350c3695551f86355697a478a1997852a0c62f6a302b5022aecb7008ded0992
+check_hash src/gsm/auth_core.c 72ae08633a627641f1f7335c215df6825a53396a4a81dd9156a2c9dcbfc67d52
 check_hash include/osmocom/gsm/a5.h 0b3be9aaf3ebdd9cdc59d445ae006e3271cf2546af36ca228eb0449c6f941074
 check_hash tests/a5/a5_test.c 87eb78647c63679bc8e5559d8453b7231f60a92c1824f80e055ad3ff97fd66b6
 check_hash tests/a5/a5_test.ok 0ac437ceb85761c55958731e2d9dfaa10d7fb572c2dc47d685bf874345a363d9
