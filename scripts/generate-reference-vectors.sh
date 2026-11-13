@@ -88,6 +88,10 @@ gea_output_dir="$output_dir/gea"
 mkdir -p "$gea_output_dir"
 "$repository_root/reference/gea/run_gea_vector.sh" > "$gea_output_dir/gea_vectors.ndjson"
 
+tuak_output_dir="$output_dir/tuak"
+mkdir -p "$tuak_output_dir"
+"$repository_root/reference/tuak/run_tuak_vector.sh" > "$tuak_output_dir/tuak_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
