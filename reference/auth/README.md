@@ -32,8 +32,8 @@ under test. The Milenage functions and `osmo_auth_3g_from_2g()` are exported by 
 but declared in no installed header, so the harness declares them.
 
 Not recorded: the deprecated `osmo_auth_gen_vec()` and `osmo_auth_gen_vec_auts()`, apart
-from the upstream test replay; TUAK, which a later harness covers; and cases where C reads a
-union member the subscriber type doesn't fill.
+from the upstream test replay; TUAK, which the [TUAK harness](../tuak/README.md) covers;
+and cases where C reads a union member the subscriber type doesn't fill.
 
 ## Fixtures
 
