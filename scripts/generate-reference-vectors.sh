@@ -92,6 +92,10 @@ tuak_output_dir="$output_dir/tuak"
 mkdir -p "$tuak_output_dir"
 "$repository_root/reference/tuak/run_tuak_vector.sh" > "$tuak_output_dir/tuak_vectors.ndjson"
 
+kdf_output_dir="$output_dir/kdf"
+mkdir -p "$kdf_output_dir"
+"$repository_root/reference/kdf/run_kdf_vector.sh" > "$kdf_output_dir/kdf_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
