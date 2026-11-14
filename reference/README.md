@@ -38,6 +38,7 @@ compatibility tests.
 | COMP128 and XOR-2G | [`comp128/`](comp128/README.md) | `tests/vectors/comp128/` | `comp128`, `comp128v2`, `comp128v3`, `osmo_auth_gen_vec2` for COMP128 and XOR-2G |
 | Authentication | [`auth/`](auth/README.md) | `tests/vectors/auth/` | `osmo_auth_*` for Milenage and XOR-3G, `osmo_c4`, the Milenage functions |
 | TUAK | [`tuak/`](tuak/README.md) | `tests/vectors/tuak/` | `tuak_f1`, `tuak_f1star`, `tuak_f2345`, `tuak_f5star`, `tuak_opc_gen`, `osmo_auth_gen_vec2` and `osmo_auth_gen_vec_auts2` for TUAK |
+| Key derivation | [`kdf/`](kdf/README.md) | `tests/vectors/kdf/` | `osmo_kdf_kc128`, `osmo_kdf_kasme`, `osmo_kdf_enb`, `osmo_kdf_nh`, `osmo_kdf_nas` |
 | TLV | [`tlv/`](tlv/README.md) | `tests/vectors/tlv/` | `tlv_*`, `osmo_tlvp_*`, `osmo_shift_*`, `osmo_tlv_prot_*`, `msgb_*` TLV helpers |
 | Bit vectors | [`bitvec/`](bitvec/README.md) | `tests/vectors/bitvec/` | `bitvec_*` |
 | Message buffers | [`msgb/`](msgb/README.md) | `tests/vectors/msgb/` | `msgb_*` |
@@ -70,13 +71,13 @@ directory and rejects `LIBOSMOCORE_ROOT` values that point elsewhere.
 
 ## Two kinds of runner
 
-**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, comp128, auth, kasumi, gea, tuak, gsm0503, tlv,
+**Library runners** (gsmtap, bcd, hexparse, bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, comp128, auth, kasumi, gea, tuak, kdf, gsm0503, tlv,
 bitvec, msgb, prim, crc, network) run `make` in the checkout's `src/core` and link
-the harness against that library with an rpath; gsm0502, gsm_utils, a5, comp128, auth, gea and tlv also build and link
+the harness against that library with an rpath; gsm0502, gsm_utils, a5, comp128, auth, gea, kdf and tlv also build and link
 `src/gsm`, kasumi and tuak build `src/isdn` and `src/gsm` and link `src/gsm`'s internal
 `libgsmint.a` archive, and gsm0503 also `src/codec`, `src/gsm` and `src/coding`. All except
 gsmtap first check SHA-256 hashes of the C sources and headers they exercise. The
-bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, comp128, auth, kasumi, gea, tuak, gsm0503, tlv, bitvec, msgb, prim, crc and network runners
+bits, base64, prbs, use_count, strrb, sockaddr_str, gsm0502, gsm_utils, a5, comp128, auth, kasumi, gea, tuak, kdf, gsm0503, tlv, bitvec, msgb, prim, crc and network runners
 also replace `LD_LIBRARY_PATH` and clear
 `LD_PRELOAD` at run time. Their fixtures are JSON, NDJSON or TSV.
 
