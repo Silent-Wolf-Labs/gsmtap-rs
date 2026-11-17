@@ -100,6 +100,10 @@ osmo_auc_gen_output_dir="$output_dir/osmo-auc-gen"
 mkdir -p "$osmo_auc_gen_output_dir"
 "$repository_root/reference/osmo-auc-gen/run_osmo_auc_gen_vector.sh" > "$osmo_auc_gen_output_dir/osmo_auc_gen_vectors.ndjson"
 
+gsm23003_output_dir="$output_dir/gsm23003"
+mkdir -p "$gsm23003_output_dir"
+"$repository_root/reference/gsm23003/run_gsm23003_vector.sh" > "$gsm23003_output_dir/gsm23003_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
