@@ -96,6 +96,10 @@ kdf_output_dir="$output_dir/kdf"
 mkdir -p "$kdf_output_dir"
 "$repository_root/reference/kdf/run_kdf_vector.sh" > "$kdf_output_dir/kdf_vectors.ndjson"
 
+osmo_auc_gen_output_dir="$output_dir/osmo-auc-gen"
+mkdir -p "$osmo_auc_gen_output_dir"
+"$repository_root/reference/osmo-auc-gen/run_osmo_auc_gen_vector.sh" > "$osmo_auc_gen_output_dir/osmo_auc_gen_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
