@@ -104,6 +104,10 @@ gsm23003_output_dir="$output_dir/gsm23003"
 mkdir -p "$gsm23003_output_dir"
 "$repository_root/reference/gsm23003/run_gsm23003_vector.sh" > "$gsm23003_output_dir/gsm23003_vectors.ndjson"
 
+gsm48_output_dir="$output_dir/gsm48"
+mkdir -p "$gsm48_output_dir"
+"$repository_root/reference/gsm48/run_gsm48_vector.sh" > "$gsm48_output_dir/gsm48_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
