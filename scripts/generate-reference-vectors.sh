@@ -108,6 +108,10 @@ gsm48_output_dir="$output_dir/gsm48"
 mkdir -p "$gsm48_output_dir"
 "$repository_root/reference/gsm48/run_gsm48_vector.sh" > "$gsm48_output_dir/gsm48_vectors.ndjson"
 
+gsm48_ie_output_dir="$output_dir/gsm48_ie"
+mkdir -p "$gsm48_ie_output_dir"
+"$repository_root/reference/gsm48_ie/run_gsm48_ie_vector.sh" > "$gsm48_ie_output_dir/gsm48_ie_vectors.ndjson"
+
 tlv_output_dir="$output_dir/tlv"
 mkdir -p "$tlv_output_dir"
 "$repository_root/reference/tlv/run_tlv_vector.sh" > "$tlv_output_dir/tlv_vectors.ndjson"
