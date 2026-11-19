@@ -104,6 +104,10 @@ gsm23003_output_dir="$output_dir/gsm23003"
 mkdir -p "$gsm23003_output_dir"
 "$repository_root/reference/gsm23003/run_gsm23003_vector.sh" > "$gsm23003_output_dir/gsm23003_vectors.ndjson"
 
+gsm23236_output_dir="$output_dir/gsm23236"
+mkdir -p "$gsm23236_output_dir"
+"$repository_root/reference/gsm23236/run_gsm23236_vector.sh" > "$gsm23236_output_dir/gsm23236_vectors.ndjson"
+
 gsm48_output_dir="$output_dir/gsm48"
 mkdir -p "$gsm48_output_dir"
 "$repository_root/reference/gsm48/run_gsm48_vector.sh" > "$gsm48_output_dir/gsm48_vectors.ndjson"
