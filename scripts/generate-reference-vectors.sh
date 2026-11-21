@@ -123,6 +123,7 @@ mkdir -p "$tlv_output_dir"
 gsm0503_output_dir="$output_dir/gsm0503"
 mkdir -p "$gsm0503_output_dir"
 "$repository_root/reference/gsm0503/run_xcch_vector.sh" > "$gsm0503_output_dir/xcch_vectors.ndjson"
+"$repository_root/reference/gsm0503/run_codes_vector.sh" > "$gsm0503_output_dir/codes_vectors.ndjson"
 
 bitvec_output_dir="$output_dir/bitvec"
 mkdir -p "$bitvec_output_dir"
