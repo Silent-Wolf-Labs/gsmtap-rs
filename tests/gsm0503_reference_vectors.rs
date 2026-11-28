@@ -32,3 +32,22 @@ fn gsm0503_codes_fixture_has_the_recorded_c_observations() {
 fn gsm0503_codes_fixture_rejects_corruption() {
     codes_fixture::check_corruptions(CODES_FIXTURE);
 }
+
+#[path = "support/gsm0503_tch_fr_fixture.rs"]
+mod tch_fr_fixture;
+
+const TCH_FR_FIXTURE: &str = include_str!("vectors/gsm0503/tch_fr_vectors.ndjson");
+
+#[test]
+fn gsm0503_tch_fr_fixture_has_the_recorded_c_observations() {
+    let total: usize = tch_fr_fixture::SECTIONS
+        .iter()
+        .map(|(_, count)| count)
+        .sum();
+    assert_eq!(tch_fr_fixture::validate(TCH_FR_FIXTURE).len(), total);
+}
+
+#[test]
+fn gsm0503_tch_fr_fixture_rejects_corruption() {
+    tch_fr_fixture::check_corruptions(TCH_FR_FIXTURE);
+}

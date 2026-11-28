@@ -27,7 +27,7 @@ compatibility tests.
 | Base64 | [`base64/`](base64/README.md) | `tests/vectors/base64/` | Base64 encode and decode |
 | PRBS | [`prbs/`](prbs/README.md) | `tests/vectors/prbs/` | `osmo_prbs_*` |
 | GSM 05.02 | [`gsm0502/`](gsm0502/README.md) | `tests/vectors/gsm0502/` | `gsm0502_*`, `GSM_TDMA_FN_*`, `GSM_NBITS_*` |
-| GSM 05.03 channel coding | [`gsm0503/`](gsm0503/README.md) | `tests/vectors/gsm0503/` | `gsm0503_xcch_*`, the 45 `gsm0503_*` convolutional codes, the `gsm0503_parity` CRC descriptors |
+| GSM 05.03 channel coding | [`gsm0503/`](gsm0503/README.md) | `tests/vectors/gsm0503/` | `gsm0503_xcch_*`, `gsm0503_tch_fr_*` (FR, EFR and FACCH/F) with `gsm0503_tch_burst_*`, the 45 `gsm0503_*` convolutional codes, the `gsm0503_parity` CRC descriptors, `gsm610_bitorder`, `gsm660_bitorder` |
 | gsm_utils | [`gsm_utils/`](gsm_utils/README.md) | `tests/vectors/gsm_utils/` | Bands, power, ARFCNs, `gsm_time`, RFN, TLLI, classmark and RACH helpers; `gsm_7bit_*`, `gsm_septet_*`, `gsm_get_octet_len` |
 | IP addresses as text | [`sockaddr_str/`](sockaddr_str/README.md) | `tests/vectors/sockaddr_str/` | `osmo_sockaddr_str_*`, `osmo_ip_str_type` |
 | String ringbuffers | [`strrb/`](strrb/README.md) | `tests/vectors/strrb/` | `osmo_strrb_*` |
